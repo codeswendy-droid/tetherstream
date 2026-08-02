@@ -16,6 +16,7 @@ import {
   Coins
 } from 'lucide-react';
 import { useWalletStore } from '../../store/useWalletStore';
+import { useMiningStore } from '../../store/useMiningStore';
 import { FundingModal } from '../../components/funding/FundingModal';
 import { WithdrawModal } from '../../components/funding/WithdrawModal';
 import { TransactionHistoryView } from '../../components/funding/TransactionHistoryView';
@@ -43,6 +44,7 @@ export const WalletScreen: React.FC = () => {
     totalRewards,
     activeMachines,
   } = useWalletStore();
+  const { fetchUserMachines } = useMiningStore();
 
   const { hapticFeedback } = useTelegram();
 
@@ -50,13 +52,15 @@ export const WalletScreen: React.FC = () => {
     fetchBalanceFromEngine();
     fetchSettlementHistory();
     fetchTransactions(5, 0);
-  }, [fetchBalanceFromEngine, fetchSettlementHistory, fetchTransactions]);
+    fetchUserMachines();
+  }, [fetchBalanceFromEngine, fetchSettlementHistory, fetchTransactions, fetchUserMachines]);
 
   const handleRefresh = () => {
     hapticFeedback.impactOccurred('light');
     fetchBalanceFromEngine();
     fetchSettlementHistory();
     fetchTransactions(5, 0);
+    fetchUserMachines();
   };
 
   const selectedPendingSession = pendingSettlements.find((s) => s.settlementId === selectedPendingId);

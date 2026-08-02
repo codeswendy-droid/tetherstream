@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 
 export const BoostScreen: React.FC = () => {
-  const { baseSpeedGhs, upgradeBaseSpeed, fetchMiningState } = useMiningStore();
+  const { baseSpeedGhs, upgradeBaseSpeed, fetchMiningState, fetchUserMachines, isMachineOwned } = useMiningStore();
   const { preferLocalCurrency } = useSettingsStore();
   const { hapticFeedback } = useTelegram();
   const { transactions } = useWalletStore();
@@ -52,8 +52,10 @@ export const BoostScreen: React.FC = () => {
   const [invoiceId, setInvoiceId] = useState('');
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutes
 
-  // Auto show machine education modal on first visit (v2 logic)
+  // Auto show machine education modal on first visit & fetch authoritative machine state
   useEffect(() => {
+    fetchMiningState();
+    fetchUserMachines();
     const hasSeen = localStorage.getItem('has_seen_machine_education_v2');
     if (!hasSeen) {
       setShowEducationModal(true);
@@ -95,6 +97,7 @@ export const BoostScreen: React.FC = () => {
       if (res.success) {
         hapticFeedback.notificationOccurred('success');
         await fetchMiningState();
+        await fetchUserMachines();
         await useWalletStore.getState().fetchBalanceFromEngine();
         setInvoiceStatus('PAID');
         showToast(`Machine ${selectedMachine.name} activated!`, 'success');
@@ -115,13 +118,16 @@ export const BoostScreen: React.FC = () => {
       const res = await machineService.purchaseMachine(selectedMachine.tierCode);
       if (res.success) {
         await fetchMiningState();
+        await fetchUserMachines();
         await useWalletStore.getState().fetchBalanceFromEngine();
       } else {
         await fetchMiningState();
+        await fetchUserMachines();
       }
     } catch (err) {
       console.warn('Sandbox simulation backend sync error:', err);
       upgradeBaseSpeed(selectedMachine.capacityGhs);
+      await fetchUserMachines();
     }
 
     adjustTreasuryStats('BOOST', selectedMachine.priceUsdt);
@@ -217,6 +223,7 @@ export const BoostScreen: React.FC = () => {
       <div className="flex flex-col gap-5">
         {MACHINE_CATALOG.filter((m) => m.id !== 'free-trial').map((machine, idx) => {
           const yieldDetails = getMachineYieldDetails(machine);
+          const isOwned = isMachineOwned(machine.tierCode);
 
           return (
             <motion.div
@@ -225,7 +232,9 @@ export const BoostScreen: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05, duration: 0.3 }}
               className={`relative rounded-3xl p-5 flex flex-col gap-4 border transition-all shadow-xl overflow-hidden ${
-                machine.isPopular
+                isOwned
+                  ? 'bg-gradient-to-br from-usdt-green/20 via-card-bg to-[#0d1319] border-usdt-green shadow-usdt-green/20'
+                  : machine.isPopular
                   ? 'bg-gradient-to-br from-usdt-green/20 via-card-bg to-[#0d1319] border-usdt-green/60 shadow-usdt-green/15'
                   : machine.tierCode === 'TS_Q2500'
                   ? 'bg-gradient-to-br from-amber-500/15 via-card-bg to-[#17120a] border-amber-500/50 shadow-amber-500/10'
@@ -234,12 +243,16 @@ export const BoostScreen: React.FC = () => {
                   : 'bg-card-bg/95 border-white/10 hover:border-usdt-green/40'
               }`}
             >
-              {/* Most Popular Badge */}
-              {machine.isPopular && (
+              {/* Most Popular or Owned Badge */}
+              {isOwned ? (
+                <div className="absolute top-0 right-0 bg-usdt-green text-app-bg font-black text-[9px] px-3.5 py-1 rounded-bl-2xl uppercase tracking-wider flex items-center gap-1 shadow-md">
+                  <CheckCircle2 size={11} /> Owned & Active Node
+                </div>
+              ) : machine.isPopular ? (
                 <div className="absolute top-0 right-0 bg-usdt-green text-app-bg font-black text-[9px] px-3.5 py-1 rounded-bl-2xl uppercase tracking-wider flex items-center gap-1 shadow-md">
                   <Sparkles size={10} /> Most Popular Tier
                 </div>
-              )}
+              ) : null}
 
               {/* LEVEL 1: ESTIMATED DAILY EARNINGS (HERO ELEMENT) */}
               <div className="bg-app-bg/90 border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-inner">
@@ -296,18 +309,25 @@ export const BoostScreen: React.FC = () => {
                 {machine.simpleExplanation}
               </p>
 
-              {/* LEVEL 6: ACQUIRE BUTTON */}
-              <button
-                onClick={() => handleBuy(machine)}
-                className={`w-full press-feedback py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase flex items-center justify-center gap-2 border transition-all shadow-lg ${
-                  machine.isPopular
-                    ? 'bg-gradient-to-r from-usdt-green to-[#00c853] text-app-bg border-usdt-green hover:brightness-110 shadow-usdt-green/20'
-                    : 'bg-gradient-to-r from-white/15 to-white/5 text-text-primary border-white/20 hover:bg-white/20'
-                }`}
-              >
-                <span>Acquire {machine.name}</span>
-                <ArrowUpRight size={16} />
-              </button>
+              {/* LEVEL 6: ACQUIRE / OWNED BUTTON */}
+              {isOwned ? (
+                <div className="w-full py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase flex items-center justify-center gap-2 bg-usdt-green/15 text-usdt-green border border-usdt-green/40 shadow-inner cursor-default">
+                  <CheckCircle2 size={16} className="text-usdt-green" />
+                  <span>Owned & Active Node</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleBuy(machine)}
+                  className={`w-full press-feedback py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase flex items-center justify-center gap-2 border transition-all shadow-lg ${
+                    machine.isPopular
+                      ? 'bg-gradient-to-r from-usdt-green to-[#00c853] text-app-bg border-usdt-green hover:brightness-110 shadow-usdt-green/20'
+                      : 'bg-gradient-to-r from-white/15 to-white/5 text-text-primary border-white/20 hover:bg-white/20'
+                  }`}
+                >
+                  <span>Acquire {machine.name}</span>
+                  <ArrowUpRight size={16} />
+                </button>
+              )}
 
               {/* LEVEL 7: TECHNICAL INFORMATION & UNDERSTANDABLE INDICATORS */}
               <div className="flex flex-col gap-2 bg-white/[0.02] border border-white/5 rounded-2xl p-3 text-xs">

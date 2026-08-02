@@ -134,6 +134,7 @@ export const MiningSpinner: React.FC = () => {
     setTonSpinnerIdx,
     hasPurchasedMachine,
     isMiningLocked,
+    isMachineOwned,
     machineMode,
     displayPromoOutput,
     tapYieldPerTap,
@@ -322,7 +323,7 @@ export const MiningSpinner: React.FC = () => {
       return;
     }
 
-    if (baseSpeedGhs < activeSpinner.minBoostGhs) {
+    if (baseSpeedGhs < activeSpinner.minBoostGhs && !isMachineOwned(activeSpinner.tierCode)) {
       impactOccurred('heavy');
       showToast(`This Machine tier is locked! Redirecting to the Cloud Machines hub.`, 'info');
       setActiveTab('boost');

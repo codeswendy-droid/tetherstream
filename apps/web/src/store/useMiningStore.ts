@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { miningService, type MiningStateResponse } from '../services/mining.service';
+import { machineService, type UserMachineAsset } from '../services/machineService';
 import { useWalletStore } from './useWalletStore';
 import { MACHINE_CATALOG } from '../data/machines';
 
@@ -18,6 +19,11 @@ export interface MiningState {
   isOverheated: boolean;
   cooldownRemaining: number;
   tapYieldPerTap: number;
+
+  // ── Authoritative Machine Ownership ──
+  userMachines: UserMachineAsset[];
+  ownedTierCodes: string[];
+  activeMachinesCount: number;
 
   // ── Eased display values (rendering only — never used for claims) ──
   displayUnclaimed: number;
@@ -45,6 +51,8 @@ export interface MiningState {
   tap: () => number; // returns per-tap yield for particle feedback (-1 if tap failed)
   applyServerSession: (session: MiningStateResponse, opts?: { snapDisplay?: boolean }) => void;
   fetchMiningState: () => Promise<void>;
+  fetchUserMachines: () => Promise<UserMachineAsset[]>;
+  isMachineOwned: (tierCode: string) => boolean;
   claimMinedYield: () => Promise<{ success: boolean; error?: any }>;
   startDisplayTicker: () => void;
   stopDisplayTicker: () => void;
@@ -84,6 +92,10 @@ export const useMiningStore = create<MiningState>((set, get) => {
     isOverheated: false,
     cooldownRemaining: 0,
     tapYieldPerTap: 0,
+
+    userMachines: [],
+    ownedTierCodes: ['TS_TRIAL'],
+    activeMachinesCount: 1,
 
     displayUnclaimed: 0.0,
     displayMultiplier: 1.0,
@@ -129,12 +141,44 @@ export const useMiningStore = create<MiningState>((set, get) => {
       });
     },
 
+    fetchUserMachines: async () => {
+      try {
+        const machines = await machineService.getMyMachines();
+        if (Array.isArray(machines)) {
+          const ownedTierCodes = machines.map((m) => m.tierCode);
+          const hasPurchased = machines.some((m) => m.tierCode !== 'TS_TRIAL' && m.status === 'ACTIVE') || get().baseSpeedGhs > 1.0;
+          const activeCount = machines.filter((m) => m.status === 'ACTIVE').length;
+          if (hasPurchased) {
+            localStorage.setItem('has_purchased_machine', 'true');
+          }
+          set({
+            userMachines: machines,
+            ownedTierCodes,
+            hasPurchasedMachine: hasPurchased,
+            activeMachinesCount: activeCount,
+          });
+          useWalletStore.getState().updateBalance({ activeMachines: activeCount });
+          return machines;
+        }
+      } catch (err) {
+        console.warn('Failed to fetch user machines:', err);
+      }
+      return get().userMachines;
+    },
+
+    isMachineOwned: (tierCode: string) => {
+      if (tierCode === 'TS_TRIAL') return true;
+      const s = get();
+      return s.ownedTierCodes.includes(tierCode) || s.userMachines.some((m) => m.tierCode === tierCode && m.status === 'ACTIVE');
+    },
+
     fetchMiningState: async () => {
       try {
         const res = await miningService.getMiningState();
         if (res.success && res.data) {
           get().applyServerSession(res.data);
         }
+        await get().fetchUserMachines();
       } catch (err) {
         console.warn('Failed to fetch backend mining state:', err);
       }
@@ -254,6 +298,12 @@ export const useMiningStore = create<MiningState>((set, get) => {
       if (s.activeCurrency === 'TON' && !s.tonUnlocked) {
         return true;
       }
+
+      const catalogMachine = MACHINE_CATALOG[spinnerIdx];
+      if (catalogMachine && s.isMachineOwned(catalogMachine.tierCode)) {
+        return false;
+      }
+
       const reqSpeed = isUsdt
         ? MIN_BOOST_USDT[spinnerIdx] || 0
         : MIN_BOOST_TON[spinnerIdx] || 0;
