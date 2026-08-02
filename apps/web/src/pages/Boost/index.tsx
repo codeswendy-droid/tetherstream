@@ -126,7 +126,7 @@ export const BoostScreen: React.FC = () => {
       }
     } catch (err) {
       console.warn('Sandbox simulation backend sync error:', err);
-      upgradeBaseSpeed(selectedMachine.capacityGhs);
+      upgradeBaseSpeed(selectedMachine.capacityGhs, selectedMachine.tierCode);
       await fetchUserMachines();
     }
 

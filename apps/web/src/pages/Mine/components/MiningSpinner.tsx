@@ -323,7 +323,7 @@ export const MiningSpinner: React.FC = () => {
       return;
     }
 
-    if (baseSpeedGhs < activeSpinner.minBoostGhs && !isMachineOwned(activeSpinner.tierCode)) {
+    if (isMiningLocked()) {
       impactOccurred('heavy');
       showToast(`This Machine tier is locked! Redirecting to the Cloud Machines hub.`, 'info');
       setActiveTab('boost');
@@ -502,7 +502,7 @@ export const MiningSpinner: React.FC = () => {
 
         <motion.div
           onClick={handleTap}
-          whileTap={baseSpeedGhs >= activeSpinner.minBoostGhs ? { scale: 0.93 } : { scale: 1.0 }}
+          whileTap={!isMiningLocked() ? { scale: 0.93 } : { scale: 1.0 }}
           className="relative w-[216px] h-[216px] rounded-full glass-panel flex items-center justify-center cursor-pointer shadow-[0_12px_40px_rgba(0,0,0,0.6)]"
           style={{
             boxShadow: `0 0 35px ${dynamicColor}25, inset 0 0 15px ${dynamicColor}10`,
@@ -1183,7 +1183,7 @@ export const MiningSpinner: React.FC = () => {
 
 
           {/* Lock Screen Overlay */}
-          {baseSpeedGhs < activeSpinner.minBoostGhs && (
+          {isMiningLocked() && (
             <div className="absolute inset-0 rounded-full bg-black/85 backdrop-blur-[3px] flex flex-col items-center justify-center z-20 text-center p-4 border border-white/10 animate-fade-in">
               <div className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gold mb-2 animate-pulse">
                 <Lock size={15} />

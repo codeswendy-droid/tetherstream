@@ -56,7 +56,7 @@ export interface MiningState {
   claimMinedYield: () => Promise<{ success: boolean; error?: any }>;
   startDisplayTicker: () => void;
   stopDisplayTicker: () => void;
-  upgradeBaseSpeed: (amount: number) => void;
+  upgradeBaseSpeed: (amount: number, tierCode?: string) => void;
   markMachinePurchased: () => void;
   upgradeLimits: () => void;
   resetTaps: (period: 'daily' | 'weekly' | 'monthly') => void;
@@ -265,8 +265,13 @@ export const useMiningStore = create<MiningState>((set, get) => {
       return state.tapYieldPerTap;
     },
 
-    upgradeBaseSpeed: (amount) =>
-      set((state) => ({ baseSpeedGhs: state.baseSpeedGhs + amount })),
+    upgradeBaseSpeed: (amount, tierCode) =>
+      set((state) => ({
+        baseSpeedGhs: state.baseSpeedGhs + amount,
+        ownedTierCodes: tierCode && !state.ownedTierCodes.includes(tierCode)
+          ? [...state.ownedTierCodes, tierCode]
+          : state.ownedTierCodes,
+      })),
     markMachinePurchased: () => {
       localStorage.setItem('has_purchased_machine', 'true');
       set({ hasPurchasedMachine: true });
