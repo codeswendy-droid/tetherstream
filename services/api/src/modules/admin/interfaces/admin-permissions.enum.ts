@@ -13,6 +13,7 @@ export enum AdminPermission {
   FINANCIAL_VIEW = 'financial.view',
   SUPPORT_MANAGE = 'support.manage',
   METRICS_VIEW = 'metrics.view',
+  TREASURY_MANAGE = 'treasury.manage',
 }
 
 export const ROLE_PERMISSIONS_MAP: Record<AdminRole, AdminPermission[]> = {

@@ -325,7 +325,9 @@ model User {
   channelVerificationEvents ChannelVerificationEvent[]
   miningState           UserMiningState?
   productSubscriptions  ProductSubscription[]
-  userMachines          UserMachine[]
+  identityId            String?            @map("identity_id")
+  identity              UniversalIdentity? @relation(fields: [identityId], references: [id], onDelete: SetNull)
+  userPreferences       UserPreferences?
 
   @@index([state])
   @@index([createdAt])
@@ -1678,6 +1680,252 @@ model UserMachine {
   @@index([status])
   @@map("user_machines")
 }
+
+// ===================================================
+// MISSION CONTROL & AGNOSTIC IDENTITY EXTENSIONS
+// ===================================================
+
+enum IdentityProvider {
+  TELEGRAM
+  WHATSAPP
+  PHONE
+  EMAIL
+  GOOGLE
+  APPLE
+  INTERNAL
+}
+
+enum AuthMethod {
+  TELEGRAM
+  WHATSAPP
+}
+
+enum NotificationChannel {
+  TELEGRAM
+  WHATSAPP
+  PUSH
+}
+
+enum ShareChannel {
+  TELEGRAM
+  WHATSAPP
+  SYSTEM
+}
+
+model UniversalIdentity {
+  id          String   @id @default(uuid()) @map("identity_id")
+  displayName String   @map("display_name")
+  avatarUrl   String?  @map("avatar_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  channels     ChannelIdentity[]
+  adminNotes   AdminNote[]
+  supportCases SupportTicket[]
+  users        User[]
+
+  @@map("universal_identities")
+}
+
+model ChannelIdentity {
+  id           String           @id @default(uuid()) @map("channel_identity_id")
+  identityId   String           @map("identity_id")
+  provider     IdentityProvider @map("provider")
+  identifier   String           @map("identifier")
+  phone        String?          @map("phone")
+  telegramId   String?          @map("telegram_id")
+  verified     Boolean          @default(true) @map("verified")
+  metadata     Json             @default("{}") @map("metadata")
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  identity UniversalIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, identifier])
+  @@index([identityId])
+  @@map("channel_identities")
+}
+
+model UserPreferences {
+  id                    String              @id @default(uuid()) @map("preference_id")
+  telegramUserId        BigInt              @unique @map("telegram_user_id")
+  authenticationMethod  AuthMethod          @default(TELEGRAM) @map("authentication_method")
+  notificationChannel   NotificationChannel @default(TELEGRAM) @map("notification_channel")
+  preferredShareChannel ShareChannel        @default(TELEGRAM) @map("preferred_share_channel")
+  pushToken             String?             @map("push_token")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model OtpChallenge {
+  id        String   @id @default(uuid()) @map("challenge_id")
+  phone     String   @map("phone")
+  otpHash   String   @map("otp_hash")
+  attempts  Int      @default(0) @map("attempts")
+  verified  Boolean  @default(false) @map("verified")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([phone])
+  @@index([verified])
+  @@map("otp_challenges")
+}
+
+model ReferralAnalytics {
+  id          String   @id @default(uuid()) @map("analytics_id")
+  inviterId   BigInt   @map("inviter_id")
+  inviteeId   BigInt?  @map("invitee_id")
+  channel     String   @default("DIRECT") @map("channel")
+  campaign    String?  @map("campaign")
+  medium      String?  @map("medium")
+  device      String?  @map("device")
+  landingPage String?  @map("landing_page")
+  registered  Boolean  @default(false) @map("registered")
+  activated   Boolean  @default(false) @map("activated")
+  funded      Boolean  @default(false) @map("funded")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([inviterId])
+  @@index([channel])
+  @@map("referral_analytics")
+}
+
+model AdminDevice {
+  id             String    @id @default(uuid()) @map("admin_device_id")
+  adminUserId    String    @map("admin_user_id")
+  fingerprint    String    @map("fingerprint")
+  deviceModel    String?   @map("device_model")
+  os             String?   @map("os")
+  browser        String?   @map("browser")
+  lastIp         String    @map("last_ip")
+  isTrusted      Boolean   @default(true) @map("is_trusted")
+  lastSeenAt     DateTime  @default(now()) @map("last_seen_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@unique([adminUserId, fingerprint])
+  @@index([adminUserId])
+  @@map("admin_devices")
+}
+
+model TelegramConfirmationToken {
+  id             String    @id @default(uuid()) @map("token_id")
+  token          String    @unique @map("token")
+  adminUserId    String    @map("admin_user_id")
+  actionType     String    @map("action_type")
+  actionPayload  Json      @map("action_payload")
+  status         String    @default("PENDING") @map("status")
+  expiresAt      DateTime  @map("expires_at")
+  confirmedAt    DateTime? @map("confirmed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([token])
+  @@index([adminUserId])
+  @@index([status])
+  @@map("telegram_confirmation_tokens")
+}
+
+model AdminNote {
+  id          String   @id @default(uuid()) @map("note_id")
+  authorId    String   @map("author_id")
+  targetType  String   @map("target_type")
+  targetId    String   @map("target_id")
+  content     String   @map("content")
+  metadata    Json?    @map("metadata")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  identity    UniversalIdentity? @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId])
+  @@index([authorId])
+  @@map("admin_notes")
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid()) @map("flag_id")
+  code        String   @unique @map("code")
+  name        String   @map("name")
+  description String?  @map("description")
+  enabled     Boolean  @default(true) @map("enabled")
+  rules       Json     @default("{}") @map("rules")
+  updatedBy   String?  @map("updated_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([code])
+  @@index([enabled])
+  @@map("feature_flags")
+}
+
+model SystemAchievement {
+  id          String   @id @default(uuid()) @map("achievement_id")
+  code        String   @unique @map("code")
+  title       String   @map("title")
+  description String   @map("description")
+  category    String   @default("MILESTONE") @map("category")
+  icon        String   @default("🏆") @map("icon")
+  rewardAmount Decimal @default(0.0) @db.Decimal(36, 18) @map("reward_amount")
+  rewardAsset String   @default("USDT") @map("reward_asset")
+  orderIndex  Int      @default(0) @map("order_index")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  userAchievements UserAchievement[]
+
+  @@index([code])
+  @@map("system_achievements")
+}
+
+model UserAchievement {
+  id             String    @id @default(uuid()) @map("id")
+  telegramUserId BigInt    @map("telegram_user_id")
+  achievementId String    @map("achievement_id")
+  unlockedAt     DateTime  @default(now()) @map("unlocked_at")
+  sharedAt       DateTime? @map("shared_at")
+
+  achievement SystemAchievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([telegramUserId, achievementId])
+  @@index([telegramUserId])
+  @@map("user_achievements")
+}
+
+model SupportTicket {
+  id            String             @id @default(uuid()) @map("ticket_id")
+  identityId    String?            @map("identity_id")
+  channel       IdentityProvider   @default(TELEGRAM) @map("channel")
+  channelUserId String             @map("channel_user_id")
+  subject       String             @map("subject")
+  status        String             @default("OPEN") @map("status")
+  priority      String             @default("MEDIUM") @map("priority")
+  assignedAdmin String?            @map("assigned_admin")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  identity UniversalIdentity? @relation(fields: [identityId], references: [id], onDelete: SetNull)
+  messages SupportMessage[]
+
+  @@index([status])
+  @@index([channelUserId])
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  id         String   @id @default(uuid()) @map("message_id")
+  ticketId   String   @map("ticket_id")
+  senderType String   @map("sender_type")
+  senderId   String   @map("sender_id")
+  content    String   @map("content")
+  attachments Json    @default("[]") @map("attachments")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("support_messages")
+}
+
 
 
 

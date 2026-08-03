@@ -32,4 +32,25 @@ export class MachineController {
   ) {
     return this.service.purchaseMachine(telegramUserId, tierCode, isSandbox);
   }
+
+  @Post('repower')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Repower an existing active cloud machine for a 30-day cycle' })
+  async repowerMachine(
+    @TelegramUserId() telegramUserId: bigint,
+    @Body('machineId') machineId: string,
+  ) {
+    return this.service.repowerMachine(telegramUserId, machineId);
+  }
+
+  @Post('upgrade')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Upgrade an existing active machine to a higher tier' })
+  async upgradeMachine(
+    @TelegramUserId() telegramUserId: bigint,
+    @Body('currentMachineId') currentMachineId: string,
+    @Body('targetTierCode') targetTierCode: string,
+  ) {
+    return this.service.upgradeMachineTier(telegramUserId, currentMachineId, targetTierCode);
+  }
 }

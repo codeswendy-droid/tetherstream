@@ -8,6 +8,8 @@ import { AuditModule } from '../audit/audit.module';
 import { PrismaModule } from '../../database/prisma.module';
 import { requiredEnv } from '../../common/config/env.util';
 
+import { AuthVerificationService } from './auth-verification.service';
+
 @Module({
   imports: [
     PrismaModule,
@@ -22,6 +24,7 @@ import { requiredEnv } from '../../common/config/env.util';
   providers: [
     AuthService,
     WebAuthSessionService,
+    AuthVerificationService,
     {
       provide: TelegramAuthService,
       useFactory: () => {
@@ -30,6 +33,6 @@ import { requiredEnv } from '../../common/config/env.util';
       },
     },
   ],
-  exports: [AuthService, WebAuthSessionService, JwtModule],
+  exports: [AuthService, WebAuthSessionService, AuthVerificationService, JwtModule],
 })
 export class AuthModule {}

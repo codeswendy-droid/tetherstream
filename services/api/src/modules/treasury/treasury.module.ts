@@ -9,6 +9,7 @@ import { TreasuryController } from './treasury.controller';
 import { PublicTreasuryController } from './public-treasury.controller';
 import { TreasuryOperatorService } from './treasury-operator.service';
 import { TreasuryOperatorController } from './treasury-operator.controller';
+import { OperatorIntelligenceService } from './services/operator-intelligence.service';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { TreasuryOperatorController } from './treasury-operator.controller';
     forwardRef(() => AdminModule),
   ],
   controllers: [TreasuryController, PublicTreasuryController, TreasuryOperatorController],
-  providers: [TreasuryService, TreasuryOperatorService],
-  exports: [TreasuryService, TreasuryOperatorService],
+  providers: [TreasuryService, TreasuryOperatorService, OperatorIntelligenceService],
+  exports: [TreasuryService, TreasuryOperatorService, OperatorIntelligenceService],
 })
 export class TreasuryModule {}

@@ -57,8 +57,8 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     capacityScore: 10,
     status: 'ACTIVE',
     spinnerSpeedMultiplier: 0.1,
-    passiveYieldRate: 0.0000001929,
-    promoYieldRate: 0.00000289,
+    passiveYieldRate: 0.00000192935,
+    promoYieldRate: 0.0000289,
     promoOutputCap: 5.0,
     promoSpinnerSpeedMultiplier: 0.5,
   },
@@ -87,7 +87,7 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     capacityScore: 35,
     status: 'AVAILABLE',
     spinnerSpeedMultiplier: 0.8,
-    passiveYieldRate: 0.0001,
+    passiveYieldRate: 0.000000625,
   },
   {
     id: 'surge-r28',
@@ -115,7 +115,7 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     comparisonText: 'Earns approximately 5× more money than Ripple X14.',
     status: 'AVAILABLE',
     spinnerSpeedMultiplier: 1.5,
-    passiveYieldRate: 0.0001,
+    passiveYieldRate: 0.000000648148,
   },
   {
     id: 'torrent-v63',
@@ -144,7 +144,7 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     isPopular: true,
     status: 'AVAILABLE',
     spinnerSpeedMultiplier: 2.2,
-    passiveYieldRate: 0.0001,
+    passiveYieldRate: 0.000000667735,
   },
   {
     id: 'cascade-m91',
@@ -172,7 +172,7 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     comparisonText: 'Earns approximately 4.2× more money than Torrent V63.',
     status: 'AVAILABLE',
     spinnerSpeedMultiplier: 3.0,
-    passiveYieldRate: 0.0001,
+    passiveYieldRate: 0.000000673401,
   },
   {
     id: 'streamtitan-2028',
@@ -200,7 +200,7 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     comparisonText: 'Earns approximately 2.6× more money than Cascade M91.',
     status: 'AVAILABLE',
     spinnerSpeedMultiplier: 3.8,
-    passiveYieldRate: 0.0001,
+    passiveYieldRate: 0.000000655864,
   },
 ];
 

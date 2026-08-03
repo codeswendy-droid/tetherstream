@@ -6,12 +6,18 @@ import { Permissions } from '../admin/decorators/permissions.decorator';
 import { AdminPermission } from '../admin/interfaces/admin-permissions.enum';
 import { CurrentAdmin, AuthenticatedAdmin } from '../admin/decorators/current-admin.decorator';
 import { TreasuryOperatorService, DutyStatus } from './treasury-operator.service';
+import { TreasuryService } from './treasury.service';
+import { OperatorIntelligenceService } from './services/operator-intelligence.service';
 
 @ApiTags('Admin Treasury Operators')
 @Controller('admin/treasury-operators')
 @UseGuards(AdminAuthGuard, RbacGuard)
 export class TreasuryOperatorController {
-  constructor(private readonly service: TreasuryOperatorService) {}
+  constructor(
+    private readonly service: TreasuryOperatorService,
+    private readonly treasuryService: TreasuryService,
+    private readonly operatorIntel: OperatorIntelligenceService,
+  ) {}
 
   @Get('roster')
   @Permissions(AdminPermission.SETTLEMENT_VIEW)
@@ -60,6 +66,35 @@ export class TreasuryOperatorController {
     return {
       success: true,
       data: result,
+    };
+  }
+
+  @Get('intelligence')
+  @Permissions(AdminPermission.SETTLEMENT_VIEW)
+  @ApiOperation({ summary: 'Get internal Treasury Intelligence, Liabilities Breakdown, RCR & Economic Forecast (Admin Only)' })
+  async getTreasuryIntelligence() {
+    const metrics = await this.treasuryService.getMetrics();
+    const liabilities = await this.treasuryService.getLiabilitiesBreakdown();
+    const forecast = await this.treasuryService.getEconomicForecast(30);
+
+    return {
+      success: true,
+      data: {
+        metrics,
+        liabilities,
+        forecast,
+      },
+    };
+  }
+
+  @Get('operator-metrics/:telegramUserId')
+  @Permissions(AdminPermission.SETTLEMENT_VIEW)
+  @ApiOperation({ summary: 'Get internal Operator Lifetime Value (OLTV), TCI, NRS & RCS metrics (Admin Only)' })
+  async getOperatorMetrics(@Param('telegramUserId') telegramUserId: string) {
+    const intel = await this.operatorIntel.getOperatorMetrics(telegramUserId);
+    return {
+      success: true,
+      data: intel,
     };
   }
 }

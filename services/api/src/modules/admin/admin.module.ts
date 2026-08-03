@@ -35,12 +35,18 @@ import { IncidentEngineService } from './services/incident-engine.service';
 import { OperationalSearchService } from './services/operational-search.service';
 import { CommandCenterConfigService } from './services/command-center-config.service';
 import { AdminManagementService } from './services/admin-management.service';
-import { SupportCenterService } from './services/support-center.service';
-import { AuditExplorerService } from './services/audit-explorer.service';
+import { LiveEventStreamService } from './services/live-event-stream.service';
+import { UniversalSearchService } from './services/universal-search.service';
+import { FraudCenterService } from './services/fraud-center.service';
+import { FinancialSimulationLabService } from './services/financial-simulation-lab.service';
+import { DualAuthorizationService } from './services/dual-authorization.service';
+import { IdentityService } from '../identity/identity.service';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
     PrismaModule, 
+    AuthModule,
     forwardRef(() => FinancialModule),
     forwardRef(() => TreasuryModule),
     forwardRef(() => PaymentOrderModule),
@@ -64,6 +70,12 @@ import { AuditExplorerService } from './services/audit-explorer.service';
     AdminAuthGuard,
     RbacGuard,
     AdminAuthService,
+    DualAuthorizationService,
+    IdentityService,
+    LiveEventStreamService,
+    UniversalSearchService,
+    FraudCenterService,
+    FinancialSimulationLabService,
     OperationalAuditService,
     AdminDashboardService,
     AdminSettlementService,
@@ -78,11 +90,15 @@ import { AuditExplorerService } from './services/audit-explorer.service';
     OperationalSearchService,
     CommandCenterConfigService,
     AdminManagementService,
-    SupportCenterService,
-    AuditExplorerService,
   ],
   exports: [
     AdminAuthService,
+    DualAuthorizationService,
+    IdentityService,
+    LiveEventStreamService,
+    UniversalSearchService,
+    FraudCenterService,
+    FinancialSimulationLabService,
     OperationalAuditService,
     AdminDashboardService,
     AdminSettlementService,
@@ -97,8 +113,6 @@ import { AuditExplorerService } from './services/audit-explorer.service';
     OperationalSearchService,
     CommandCenterConfigService,
     AdminManagementService,
-    SupportCenterService,
-    AuditExplorerService,
     AdminAuthGuard,
     RbacGuard,
   ],

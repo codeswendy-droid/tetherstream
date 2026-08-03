@@ -16,9 +16,12 @@ import { LedgerService } from './ledger.service';
 import { TransactionService } from './transaction.service';
 import { WithdrawalService } from './withdrawal.service';
 import { WithdrawalRiskService } from './withdrawal-risk.service';
+import { WithdrawalEligibilityService } from './withdrawal-eligibility.service';
 import { WithdrawalController } from './withdrawal.controller';
 import { ExchangeRateService } from './exchange-rate.service';
 import { ExchangeRateController } from './exchange-rate.controller';
+
+import { TreasuryModule } from '../treasury/treasury.module';
 
 @Module({
   imports: [
@@ -26,6 +29,7 @@ import { ExchangeRateController } from './exchange-rate.controller';
     AuditModule,
     forwardRef(() => FinancialOrchestrationModule),
     forwardRef(() => AdminModule),
+    forwardRef(() => TreasuryModule),
     GrowthModule,
   ],
   controllers: [FinancialController, FinancialAccountController, WithdrawalController, ExchangeRateController],
@@ -39,6 +43,7 @@ import { ExchangeRateController } from './exchange-rate.controller';
     TransactionService,
     WithdrawalService,
     WithdrawalRiskService,
+    WithdrawalEligibilityService,
     ExchangeRateService,
   ],
   exports: [
@@ -48,6 +53,7 @@ import { ExchangeRateController } from './exchange-rate.controller';
     TransactionService,
     WithdrawalService,
     WithdrawalRiskService,
+    WithdrawalEligibilityService,
     ExchangeRateService,
   ],
 })

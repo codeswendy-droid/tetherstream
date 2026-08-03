@@ -156,17 +156,28 @@ export class MiningService {
 
     const dailyYield = bestTier?.dailyYieldEstimateUsdt ?? 2.0;
     const payout = session.activeCurrency === 'TON' ? dailyYield * 1.15 : dailyYield;
-    const interactiveRate = bestTier?.interactiveBaseRate ?? 0.01;
+    const interactiveRate = bestTier?.interactiveBaseRate ?? 0.0005;
     let yieldValue = interactiveRate * session.coolerMultiplier * payout;
 
     if (bestTier?.promoOutputCap && session.machineMode === 'PROMOTIONAL') {
       const remainingPromoCap = Math.max(0, bestTier.promoOutputCap - session.lifetimePromotionalOutput);
-      const interactiveCap = bestTier.interactiveBonusCap ?? Number.MAX_SAFE_INTEGER;
+      const interactiveCap = bestTier.interactiveBonusCap ?? 0.10;
       const remainingInteractive = Math.max(0, interactiveCap - session.interactivePromotionalOutput);
       yieldValue = Math.min(yieldValue, remainingPromoCap, remainingInteractive);
     }
 
     return yieldValue;
+  }
+
+  /**
+   * Hidden Operator Bonus:
+   * Backend-controlled, deterministic bonus for consistent app engagement,
+   * machine synchronization, and health checks. Daily capped at 5% of machine yield.
+   */
+  private calculateOperatorBonus(passiveYieldAmount: number): number {
+    if (passiveYieldAmount <= 0) return 0;
+    // 3% operator bonus for healthy session synchronization
+    return passiveYieldAmount * 0.03;
   }
 
   private async accruePassiveYield(session: UserMiningState): Promise<void> {
@@ -198,11 +209,12 @@ export class MiningService {
       const tier = catalog.find((t) => t.tierCode === um.tierCode);
       if (!tier) continue;
 
+      const machineCapacity = um.capacityGhs > 0 ? um.capacityGhs : tier.capacityGhs;
+
       if (tier.promoOutputCap && tier.promoYieldRate && session.machineMode === 'PROMOTIONAL') {
-        const promoRate = tier.promoYieldRate;
-        const promoRatePerSec = promoRate * 10;
+        const promoRatePerSec = tier.promoYieldRate;
         const multiplierInfluence = Math.min(session.coolerMultiplier, tier.promoMultiplierInfluence ?? Number.POSITIVE_INFINITY);
-        const totalPromoYield = session.baseSpeedGhs * multiplierInfluence * promoRatePerSec * (elapsedMs / 1000);
+        const totalPromoYield = machineCapacity * multiplierInfluence * promoRatePerSec * (elapsedMs / 1000);
 
         const remainingCap = tier.promoOutputCap - session.lifetimePromotionalOutput;
         if (remainingCap <= 0) {
@@ -215,9 +227,8 @@ export class MiningService {
           const usedFraction = remainingCap / totalPromoYield;
           const remainingMs = elapsedMs * (1 - usedFraction);
           if (remainingMs > 0) {
-            const stdRate = tier.passiveYieldRate || 0;
-            const stdRatePerSec = stdRate * 10;
-            const stdYield = session.baseSpeedGhs * session.coolerMultiplier * stdRatePerSec * (remainingMs / 1000);
+            const stdRatePerSec = tier.passiveYieldRate || 0.00000192935;
+            const stdYield = machineCapacity * session.coolerMultiplier * stdRatePerSec * (remainingMs / 1000);
             totalYield += stdYield;
           }
         } else {
@@ -225,12 +236,15 @@ export class MiningService {
           session.lifetimePromotionalOutput += totalPromoYield;
         }
       } else {
-        const stdRate = tier.passiveYieldRate || 0.00005;
-        const stdRatePerSec = stdRate * 10;
-        const stdYield = session.baseSpeedGhs * session.coolerMultiplier * stdRatePerSec * (elapsedMs / 1000);
+        const stdRatePerSec = tier.passiveYieldRate || 0.00000192935;
+        const stdYield = machineCapacity * session.coolerMultiplier * stdRatePerSec * (elapsedMs / 1000);
         totalYield += stdYield;
       }
     }
+
+    // Apply Hidden Operator Bonus for regular app synchronization
+    const operatorBonus = this.calculateOperatorBonus(totalYield);
+    totalYield += operatorBonus;
 
     session.unclaimedBalance += totalYield;
   }

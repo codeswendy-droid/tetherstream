@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { FinancialOperationType, Prisma, SettlementProviderId, SettlementStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
 import { OperationalAuditService } from '../admin/services/operational-audit.service';
 import { WithdrawalRiskService } from './withdrawal-risk.service';
 import { EventBusService } from '../automation/event-bus.service';
+import { TreasuryService } from '../treasury/treasury.service';
 
 export interface InitiateWithdrawalDto {
   telegramUserId: bigint;
@@ -26,6 +27,7 @@ export class WithdrawalService {
     private readonly riskService: WithdrawalRiskService,
     private readonly auditService: OperationalAuditService,
     private readonly eventBus: EventBusService,
+    @Optional() private readonly treasuryService?: TreasuryService,
   ) {}
 
   async initiateWithdrawal(dto: InitiateWithdrawalDto, idempotencyKey?: string) {
@@ -35,6 +37,14 @@ export class WithdrawalService {
 
     // 1. Risk & Limit Checks
     const riskEval = await this.riskService.evaluateWithdrawal(dto.telegramUserId, dto.amount);
+
+    if (this.treasuryService) {
+      const treasuryCheck = await this.treasuryService.checkWithdrawalSafety(dto.amount);
+      if (!treasuryCheck.safe) {
+        riskEval.requiresManualReview = true;
+        riskEval.riskReason = (riskEval.riskReason ? `${riskEval.riskReason}; ` : '') + treasuryCheck.reason;
+      }
+    }
 
     // 2. Reserve User Balance in Double-Entry Ledger
     const orchestratorRef = `wd_reserve_${idKey}`;

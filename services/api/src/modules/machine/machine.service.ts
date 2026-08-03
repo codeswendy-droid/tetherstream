@@ -72,14 +72,14 @@ export class MachineService {
       performanceTier: 'Baseline Tier',
       capacityScore: 10,
       recommendedFor: 'Starter core for everyone.',
-      passiveYieldRate: 0.0000001929,
-      promoYieldRate: 0.00000289,
+      passiveYieldRate: 0.00000192935,
+      promoYieldRate: 0.0000289,
       promoOutputCap: 5.0,
       spinnerSpeedMultiplier: 0.1,
       promoSpinnerSpeedMultiplier: 0.5,
       maxMultiplier: 20.2,
       multiplierDecayPerSec: 0.5,
-      interactiveBaseRate: 0.01,
+      interactiveBaseRate: 0.0005,
       interactiveBonusCap: 0.10,
       promoMultiplierInfluence: 1.06,
     },
@@ -97,7 +97,8 @@ export class MachineService {
       performanceTier: 'Starter Tier',
       capacityScore: 35,
       recommendedFor: 'Perfect for getting started.',
-      passiveYieldRate: 0.0001,
+      passiveYieldRate: 0.000000625,
+      interactiveBaseRate: 0.0005,
     },
     {
       tierCode: 'TS_A50',
@@ -113,7 +114,8 @@ export class MachineService {
       performanceTier: 'Growth Tier',
       capacityScore: 60,
       recommendedFor: 'Designed for growing daily earnings.',
-      passiveYieldRate: 0.0001,
+      passiveYieldRate: 0.000000648148,
+      interactiveBaseRate: 0.0005,
     },
     {
       tierCode: 'TS_P250',
@@ -130,7 +132,8 @@ export class MachineService {
       capacityScore: 82,
       recommendedFor: 'Built for users scaling cloud capacity.',
       isPopular: true,
-      passiveYieldRate: 0.0001,
+      passiveYieldRate: 0.000000667735,
+      interactiveBaseRate: 0.0005,
     },
     {
       tierCode: 'TS_X1000',
@@ -146,7 +149,8 @@ export class MachineService {
       performanceTier: 'Professional Tier',
       capacityScore: 94,
       recommendedFor: 'Built for users seeking high-volume cloud allocation.',
-      passiveYieldRate: 0.0001,
+      passiveYieldRate: 0.000000673401,
+      interactiveBaseRate: 0.0005,
     },
     {
       tierCode: 'TS_Q2500',
@@ -162,7 +166,8 @@ export class MachineService {
       performanceTier: 'Flagship Enterprise',
       capacityScore: 99,
       recommendedFor: 'Enterprise performance for maximum compute allocation.',
-      passiveYieldRate: 0.0001,
+      passiveYieldRate: 0.000000655864,
+      interactiveBaseRate: 0.0005,
     },
   ];
 
@@ -389,6 +394,111 @@ export class MachineService {
       requiresFunding: false,
       machine: newMachineAsset,
       message: `Machine ${tier.name} purchased and activated successfully!`,
+    };
+  }
+
+  async repowerMachine(telegramUserId: bigint, machineId: string) {
+    const machine = await this.prisma.userMachine.findUnique({
+      where: { id: machineId },
+    });
+    if (!machine || machine.telegramUserId !== telegramUserId) {
+      throw new NotFoundException('Machine not found');
+    }
+
+    const tier = this.catalog.find((t) => t.tierCode === machine.tierCode);
+    const repowerFee = tier ? tier.priceUsdt * 0.15 : 1.65;
+
+    // Record double-entry repower transaction in Ledger
+    await this.orchestrator.requestOperation({
+      telegramUserId,
+      operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+      assetCode: 'USDT',
+      amount: repowerFee.toString(),
+      idempotencyKey: `repower_${machineId}_${Date.now()}`,
+      reference: `repower_${machineId}`,
+      metadata: { machineId, repowerFee },
+    });
+
+    const updated = await this.prisma.userMachine.update({
+      where: { id: machineId },
+      data: {
+        status: 'ACTIVE',
+        activatedAt: new Date(),
+      },
+    });
+
+    if (this.miningService) {
+      await this.miningService.recalculateUserMiningState(telegramUserId.toString());
+    }
+
+    await this.audit.create({
+      telegramUserId,
+      eventType: AuditEventType.TRANSACTION_COMPLETED,
+      description: `Repowered machine ${machine.name} ($${repowerFee.toFixed(2)} USDT)`,
+      metadata: { machineId, repowerFee },
+    });
+
+    return {
+      success: true,
+      machine: updated,
+      message: `Machine ${machine.name} repowered successfully for 30 days!`,
+    };
+  }
+
+  async upgradeMachineTier(telegramUserId: bigint, currentMachineId: string, targetTierCode: string) {
+    const currentMachine = await this.prisma.userMachine.findUnique({
+      where: { id: currentMachineId },
+    });
+    if (!currentMachine || currentMachine.telegramUserId !== telegramUserId) {
+      throw new NotFoundException('Current machine asset not found');
+    }
+
+    const targetTier = this.catalog.find((t) => t.tierCode === targetTierCode);
+    if (!targetTier) throw new NotFoundException(`Target tier ${targetTierCode} not found`);
+
+    const currentTier = this.catalog.find((t) => t.tierCode === currentMachine.tierCode);
+    const currentPrice = currentTier ? currentTier.priceUsdt : currentMachine.purchasePrice.toNumber();
+    const upgradeCost = Math.max(0, targetTier.priceUsdt - currentPrice);
+
+    if (upgradeCost > 0) {
+      await this.orchestrator.requestOperation({
+        telegramUserId,
+        operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+        assetCode: 'USDT',
+        amount: upgradeCost.toString(),
+        idempotencyKey: `upgrade_${currentMachineId}_${Date.now()}`,
+        reference: `upgrade_${currentMachineId}`,
+        metadata: { currentMachineId, targetTierCode, upgradeCost },
+      });
+    }
+
+    const updatedMachine = await this.prisma.userMachine.update({
+      where: { id: currentMachineId },
+      data: {
+        tierCode: targetTier.tierCode,
+        name: targetTier.name,
+        capacityGhs: targetTier.capacityGhs,
+        purchasePrice: targetTier.priceUsdt,
+        status: 'ACTIVE',
+        activatedAt: new Date(),
+      },
+    });
+
+    if (this.miningService) {
+      await this.miningService.recalculateUserMiningState(telegramUserId.toString());
+    }
+
+    await this.audit.create({
+      telegramUserId,
+      eventType: AuditEventType.TRANSACTION_COMPLETED,
+      description: `Upgraded machine to ${targetTier.name} ($${upgradeCost.toFixed(2)} USDT)`,
+      metadata: { currentMachineId, targetTierCode, upgradeCost },
+    });
+
+    return {
+      success: true,
+      machine: updatedMachine,
+      message: `Machine upgraded to ${targetTier.name} (${targetTier.capacityGhs} GH/s) successfully!`,
     };
   }
 }
