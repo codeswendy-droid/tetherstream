@@ -32,12 +32,15 @@ export class BotAdminService {
     });
 
     if (!state) {
+      const mainChannelId = process.env.TELEGRAM_CHANNEL_ID || '@tetherstream';
       state = await this.prisma.emergencyControlState.create({
         data: {
           id: 'SYSTEM_EMERGENCY_STATE',
           depositsPaused: false,
           withdrawalsPaused: false,
           rewardsPaused: false,
+          channelGateEnabled: true,
+          requiredChannelId: mainChannelId,
         },
       });
     }
@@ -56,7 +59,11 @@ export class BotAdminService {
     const state = await this.getEmergencyState();
     const systemStatus = state.depositsPaused || state.withdrawalsPaused || state.rewardsPaused ? '⚠️ PAUSED (PARTIAL)' : '🟢 ALL SYSTEMS OPERATIONAL';
 
-    const text = `<b>🛡 TitanStream Admin Control Panel</b>\n\nWelcome, Operator <b>${userCtx.firstName}</b>.\n\n<b>System Health:</b> ${systemStatus}\n\nSelect an administrative department:`;
+    const text = `<b>🛡 TitanStream Admin Control Panel</b>\n\n` +
+      `Welcome, Operator <b>${userCtx.firstName}</b>.\n\n` +
+      `<b>System Health:</b> ${systemStatus}\n` +
+      `<b>Channel Gate:</b> ${state.channelGateEnabled ? `🟢 REQUIRED (${state.requiredChannelId})` : '⚪ DISABLED (OPEN ACCESS)'}\n\n` +
+      `Select an administrative department:`;
 
     return {
       text,
@@ -75,7 +82,7 @@ export class BotAdminService {
             { text: '📊 Analytics', callback_data: 'admin_analytics' },
           ],
           [
-            { text: '🛑 Emergency Controls', callback_data: 'admin_emergency_menu' },
+            { text: '🛑 Emergency & Gate Controls', callback_data: 'admin_emergency_menu' },
           ],
         ],
       },
@@ -90,7 +97,13 @@ export class BotAdminService {
       this.prisma.supportCase.count({ where: { status: 'OPEN' } }),
     ]);
 
-    const text = `<b>📊 System Operational Summary</b>\n\n• <b>Total Users:</b> ${userCount}\n• <b>Ready Users:</b> ${readyUserCount}\n• <b>Active Settlements:</b> ${activeSessionsCount}\n• <b>Open Support Cases:</b> ${openTicketsCount}\n• <b>API Status:</b> 🟢 ONLINE\n• <b>Database Engine:</b> 🟢 CONNECTED`;
+    const text = `<b>📊 System Operational Summary</b>\n\n` +
+      `• <b>Total Users:</b> ${userCount}\n` +
+      `• <b>Ready Users:</b> ${readyUserCount}\n` +
+      `• <b>Active Settlements:</b> ${activeSessionsCount}\n` +
+      `• <b>Open Support Cases:</b> ${openTicketsCount}\n` +
+      `• <b>API Status:</b> 🟢 ONLINE\n` +
+      `• <b>Database Engine:</b> 🟢 CONNECTED`;
 
     return {
       text,
@@ -165,7 +178,11 @@ export class BotAdminService {
 
   async handleTreasury(): Promise<{ text: string; keyboard: any }> {
     const assets = await this.prisma.asset.findMany({ where: { enabled: true } });
-    const text = `<b>🏦 System Treasury Health</b>\n\n• <b>Primary Reserve:</b> USDT (Multi-chain)\n• <b>Enabled Assets:</b> ${assets.map((a) => a.symbol).join(', ')}\n• <b>Liquidity Engine:</b> Active\n• <b>Reconciliation:</b> PASSED`;
+    const text = `<b>🏦 System Treasury Health</b>\n\n` +
+      `• <b>Primary Reserve:</b> USDT (Multi-chain)\n` +
+      `• <b>Enabled Assets:</b> ${assets.map((a) => a.symbol).join(', ')}\n` +
+      `• <b>Liquidity Engine:</b> Active\n` +
+      `• <b>Reconciliation:</b> PASSED`;
 
     return {
       text,
@@ -185,7 +202,10 @@ export class BotAdminService {
       this.prisma.user.count({ where: { isReady: true } }),
     ]);
 
-    const text = `<b>👥 User Analytics Dashboard</b>\n\n• Total User Accounts: <b>${total}</b>\n• Channel Verified: <b>${verifiedChannel}</b>\n• Fully Onboarded & Ready: <b>${ready}</b>`;
+    const text = `<b>👥 User Analytics Dashboard</b>\n\n` +
+      `• Total User Accounts: <b>${total}</b>\n` +
+      `• Channel Verified: <b>${verifiedChannel}</b>\n` +
+      `• Fully Onboarded & Ready: <b>${ready}</b>`;
 
     return {
       text,
@@ -201,26 +221,32 @@ export class BotAdminService {
   async getEmergencyMenu(): Promise<{ text: string; keyboard: any }> {
     const state = await this.getEmergencyState();
 
-    const text = `<b>🛑 Emergency Operational Controls</b>\n\nManage global system pause state:\n\n` +
-      `• Deposits: <b>${state.depositsPaused ? '⛔ PAUSED' : '🟢 ACTIVE'}</b>\n` +
-      `• Withdrawals: <b>${state.withdrawalsPaused ? '⛔ PAUSED' : '🟢 ACTIVE'}</b>\n` +
-      `• Rewards: <b>${state.rewardsPaused ? '⛔ PAUSED' : '🟢 ACTIVE'}</b>`;
+    const text = `<b>🛑 Emergency & Operational Controls</b>\n\n` +
+      `Manage global system switches and channel membership rules:\n\n` +
+      `• 📢 <b>Channel Membership Gate:</b> <b>${state.channelGateEnabled ? `🟢 REQUIRED (${state.requiredChannelId})` : '⚪ DISABLED (OPEN ACCESS)'}</b>\n` +
+      `• 💳 <b>Deposits:</b> <b>${state.depositsPaused ? '⛔ PAUSED' : '🟢 ACTIVE'}</b>\n` +
+      `• 💸 <b>Withdrawals:</b> <b>${state.withdrawalsPaused ? '⛔ PAUSED' : '🟢 ACTIVE'}</b>\n` +
+      `• 🎁 <b>Rewards:</b> <b>${state.rewardsPaused ? '⛔ PAUSED' : '🟢 ACTIVE'}</b>`;
 
     return {
       text,
       keyboard: {
         inline_keyboard: [
+          [{ text: state.channelGateEnabled ? '⚪ Disable Channel Gate' : '📢 Enable Channel Gate', callback_data: 'emg_toggle_channel_gate' }],
           [{ text: state.depositsPaused ? '▶️ Resume Deposits' : '⛔ Pause Deposits', callback_data: 'emg_toggle_deposits' }],
           [{ text: state.withdrawalsPaused ? '▶️ Resume Withdrawals' : '⛔ Pause Withdrawals', callback_data: 'emg_toggle_withdrawals' }],
           [{ text: state.rewardsPaused ? '▶️ Resume Rewards' : '⛔ Pause Rewards', callback_data: 'emg_toggle_rewards' }],
-          [{ text: '✅ Resume All Systems', callback_data: 'emg_resume_all' }],
+          [{ text: '✅ Resume All Systems & Enable Gate', callback_data: 'emg_resume_all' }],
           [{ text: '⬅️ Back to Admin Dashboard', callback_data: 'cmd_admin' }],
         ],
       },
     };
   }
 
-  async toggleEmergencyPause(field: 'depositsPaused' | 'withdrawalsPaused' | 'rewardsPaused' | 'resumeAll', adminUsername: string): Promise<{ text: string; keyboard: any }> {
+  async toggleEmergencyPause(
+    field: 'depositsPaused' | 'withdrawalsPaused' | 'rewardsPaused' | 'channelGateEnabled' | 'resumeAll',
+    adminUsername: string,
+  ): Promise<{ text: string; keyboard: any }> {
     const state = await this.getEmergencyState();
 
     if (field === 'resumeAll') {
@@ -230,6 +256,7 @@ export class BotAdminService {
           depositsPaused: false,
           withdrawalsPaused: false,
           rewardsPaused: false,
+          channelGateEnabled: true,
           updatedBy: adminUsername,
         },
       });
@@ -253,7 +280,12 @@ export class BotAdminService {
     reference: string;
     riskLevel: string;
   }): Promise<void> {
-    const alertText = `🚨 <b>Large Withdrawal Request Alert</b>\n\n<b>User:</b> @${details.username || details.userId}\n<b>Amount:</b> <code>${details.amount} USDT</code>\n<b>Reference:</b> <code>${details.reference}</code>\n<b>Risk Level:</b> <b>${details.riskLevel}</b>\n\nAction required by admin operator:`;
+    const alertText = `🚨 <b>Large Withdrawal Request Alert</b>\n\n` +
+      `<b>User:</b> @${details.username || details.userId}\n` +
+      `<b>Amount:</b> <code>${details.amount} USDT</code>\n` +
+      `<b>Reference:</b> <code>${details.reference}</code>\n` +
+      `<b>Risk Level:</b> <b>${details.riskLevel}</b>\n\n` +
+      `Action required by admin operator:`;
 
     const keyboard = {
       inline_keyboard: [

@@ -1613,12 +1613,14 @@ model ChannelVerificationEvent {
 }
 
 model EmergencyControlState {
-  id                String   @id @default("SYSTEM_EMERGENCY_STATE") @map("id")
-  depositsPaused    Boolean  @default(false) @map("deposits_paused")
-  withdrawalsPaused Boolean  @default(false) @map("withdrawals_paused")
-  rewardsPaused     Boolean  @default(false) @map("rewards_paused")
-  updatedBy         String?  @map("updated_by")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  id                 String   @id @default("SYSTEM_EMERGENCY_STATE") @map("id")
+  depositsPaused     Boolean  @default(false) @map("deposits_paused")
+  withdrawalsPaused  Boolean  @default(false) @map("withdrawals_paused")
+  rewardsPaused      Boolean  @default(false) @map("rewards_paused")
+  channelGateEnabled Boolean  @default(true) @map("channel_gate_enabled")
+  requiredChannelId  String   @default("@tetherstream") @map("required_channel_id")
+  updatedBy          String?  @map("updated_by")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@map("emergency_control_states")
 }

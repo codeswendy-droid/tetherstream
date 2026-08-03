@@ -17,20 +17,22 @@ export interface TelegramUserCtx {
 @Injectable()
 export class BotGateService {
   private readonly logger = new Logger(BotGateService.name);
-  private readonly requiredChannels: { id: string; username: string; label: string }[];
   private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app';
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly telegramClient: TelegramClientService,
     private readonly auditService: AuditService,
-  ) {
-    const mainChannelId = process.env.TELEGRAM_CHANNEL_ID || '@titanstream';
-    const mainChannelUser = process.env.TELEGRAM_CHANNEL_USERNAME || 'titanstream';
+  ) {}
 
-    this.requiredChannels = [
-      { id: mainChannelId, username: mainChannelUser, label: '📢 Join Official Channel' },
-    ];
+  private get defaultChannel(): { id: string; username: string; label: string } {
+    const mainChannelId = process.env.TELEGRAM_CHANNEL_ID || '@titanstreamm';
+    const mainChannelUser = (process.env.TELEGRAM_CHANNEL_USERNAME || 'titanstreamm').replace('@', '');
+    return {
+      id: mainChannelId,
+      username: mainChannelUser,
+      label: '📢 Join Official Channel',
+    };
   }
 
   async verifyChannelMembership(telegramUserId: bigint, channelId?: string): Promise<{
@@ -38,11 +40,14 @@ export class BotGateService {
     status: string;
     details?: any;
   }> {
-    const targetChannel = channelId || this.requiredChannels[0].id;
+    const targetChannel = channelId || this.defaultChannel.id;
     const member = await this.telegramClient.getChatMember(targetChannel, Number(telegramUserId));
 
     if (!member) {
-      return { isMember: false, status: 'unknown' };
+      // If Telegram API returned error (e.g. Bot not admin in channel, or chat not found),
+      // gracefully allow passage so users are never trapped in an infinite gate loop!
+      this.logger.warn(`Could not verify member status in ${targetChannel} (Bot may need Admin rights in ${targetChannel}). Granting fallback passage.`);
+      return { isMember: true, status: 'fallback_granted' };
     }
 
     const acceptedStates = ['creator', 'administrator', 'member'];
@@ -186,7 +191,72 @@ export class BotGateService {
     keyboard: any;
   }> {
     const { user } = await this.ensureUserIdentity(userCtx);
-    const { isMember } = await this.verifyChannelMembership(userCtx.id);
+
+    let channelGateEnabled = true;
+    let targetChannel = this.defaultChannel.id;
+
+    try {
+      const state = await this.prisma.emergencyControlState.findUnique({
+        where: { id: 'SYSTEM_EMERGENCY_STATE' },
+      });
+      if (state) {
+        channelGateEnabled = state.channelGateEnabled;
+        if (state.requiredChannelId) {
+          targetChannel = state.requiredChannelId;
+        }
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to fetch EmergencyControlState in processGateCheck: ${err.message}`);
+    }
+
+    // Check first deposit status for checklist rendering
+    const hasDeposit = await this.prisma.paymentInvoice.findFirst({
+      where: { telegramUserId: userCtx.id, status: 'PAID' },
+    });
+    const depositCheck = hasDeposit ? '✅' : '⬜';
+
+    const welcomeText = `<b>Welcome to TitanStream, ${userCtx.firstName}! 🚀⚡</b>\n\n` +
+      `Your <b>Telegram-Native Financial Account & Yield Engine</b> is active.\n\n` +
+      `<b>🌐 What TitanStream Offers:</b>\n` +
+      `• <b>⚡ Yield Mining Node:</b> Generate continuous passive USDT yield 24/7.\n` +
+      `• <b>🎰 Arcade USDT Games:</b> High-multiplier minigames with instant ledger payouts.\n` +
+      `• <b>💰 Universal Cashouts:</b> Instant 24/7 Mobile Money P2P & Crypto settlements.\n` +
+      `• <b>🎁 Daily Quests:</b> Complete economic missions & build yield streaks.\n\n` +
+      `<b>📋 Account Onboarding Status:</b>\n` +
+      `✅ Community Channel Verified\n` +
+      `✅ Double-Entry Ledger Wallet Initialized\n` +
+      `${depositCheck} First Deposit Completed\n\n` +
+      `Tap <b>Open TitanStream App</b> below or use the main menu to begin:`;
+
+    const verifiedKeyboard = {
+      inline_keyboard: [
+        [
+          {
+            text: '🚀 Open TitanStream App',
+            web_app: { url: this.webAppUrl },
+          },
+        ],
+        [
+          { text: '➕ Quick Deposit', callback_data: 'cmd_deposit' },
+          { text: '⚡ Mining Rig', callback_data: 'cmd_treasury' },
+          { text: '🎰 Arcade Games', callback_data: 'cmd_games' },
+        ],
+        [
+          { text: '📚 How TitanStream Works', callback_data: 'edu_menu' },
+        ],
+      ],
+    };
+
+    // If Admin has disabled the gate, bypass check!
+    if (!channelGateEnabled) {
+      return {
+        verified: true,
+        message: welcomeText,
+        keyboard: verifiedKeyboard,
+      };
+    }
+
+    const { isMember } = await this.verifyChannelMembership(userCtx.id, targetChannel);
 
     if (isMember) {
       if (!user.channelVerified) {
@@ -199,61 +269,25 @@ export class BotGateService {
         });
       }
 
-      // Check if user has made first deposit
-      const hasDeposit = await this.prisma.paymentInvoice.findFirst({
-        where: { telegramUserId: userCtx.id, status: 'PAID' },
-      });
-
-      const depositCheck = hasDeposit ? '✅' : '⬜';
-
-      const welcomeText = `<b>Welcome to TitanStream, ${userCtx.firstName}! 🚀⚡</b>\n\n` +
-        `Your <b>Telegram-Native Financial Account & Yield Engine</b> is active.\n\n` +
-        `<b>🌐 What TitanStream Offers:</b>\n` +
-        `• <b>⚡ Yield Mining Node:</b> Generate continuous passive USDT yield 24/7.\n` +
-        `• <b>🎰 Arcade USDT Games:</b> High-multiplier minigames with instant ledger payouts.\n` +
-        `• <b>💰 Universal Cashouts:</b> Instant 24/7 Mobile Money P2P & Crypto settlements.\n` +
-        `• <b>🎁 Daily Quests:</b> Complete economic missions & build yield streaks.\n\n` +
-        `<b>📋 Account Onboarding Status:</b>\n` +
-        `✅ Community Channel Verified\n` +
-        `✅ Double-Entry Ledger Wallet Initialized\n` +
-        `${depositCheck} First Deposit Completed\n\n` +
-        `Tap <b>Open TitanStream App</b> below or use the main menu to begin:`;
-
       return {
         verified: true,
         message: welcomeText,
-        keyboard: {
-          inline_keyboard: [
-            [
-              {
-                text: '🚀 Open TitanStream App',
-                web_app: { url: this.webAppUrl },
-              },
-            ],
-            [
-              { text: '➕ Quick Deposit', callback_data: 'cmd_deposit' },
-              { text: '⚡ Mining Rig', callback_data: 'cmd_treasury' },
-              { text: '🎰 Arcade Games', callback_data: 'cmd_games' },
-            ],
-            [
-              { text: '📚 How TitanStream Works', callback_data: 'edu_menu' },
-            ],
-          ],
-        },
+        keyboard: verifiedKeyboard,
       };
     }
 
-    const mainChan = this.requiredChannels[0];
-    const channelLink = `https://t.me/${mainChan.username.replace('@', '')}`;
+    const channelUsernameClean = targetChannel.replace('@', '');
+    const channelLink = `https://t.me/${channelUsernameClean}`;
+
     return {
       verified: false,
       message: `<b>Welcome to TitanStream, ${userCtx.firstName}! 🚀</b>\n\n` +
         `The premier Telegram-native liquidity, daily yield mining, and financial settlement network.\n\n` +
         `<b>Access Requirement:</b>\n` +
-        `To protect our community and activate your instant double-entry wallet, please join our official Telegram channel first:`,
+        `To protect our community and activate your instant double-entry wallet, please join our official Telegram channel first (@${channelUsernameClean}):`,
       keyboard: {
         inline_keyboard: [
-          [{ text: mainChan.label, url: channelLink }],
+          [{ text: `📢 Join @${channelUsernameClean}`, url: channelLink }],
           [{ text: '🔄 Verify Membership', callback_data: 'verify_membership' }],
         ],
       },

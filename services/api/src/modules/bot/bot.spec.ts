@@ -293,14 +293,14 @@ describe('Telegram Host Bot Production Suite', () => {
   describe('Admin Controls & System Emergency Switches', () => {
     it('should render emergency controls menu', async () => {
       const res = await adminService.getEmergencyMenu();
-      expect(res.text).toContain('Emergency Operational Controls');
+      expect(res.text).toContain('Emergency & Operational Controls');
       expect(res.keyboard.inline_keyboard.length).toBeGreaterThan(0);
     });
 
     it('should toggle emergency deposit pause', async () => {
       const res = await adminService.toggleEmergencyPause('depositsPaused', 'operator1');
       expect(mockPrismaService.emergencyControlState.update).toHaveBeenCalled();
-      expect(res.text).toContain('Emergency Operational Controls');
+      expect(res.text).toContain('Emergency & Operational Controls');
     });
   });
 
