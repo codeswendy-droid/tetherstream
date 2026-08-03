@@ -28,6 +28,7 @@ import { useTreasuryStore } from '../../store/useTreasuryStore';
 import { useMiningStore } from '../../store/useMiningStore';
 import { CurrencyDisplay } from '../../components/DualCurrencyDisplay';
 import { showToast } from '../../components/Toast';
+import { RewardHistorySection } from '../../components/rewards/RewardHistorySection';
 
 export const GrowthScreen: React.FC = () => {
   const { hasPurchasedMachine, baseSpeedGhs, unclaimedBalance } = useMiningStore();
@@ -723,6 +724,18 @@ export const GrowthScreen: React.FC = () => {
                   </span>
                   <ChevronRight size={15} className={`transition-transform duration-200 ${showPayoutHistory ? 'rotate-90' : ''}`} />
                 </button>
+
+                {showPayoutHistory && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25, ease: 'easeInOut' }}
+                    className="overflow-hidden mt-2"
+                  >
+                    <RewardHistorySection />
+                  </motion.div>
+                )}
               </div>
             </div>
           )}

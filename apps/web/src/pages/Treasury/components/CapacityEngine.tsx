@@ -10,7 +10,6 @@ import {
   Sparkles,
   Package,
   Crown,
-  Gift,
   ShieldCheck,
   Award,
   ChevronRight,
@@ -20,6 +19,7 @@ import { useCapacityStore, type CapacityOpportunity, type CapacityLevel } from '
 import { useMiningStore } from '../../../store/useMiningStore';
 import { useNavigationStore } from '../../../store/useNavigationStore';
 import { showToast } from '../../../components/Toast';
+import { RewardQueue } from '../../../components/rewards/RewardQueue';
 
 export const CapacityEngine: React.FC = () => {
   const { setActiveTab } = useNavigationStore();
@@ -280,107 +280,13 @@ export const CapacityEngine: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* NEW SECTION: AVAILABLE REWARDS */}
+      {/* NEW SECTION: AVAILABLE REWARDS — real claim queue from the Rewards Engine */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.08 }}
-        className="web3-card rounded-2xl p-4 relative overflow-hidden space-y-3"
       >
-        <div className="flex items-center justify-between border-b border-white/5 pb-2">
-          <div className="flex items-center gap-1.5">
-            <Gift size={16} className="text-usdt-green" />
-            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">AVAILABLE REWARDS</h2>
-          </div>
-          <span className="text-[10px] font-mono font-bold text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-2 py-0.5 rounded-full">
-            4 Rewards
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5">
-          {/* Reward 1 */}
-          <div className="bg-control-bg/40 border border-usdt-green/30 p-3 rounded-2xl relative overflow-hidden flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-lg">💰</span>
-              <span className="text-[9px] font-bold uppercase bg-usdt-green/20 text-usdt-green px-2 py-0.5 rounded-full border border-usdt-green/30">
-                Unlocked
-              </span>
-            </div>
-            <div>
-              <div className="text-xs font-black text-text-primary">$2 USDT Bonus</div>
-              <div className="text-[10px] text-text-secondary mt-0.5">Ready to claim in wallet</div>
-            </div>
-            <button
-              onClick={() => {
-                showToast('Claimed $2 USDT Bonus into your Wallet!', 'success');
-                setActiveTab('wallet');
-              }}
-              className="mt-2.5 w-full py-1.5 rounded-xl bg-usdt-green text-app-bg text-[10px] font-extrabold press-feedback shadow-sm"
-            >
-              Claim Now
-            </button>
-          </div>
-
-          {/* Reward 2 */}
-          <div className="bg-control-bg/30 border border-white/10 p-3 rounded-2xl relative overflow-hidden flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-lg">⭐</span>
-              <span className="text-[9px] font-bold uppercase bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20">
-                2 invites away
-              </span>
-            </div>
-            <div>
-              <div className="text-xs font-black text-text-primary">Premium Status 7 Days</div>
-              <div className="text-[10px] text-text-secondary mt-0.5">Invite 2 friends to unlock</div>
-            </div>
-            <button
-              onClick={() => setActiveTab('friends')}
-              className="mt-2.5 w-full py-1.5 rounded-xl bg-control-bg border border-white/10 text-text-primary text-[10px] font-extrabold press-feedback hover:border-usdt-green/30"
-            >
-              Invite Friends
-            </button>
-          </div>
-
-          {/* Reward 3 */}
-          <div className="bg-control-bg/30 border border-white/10 p-3 rounded-2xl relative overflow-hidden flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-lg">🏆</span>
-              <span className="text-[9px] font-bold uppercase bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-full border border-purple-500/20">
-                Reach Builder Lv2
-              </span>
-            </div>
-            <div>
-              <div className="text-xs font-black text-text-primary">$10 USDT Reward</div>
-              <div className="text-[10px] text-text-secondary mt-0.5">Upgrade trust score to unlock</div>
-            </div>
-            <button
-              disabled
-              className="mt-2.5 w-full py-1.5 rounded-xl bg-control-bg/40 border border-white/5 text-text-tertiary text-[10px] font-extrabold cursor-not-allowed"
-            >
-              Locked
-            </button>
-          </div>
-
-          {/* Reward 4 */}
-          <div className="bg-control-bg/30 border border-white/10 p-3 rounded-2xl relative overflow-hidden flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-lg">🎖️</span>
-              <span className="text-[9px] font-bold uppercase bg-sky-500/10 text-sky-400 px-2 py-0.5 rounded-full border border-sky-500/20">
-                Coming Soon
-              </span>
-            </div>
-            <div>
-              <div className="text-xs font-black text-text-primary">Special Season Badge</div>
-              <div className="text-[10px] text-text-secondary mt-0.5">Season 1 Treasury reward</div>
-            </div>
-            <button
-              disabled
-              className="mt-2.5 w-full py-1.5 rounded-xl bg-control-bg/40 border border-white/5 text-text-tertiary text-[10px] font-extrabold cursor-not-allowed"
-            >
-              Upcoming
-            </button>
-          </div>
-        </div>
+        <RewardQueue />
       </motion.div>
 
       {/* Growth Opportunities & Tasks */}

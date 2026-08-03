@@ -86,6 +86,58 @@ export interface RewardItem {
   createdAt: string;
 }
 
+export interface RewardRequirement {
+  key: string;
+  label: string;
+  required: number;
+  current: number;
+  unit: string;
+  completed: boolean;
+  actionTab?: string;
+}
+
+export interface RewardQueueItem {
+  id: string;
+  rewardType: string;
+  amount: string;
+  assetCode: string;
+  status: string;
+  reference: string;
+  createdAt: string;
+  ruleName?: string;
+  description?: string;
+  requirement: RewardRequirement | null;
+  reason?: string;
+  eligible: boolean;
+}
+
+export interface RewardHistoryItem {
+  id: string;
+  rewardType: string;
+  amount: string;
+  assetCode: string;
+  status: string;
+  reference: string;
+  createdAt: string;
+  claimedAt: string;
+  transactionReference: string;
+  ruleName?: string;
+  description?: string;
+}
+
+export interface ClaimResult {
+  reward: {
+    id: string;
+    rewardType: string;
+    amount: string;
+    assetCode: string;
+    status: string;
+    reference: string;
+    operationId?: string | null;
+    processedAt?: string | null;
+  };
+}
+
 export interface QualificationStatus {
   withdrawal: any;
   discount: any;
@@ -105,6 +157,26 @@ export const growthService = {
   async getRewards(): Promise<RewardItem[]> {
     const res = await api.get('/growth/rewards');
     return res.data.data;
+  },
+
+  async getAvailableRewards(): Promise<RewardQueueItem[]> {
+    const res = await api.get('/growth/rewards/available');
+    return res.data.data.queue;
+  },
+
+  async getRewardDetail(id: string): Promise<RewardQueueItem> {
+    const res = await api.get(`/growth/rewards/${id}`);
+    return res.data.data;
+  },
+
+  async claimReward(id: string): Promise<ClaimResult> {
+    const res = await api.post(`/growth/rewards/${id}/claim`);
+    return res.data.data;
+  },
+
+  async getRewardHistory(): Promise<RewardHistoryItem[]> {
+    const res = await api.get('/growth/rewards/history');
+    return res.data.data.history;
   },
 
   async getQualification(): Promise<QualificationStatus> {
