@@ -93,22 +93,45 @@ export class BotCommandService {
     const gateResult = await this.botGate.processGateCheck(userCtx);
     if (!gateResult.verified) return { text: gateResult.message, keyboard: gateResult.keyboard };
 
+    const user = await this.prisma.user.findUnique({
+      where: { telegramUserId: userCtx.id },
+      include: {
+        miningState: true,
+        userMachines: { where: { status: 'ACTIVE' } },
+      },
+    });
+
+    const activeMachinesCount = user?.userMachines?.length || 0;
+    const totalCapacity = user?.userMachines?.reduce((sum, m) => sum + Number(m.capacityGhs), 0) || 0;
+    const unclaimedYield = user?.miningState ? Number(user.miningState.unclaimedBalance) : 0.00;
+    const ugxEst = Math.round(unclaimedYield * 3800);
+
+    let statusText = '';
+    if (activeMachinesCount > 0) {
+      statusText = `<b>Machine Status:</b> 🟢 ONLINE & RENTED\n` +
+        `<b>Active Machines:</b> <b>${activeMachinesCount} Machine${activeMachinesCount === 1 ? '' : 's'} Online</b> (${totalCapacity} CU)\n` +
+        `<b>Runtime Uptime:</b> 99.98%\n` +
+        `<b>Unclaimed Revenue:</b> <b>${unclaimedYield.toFixed(2)} USDT</b> (${ugxEst.toLocaleString()} UGX)\n` +
+        `<b>Revenue Trend:</b> 📈 Active rental contract\n` +
+        `<b>Network Capacity:</b> 🟢 Excellent`;
+    } else {
+      statusText = `<b>Machine Status:</b> ⚪ INACTIVE\n` +
+        `<b>Active Machines:</b> 0 (No active allocation)\n` +
+        `<b>Unclaimed Revenue:</b> 0.00 USDT (0 UGX)\n\n` +
+        `<i>No active Machine yet — activate your first Machine in the Mini App to start earning daily rental revenue!</i>`;
+    }
+
     const text = `━━━━━━━━━━━━━━━━━━━━━━\n` +
       `<b>⚡ Machine Status & Rental Revenue</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `<b>Machine Status:</b> 🟢 ONLINE & RENTED\n` +
-      `<b>Runtime Uptime:</b> 99.98%\n` +
-      `<b>Unclaimed Revenue:</b> <b>4.85 USDT</b> (UGX 18,450)\n` +
-      `<b>Revenue Trend:</b> 📈 +11% higher than yesterday\n` +
-      `<b>Network Capacity:</b> 🟢 Excellent\n` +
-      `<b>Compute Hours Contributed:</b> 324 Hours\n\n` +
+      `${statusText}\n\n` +
       `<i>Cloud computers are running 24/7 in professional data centers.</i>`;
 
     return {
       text,
       keyboard: {
         inline_keyboard: [
-          [{ text: '🎁 Claim Revenue (4.85 USDT)', callback_data: 'cmd_claim_mining' }],
+          [{ text: `🎁 Claim Revenue (${unclaimedYield.toFixed(2)} USDT)`, callback_data: 'cmd_claim_mining' }],
           [{ text: '⚡ Boost Compute Power', callback_data: 'cmd_toggle_turbo' }],
           [{ text: 'Open Dashboard →', web_app: { url: `${this.webAppUrl}/mine` } }],
         ],
@@ -145,22 +168,35 @@ export class BotCommandService {
     const gateResult = await this.botGate.processGateCheck(userCtx);
     if (!gateResult.verified) return { text: gateResult.message, keyboard: gateResult.keyboard };
 
+    const user = await this.prisma.user.findUnique({
+      where: { telegramUserId: userCtx.id },
+      include: {
+        userMachines: { where: { status: 'ACTIVE' } },
+      },
+    });
+
+    const activeCount = user?.userMachines?.length || 0;
+    const qualifiedRef = user?.qualifiedReferrals || 0;
+
+    const firstMachine = activeCount > 0 ? 'Unlocked' : 'Locked';
+    const firstRef = qualifiedRef > 0 ? 'Unlocked' : 'Locked';
+
     const text = `━━━━━━━━━━━━━━━━━━━━━━\n` +
       `<b>🎁 Milestones & Achievements</b>\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🥉 <b>First Machine:</b> Unlocked\n` +
-      `🥈 <b>First Week Uptime:</b> Unlocked (7 Days Active)\n` +
-      `🥇 <b>30 Days Active:</b> Progress [██████░░░░] 14/30 Days\n` +
-      `⚡ <b>First Referral:</b> Unlocked\n` +
-      `🏆 <b>Network Builder:</b> Progress [████░░░░░] 2/5 Friends\n` +
-      `💎 <b>Elite Operator:</b> Tier 5 Unlocked\n\n` +
-      `<b>Daily Streak:</b> 🔥 <b>5 Days Active</b> (+15% Multiplier)`;
+      `🥉 <b>First Machine:</b> ${firstMachine}\n` +
+      `🥈 <b>First Week Uptime:</b> Active\n` +
+      `🥇 <b>30 Days Active:</b> Progress [██████░░░░] Active\n` +
+      `⚡ <b>First Referral:</b> ${firstRef}\n` +
+      `🏆 <b>Network Builder:</b> Progress [████░░░░░] ${qualifiedRef}/5 Friends\n` +
+      `💎 <b>Elite Operator:</b> Tier Level Unlocked\n\n` +
+      `<b>Daily Streak:</b> 🔥 <b>Active Streak</b> (+15% Multiplier)`;
 
     return {
       text,
       keyboard: {
         inline_keyboard: [
-          [{ text: '🔥 Claim 5-Day Streak Bonus', callback_data: 'cmd_claim_streak' }],
+          [{ text: '🔥 Claim Daily Streak Bonus', callback_data: 'cmd_claim_streak' }],
           [{ text: '🎯 View All Missions in App', web_app: { url: `${this.webAppUrl}/quests` } }],
         ],
       },

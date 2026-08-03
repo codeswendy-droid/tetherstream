@@ -44,8 +44,6 @@ export class BotGateService {
     const member = await this.telegramClient.getChatMember(targetChannel, Number(telegramUserId));
 
     if (!member) {
-      // If Telegram API returned error (e.g. Bot not admin in channel, or chat not found),
-      // gracefully allow passage so users are never trapped in an infinite gate loop!
       this.logger.warn(`Could not verify member status in ${targetChannel} (Bot may need Admin rights in ${targetChannel}). Granting fallback passage.`);
       return { isMember: true, status: 'fallback_granted' };
     }
@@ -53,7 +51,6 @@ export class BotGateService {
     const acceptedStates = ['creator', 'administrator', 'member'];
     const isMember = acceptedStates.includes(member.status);
 
-    // Audit log verification event
     try {
       await this.prisma.channelVerificationEvent.create({
         data: {
@@ -78,13 +75,13 @@ export class BotGateService {
     user: any;
     isNew: boolean;
   }> {
-    let user = await this.prisma.user.findUnique({
+    let existingUser = await this.prisma.user.findUnique({
       where: { telegramUserId: userCtx.id },
     });
 
     let isNew = false;
-    if (!user) {
-      user = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    if (!existingUser) {
+      await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         const newUser = await tx.user.create({
           data: {
             telegramUserId: userCtx.id,
@@ -176,11 +173,21 @@ export class BotGateService {
       if (userCtx.languageCode) updateData.languageCode = userCtx.languageCode;
       if (userCtx.photoUrl) updateData.photoUrl = userCtx.photoUrl;
 
-      user = await this.prisma.user.update({
+      await this.prisma.user.update({
         where: { telegramUserId: userCtx.id },
         data: updateData,
       });
     }
+
+    const user = await this.prisma.user.findUnique({
+      where: { telegramUserId: userCtx.id },
+      include: {
+        financialAccount: true,
+        userLevel: true,
+        miningState: true,
+        userMachines: { where: { status: 'ACTIVE' } },
+      },
+    });
 
     return { user, isNew };
   }
@@ -209,24 +216,53 @@ export class BotGateService {
       this.logger.warn(`Failed to fetch EmergencyControlState in processGateCheck: ${err.message}`);
     }
 
-    // Check first deposit status for checklist rendering
-    const hasDeposit = await this.prisma.paymentInvoice.findFirst({
-      where: { telegramUserId: userCtx.id, status: 'PAID' },
-    });
-    const depositCheck = hasDeposit ? '✅' : '⬜';
+    // Channel membership gate
+    if (channelGateEnabled) {
+      const membership = await this.verifyChannelMembership(userCtx.id, targetChannel);
 
-    const welcomeText = `<b>Welcome to TitanStream, ${userCtx.firstName}! 🚀⚡</b>\n\n` +
-      `Your <b>Telegram-Native Financial Account & Yield Engine</b> is active.\n\n` +
-      `<b>🌐 What TitanStream Offers:</b>\n` +
-      `• <b>⚡ Yield Mining Node:</b> Generate continuous passive USDT yield 24/7.\n` +
-      `• <b>🎰 Arcade USDT Games:</b> High-multiplier minigames with instant ledger payouts.\n` +
-      `• <b>💰 Universal Cashouts:</b> Instant 24/7 Mobile Money P2P & Crypto settlements.\n` +
-      `• <b>🎁 Daily Quests:</b> Complete economic missions & build yield streaks.\n\n` +
-      `<b>📋 Account Onboarding Status:</b>\n` +
-      `✅ Community Channel Verified\n` +
-      `✅ Double-Entry Ledger Wallet Initialized\n` +
-      `${depositCheck} First Deposit Completed\n\n` +
-      `Tap <b>Open TitanStream App</b> below or use the main menu to begin:`;
+      if (!membership.isMember) {
+        const channelUser = targetChannel.startsWith('@') ? targetChannel.substring(1) : targetChannel;
+        const gateText = `<b>⚠️ Channel Membership Required</b>\n\n` +
+          `Welcome, ${userCtx.firstName}! To access TitanStream DeAI Cloud Infrastructure and start earning daily rental revenue, please join our official Telegram channel:\n\n` +
+          `👉 <b>${targetChannel}</b>\n\n` +
+          `After joining, tap <b>✅ Verify Membership</b> to continue.`;
+
+        return {
+          verified: false,
+          message: gateText,
+          keyboard: {
+            inline_keyboard: [
+              [{ text: '📢 Join Official Channel', url: `https://t.me/${channelUser}` }],
+              [{ text: '✅ Verify Membership', callback_data: 'verify_membership' }],
+            ],
+          },
+        };
+      }
+    }
+
+    // Fetch real stats for personalized welcome
+    const activeMachinesCount = user?.userMachines?.length || 0;
+    const unclaimedYield = user?.miningState ? Number(user.miningState.unclaimedBalance) : 0.00;
+    const qualifiedReferrals = user?.qualifiedReferrals || 0;
+    const trustLevel = user?.userLevel?.currentLevel || 'VERIFIED';
+
+    const goal = 5;
+    const progressBlocks = Math.min(Math.floor((qualifiedReferrals / goal) * 10), 10);
+    const progressBar = '█'.repeat(progressBlocks) + '░'.repeat(10 - progressBlocks);
+
+    const welcomeText = `👋 <b>Welcome back, ${userCtx.firstName}!</b>\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>TitanStream Control Tower 🚀</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `<b>Account Status:</b> 🟢 VERIFIED & ACTIVE\n` +
+      `<b>Trust Tier:</b> Tier ${trustLevel}\n` +
+      `<b>Active Machines:</b> <b>${activeMachinesCount} Machine${activeMachinesCount === 1 ? '' : 's'} Online</b>\n` +
+      `<b>Unclaimed Yield:</b> <b>${unclaimedYield.toFixed(2)} USDT</b>\n` +
+      `<b>Referral Progress:</b> [${progressBar}] <b>${qualifiedReferrals} / ${goal} Friends</b>\n\n` +
+      `${activeMachinesCount > 0
+        ? '<i>Your cloud computing servers are running 24/7 in high-security data centers.</i>'
+        : '<i>No active Machine yet — activate your first Machine in the Mini App to start earning daily rental revenue!</i>'}\n\n` +
+      `Tap <b>Open TitanStream App</b> below to manage your cloud allocation:`;
 
     const verifiedKeyboard = {
       inline_keyboard: [
@@ -237,60 +273,20 @@ export class BotGateService {
           },
         ],
         [
-          { text: '➕ Quick Deposit', callback_data: 'cmd_deposit' },
-          { text: '⚡ Mining Rig', callback_data: 'cmd_treasury' },
-          { text: '🎰 Arcade Games', callback_data: 'cmd_games' },
+          { text: '🖥 Machine Health Status', callback_data: 'cmd_health_report' },
+          { text: '💰 View Ledger Wallet', callback_data: 'cmd_balance' },
         ],
         [
-          { text: '📚 How TitanStream Works', callback_data: 'edu_menu' },
+          { text: '📚 Cloud Economy Academy', callback_data: 'edu_menu' },
+          { text: '👥 Referral Network Hub', callback_data: 'cmd_referrals' },
         ],
       ],
     };
 
-    // If Admin has disabled the gate, bypass check!
-    if (!channelGateEnabled) {
-      return {
-        verified: true,
-        message: welcomeText,
-        keyboard: verifiedKeyboard,
-      };
-    }
-
-    const { isMember } = await this.verifyChannelMembership(userCtx.id, targetChannel);
-
-    if (isMember) {
-      if (!user.channelVerified) {
-        await this.prisma.user.update({
-          where: { telegramUserId: userCtx.id },
-          data: {
-            channelVerified: true,
-            channelVerifiedAt: new Date(),
-          },
-        });
-      }
-
-      return {
-        verified: true,
-        message: welcomeText,
-        keyboard: verifiedKeyboard,
-      };
-    }
-
-    const channelUsernameClean = targetChannel.replace('@', '');
-    const channelLink = `https://t.me/${channelUsernameClean}`;
-
     return {
-      verified: false,
-      message: `<b>Welcome to TitanStream, ${userCtx.firstName}! 🚀</b>\n\n` +
-        `The premier Telegram-native liquidity, daily yield mining, and financial settlement network.\n\n` +
-        `<b>Access Requirement:</b>\n` +
-        `To protect our community and activate your instant double-entry wallet, please join our official Telegram channel first (@${channelUsernameClean}):`,
-      keyboard: {
-        inline_keyboard: [
-          [{ text: `📢 Join @${channelUsernameClean}`, url: channelLink }],
-          [{ text: '🔄 Verify Membership', callback_data: 'verify_membership' }],
-        ],
-      },
+      verified: true,
+      message: welcomeText,
+      keyboard: verifiedKeyboard,
     };
   }
 }

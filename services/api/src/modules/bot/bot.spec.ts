@@ -245,7 +245,7 @@ describe('Telegram Host Bot Production Suite', () => {
 
     it('should display onboarding step checklist on start', async () => {
       const res = await commandService.handleStart({ id: BigInt(123456), firstName: 'TestUser' });
-      expect(res.text).toContain('Account Onboarding Status');
+      expect(res.text).toContain('TitanStream Control Tower');
       expect(res.keyboard.keyboard).toBeDefined(); // Persistent keyboard attached
     });
   });

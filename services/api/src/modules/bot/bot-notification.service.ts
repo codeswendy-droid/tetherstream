@@ -30,19 +30,41 @@ export class BotNotificationService {
     telegramUserId: bigint,
     userName?: string,
   ): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { telegramUserId },
+      include: {
+        miningState: true,
+        userMachines: { where: { status: 'ACTIVE' } },
+      },
+    });
+
+    const activeMachinesCount = user?.userMachines?.length || 0;
+    const totalCapacity = user?.userMachines?.reduce((sum, m) => sum + Number(m.capacityGhs), 0) || 0;
+    const unclaimedYield = user?.miningState ? Number(user.miningState.unclaimedBalance) : 0.00;
+    const ugxEst = Math.round(unclaimedYield * 3800); // 1 USDT ~= 3800 UGX
+
     const timeGreeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening';
     const name = userName ? `, ${userName}` : '';
 
-    const text = `👋 <b>${timeGreeting}${name}.</b>\n\n` +
+    let text = `👋 <b>${timeGreeting}${name}.</b>\n\n` +
       `━━━━━━━━━━━━━━━━━━━━━━\n` +
       `<b>🖥 Machine Health & Revenue Report</b>\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `<b>Machine Status:</b> 🟢 ONLINE & RENTED\n` +
-      `<b>Runtime Uptime:</b> 99.98%\n` +
-      `<b>Today's Revenue:</b> <b>4.85 USDT</b> (UGX 18,450)\n` +
-      `<b>Revenue Trend:</b> 📈 +11% higher than yesterday\n` +
-      `<b>Network Capacity:</b> 🟢 Excellent\n\n` +
-      `Your Machine cloud allocation is processing active workloads 24/7 in high-security data centers.`;
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    if (activeMachinesCount > 0) {
+      text += `<b>Status:</b> 🟢 ONLINE & RENTED\n` +
+        `<b>Active Machines:</b> <b>${activeMachinesCount} Machine${activeMachinesCount === 1 ? '' : 's'}</b> (${totalCapacity} CU)\n` +
+        `<b>Runtime Uptime:</b> 99.98%\n` +
+        `<b>Unclaimed Revenue:</b> <b>${unclaimedYield.toFixed(2)} USDT</b> (${ugxEst.toLocaleString()} UGX)\n` +
+        `<b>Revenue Trend:</b> 📈 Active rental contract\n` +
+        `<b>Network Capacity:</b> 🟢 Excellent\n\n` +
+        `Your Machine cloud allocation is processing active workloads 24/7 in high-security data centers.`;
+    } else {
+      text += `<b>Status:</b> ⚪ INACTIVE\n` +
+        `<b>Active Machines:</b> 0 (No active allocation)\n` +
+        `<b>Unclaimed Revenue:</b> 0.00 USDT (0 UGX)\n\n` +
+        `<i>No active Machine yet — activate your first Machine in the Mini App to start earning daily rental revenue!</i>`;
+    }
 
     return this.dispatchNotification({
       telegramUserId,
