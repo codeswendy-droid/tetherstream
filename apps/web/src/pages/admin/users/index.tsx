@@ -4,7 +4,8 @@ import { DataTable, type Column } from '@/components/admin/DataTable';
 import { DetailDrawer } from '@/components/admin/DetailDrawer';
 import { MetricCard, MetricCardGrid } from '@/components/admin/MetricCard';
 import { api } from '@/services/api';
-import { useWalletStore } from '@/store/useWalletStore';
+import { showToast } from '@/components/Toast';
+import { Eye, ShieldAlert, MessageSquare, Plus, ExternalLink } from 'lucide-react';
 
 export interface UserProfile {
   id: string;
@@ -43,6 +44,9 @@ export const UsersPage: React.FC = () => {
   const [usersList, setUsersList] = useState<UserProfile[]>([]);
   const [selected, setSelected] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [impersonating, setImpersonating] = useState(false);
+  const [adminNote, setAdminNote] = useState('');
+  const [notesList, setNotesList] = useState<any[]>([]);
 
   useEffect(() => {
     api.get('/admin/users/list')
@@ -51,8 +55,38 @@ export const UsersPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  const startReadonlyImpersonation = (user: UserProfile) => {
+    setImpersonating(true);
+    showToast(`READ-ONLY MIRROR: Viewing app state as ${user.name} (${user.telegramId}). No actions can be modified.`, 'info');
+  };
+
+  const saveAdminNote = () => {
+    if (!adminNote.trim() || !selected) return;
+    setNotesList((prev) => [
+      { id: Date.now().toString(), text: adminNote, date: new Date().toLocaleTimeString() },
+      ...prev,
+    ]);
+    setAdminNote('');
+    showToast('Internal Admin Note saved.', 'success');
+  };
+
   return (
     <div className="space-y-4">
+      {impersonating && (
+        <div className="p-4 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-between text-xs text-amber-300">
+          <div className="flex items-center gap-2">
+            <Eye size={18} />
+            <span className="font-bold">READ-ONLY IMPERSONATION MODE ACTIVE</span>
+          </div>
+          <button
+            onClick={() => setImpersonating(false)}
+            className="px-3 py-1 rounded-lg bg-amber-500 text-app-bg font-extrabold text-[10px] uppercase"
+          >
+            Exit Mirror
+          </button>
+        </div>
+      )}
+
       <MetricCardGrid columns={2}>
         <MetricCard label="Total Registered Users" value={usersList.length.toString()} change={0} icon="Users" variant="green" />
         <MetricCard label="Flagged Accounts" value={usersList.filter(u => u.flags?.length > 0).length.toString()} change={0} icon="ShieldAlert" variant="gold" />
@@ -65,7 +99,7 @@ export const UsersPage: React.FC = () => {
       ) : usersList.length === 0 ? (
         <div className="p-8 text-center bg-card-bg rounded-xl border border-white/5 space-y-1">
           <p className="text-xs font-bold text-text-primary">No user accounts registered yet</p>
-          <p className="text-[11px] text-text-tertiary">Authenticated Telegram members will appear here automatically.</p>
+          <p className="text-[11px] text-text-tertiary font-mono">Authenticated Telegram members will appear here automatically.</p>
         </div>
       ) : (
         <DataTable
@@ -81,34 +115,49 @@ export const UsersPage: React.FC = () => {
       )}
 
       {selected && (
-        <DetailDrawer isOpen={!!selected} onClose={() => setSelected(null)} title={selected.name || 'User Details'}>
+        <DetailDrawer isOpen={!!selected} onClose={() => setSelected(null)} title={selected.name || 'User Inspector'}>
           <div className="space-y-5">
-            <div>
-              <p className="text-sm text-text-tertiary">{selected.username}</p>
-              <p className="text-xs font-mono text-text-tertiary">Telegram ID: {selected.telegramId}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-text-primary">{selected.name} (@{selected.username})</p>
+                <p className="text-xs font-mono text-text-tertiary">Telegram ID: {selected.telegramId}</p>
+              </div>
+              <button
+                onClick={() => startReadonlyImpersonation(selected)}
+                className="px-3 py-2 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-bold flex items-center gap-1.5"
+              >
+                <Eye size={14} /> Read-Only Mirror
+              </button>
             </div>
+
+            {/* Admin Notes Section */}
             <div className="border-t border-border pt-4 space-y-3">
-              <h4 className="text-sm font-bold text-text-primary">Admin Wallet Control</h4>
-              <div className="flex items-center gap-2">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-text-primary flex items-center gap-2">
+                <MessageSquare size={14} className="text-usdt-green" /> Internal Admin Notes
+              </h4>
+              <div className="flex gap-2">
                 <input
-                  type="number"
-                  placeholder="Amount USDT"
-                  id="accredit-amount-input"
-                  className="bg-control-bg text-text-primary rounded-xl px-3 py-2 text-sm border border-white/10 focus:border-usdt-green focus:outline-none flex-1 font-mono font-bold"
+                  type="text"
+                  placeholder="Add internal note for this user..."
+                  value={adminNote}
+                  onChange={(e) => setAdminNote(e.target.value)}
+                  className="flex-1 bg-control-bg text-text-primary text-xs rounded-xl px-3 py-2 border border-white/10"
                 />
                 <button
-                  onClick={() => {
-                    const input = document.getElementById('accredit-amount-input') as HTMLInputElement;
-                    const amt = parseFloat(input.value);
-                    if (!amt || isNaN(amt)) return;
-                    useWalletStore.getState().accreditUserBalance(amt, `Admin accreditation for user ${selected.telegramId}`);
-                    alert(`Accredited $${amt} USDT to balance.`);
-                    input.value = '';
-                  }}
-                  className="px-4 py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-bold shadow-md"
+                  onClick={saveAdminNote}
+                  className="px-3 py-2 rounded-xl bg-usdt-green text-app-bg text-xs font-bold flex items-center gap-1"
                 >
-                  Accredit Balance
+                  <Plus size={14} /> Save
                 </button>
+              </div>
+
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {notesList.map((n) => (
+                  <div key={n.id} className="p-2 rounded-lg bg-control-bg text-xs text-text-secondary flex justify-between">
+                    <span>{n.text}</span>
+                    <span className="text-[10px] text-text-tertiary">{n.date}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

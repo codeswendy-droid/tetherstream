@@ -53,8 +53,7 @@ export const MiningSimulatorPage: React.FC = () => {
   // remains the authoritative source and reconciles on the next sync)
   const fastForward = (hours: number) => {
     const s = useMiningStore.getState();
-    const rate = 0.00000289; // TS_TRIAL promotional rate
-    const baseYieldRatePerSec = rate * 10;
+    const baseYieldRatePerSec = 0.0000289; // TS_TRIAL promotional rate per second
     const seconds = hours * 3600;
     const multiplierInfluence = Math.min(s.coolerMultiplier, 1.06); // mirrors server promoMultiplierInfluence
     let accrued = s.baseSpeedGhs * multiplierInfluence * baseYieldRatePerSec * seconds;
