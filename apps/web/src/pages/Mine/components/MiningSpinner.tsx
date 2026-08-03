@@ -566,612 +566,354 @@ export const MiningSpinner: React.FC = () => {
 
           {/* DYNAMIC SPINNER RENDERING ENGINE */}
           
-          {/* 0. Quantum Loop Reactor (Visual Upgrade for Free Trial Machine & Baseline Core) */}
-          {(activeSpinner.id === 'free-trial' || !['berp-heli', 'jet-turbine', 'co-axial', 'plasma-coil', 'quantum-core', 'neural-net', 'crystal-array', 'plasma-fusion'].includes(activeSpinner.id)) && (
-            <>
-              {/* Floating Holographic Telemetry Data (Req 16) */}
-              <div className="absolute -top-3 -left-2 z-20 pointer-events-none flex flex-col opacity-75 animate-pulse">
-                <span className="text-[7px] font-mono font-bold text-cyan-400 uppercase tracking-tighter">AI LOAD</span>
-                <span className="text-[9px] font-mono font-black text-cyan-200">
-                  {93 + Math.floor((Math.sin(Date.now() / 3500) + 1) * 2.5)}%
-                </span>
-              </div>
-              <div className="absolute -top-3 -right-2 z-20 pointer-events-none flex flex-col items-end opacity-75 animate-pulse">
-                <span className="text-[7px] font-mono font-bold text-cyan-400 uppercase tracking-tighter">COMPUTE</span>
-                <span className="text-[9px] font-mono font-black text-cyan-200">
-                  {(8.1 + (Math.cos(Date.now() / 4000) + 1) * 0.25).toFixed(1)} TH/s
-                </span>
-              </div>
-              <div className="absolute -bottom-2 right-1 z-20 pointer-events-none flex flex-col items-end opacity-75">
-                <span className="text-[7px] font-mono font-bold text-emerald-400 uppercase tracking-tighter">NETWORK</span>
-                <span className="text-[8px] font-mono font-bold text-emerald-300">SYNCED</span>
-              </div>
+          {/* Floating Holographic Telemetry Data (Req 16) */}
+          <div className="absolute -top-3 -left-2 z-20 pointer-events-none flex flex-col opacity-75 animate-pulse">
+            <span className="text-[7px] font-mono font-bold text-cyan-400 uppercase tracking-tighter">AI LOAD</span>
+            <span className="text-[9px] font-mono font-black text-cyan-200">
+              {93 + Math.floor((Math.sin(Date.now() / 3500) + 1) * 2.5)}%
+            </span>
+          </div>
+          <div className="absolute -top-3 -right-2 z-20 pointer-events-none flex flex-col items-end opacity-75 animate-pulse">
+            <span className="text-[7px] font-mono font-bold text-cyan-400 uppercase tracking-tighter">COMPUTE</span>
+            <span className="text-[9px] font-mono font-black text-cyan-200">
+              {(8.1 + (Math.cos(Date.now() / 4000) + 1) * 0.25).toFixed(1)} TH/s
+            </span>
+          </div>
+          <div className="absolute -bottom-2 right-1 z-20 pointer-events-none flex flex-col items-end opacity-75">
+            <span className="text-[7px] font-mono font-bold text-emerald-400 uppercase tracking-tighter">NETWORK</span>
+            <span className="text-[8px] font-mono font-bold text-emerald-300">SYNCED</span>
+          </div>
 
-              {/* Rare Discovery Event Toast (Req 18) */}
-              {discoveryToast && (
-                <div className="absolute -top-12 z-30 bg-cyan-950/80 border border-cyan-400 text-cyan-200 text-[9px] font-mono font-black px-3 py-1 rounded-full flex items-center gap-1.5 uppercase tracking-widest shadow-[0_0_20px_rgba(0,242,254,0.5)] animate-bounce backdrop-blur-md">
-                  <Sparkles size={12} className="text-cyan-300 animate-spin" />
-                  <span>{discoveryToast}</span>
-                </div>
-              )}
-
-              {/* Session Boot Experience Overlay (Req 19) */}
-              {isBooting && (
-                <div className="absolute inset-0 rounded-full bg-black/90 backdrop-blur-md z-30 flex flex-col items-center justify-center p-4 text-center border border-cyan-500/40 animate-fade-in pointer-events-none">
-                  <div className="w-7 h-7 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mb-1.5" />
-                  <span className="text-[9px] font-mono font-black text-cyan-300 uppercase tracking-widest">
-                    {BOOT_STEPS[bootStep]}
-                  </span>
-                </div>
-              )}
-
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                <QuantumLoopReactor
-                  ref={reactorRef}
-                  coolerMultiplier={coolerMultiplier}
-                  isOverheated={isOverheated}
-                  isLocked={isMiningLocked()}
-                  onDiscoveryEvent={handleDiscoveryEvent}
-                  tierCode={activeSpinner.tierCode}
-                  tierIndex={activeSpinnerIdx}
-                />
-              </div>
-            </>
+          {/* Rare Discovery Event Toast (Req 18) */}
+          {discoveryToast && (
+            <div className="absolute -top-12 z-30 bg-cyan-950/80 border border-cyan-400 text-cyan-200 text-[9px] font-mono font-black px-3 py-1 rounded-full flex items-center gap-1.5 uppercase tracking-widest shadow-[0_0_20px_rgba(0,242,254,0.5)] animate-bounce backdrop-blur-md">
+              <Sparkles size={12} className="text-cyan-300 animate-spin" />
+              <span>{discoveryToast}</span>
+            </div>
           )}
 
+          {/* Session Boot Experience Overlay (Req 19) */}
+          {isBooting && (
+            <div className="absolute inset-0 rounded-full bg-black/90 backdrop-blur-md z-30 flex flex-col items-center justify-center p-4 text-center border border-cyan-500/40 animate-fade-in pointer-events-none">
+              <div className="w-7 h-7 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mb-1.5" />
+              <span className="text-[9px] font-mono font-black text-cyan-300 uppercase tracking-widest">
+                {BOOT_STEPS[bootStep]}
+              </span>
+            </div>
+          )}
 
-          {/* 1. Aero BERP Rotor (Helicopter Aerodynamic Blades) */}
-          {activeSpinner.id === 'berp-heli' && (
-            <>
-              {/* Aerodynamic Downwash Airflow Vectors */}
-              <div className="absolute inset-0 pointer-events-none z-10">
-                <svg className="w-full h-full" viewBox="0 0 216 216">
-                  {/* Outer airflow downwash ring */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="88"
-                    fill="none"
-                    stroke={dynamicColor}
-                    strokeWidth="1"
-                    strokeDasharray="30 160"
-                    opacity="0.25"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin ${Math.max(0.25, 3.0 - coolerMultiplier * 0.2)}s linear infinite`,
-                    }}
-                  />
-                  {/* Mid vortex ring (counter-rotating) */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="72"
-                    fill="none"
-                    stroke={dynamicColor}
-                    strokeWidth="1.2"
-                    strokeDasharray="20 110"
-                    opacity="0.3"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin-reverse ${Math.max(0.2, 2.0 - coolerMultiplier * 0.15)}s linear infinite`,
-                    }}
-                  />
-                </svg>
-              </div>
+          {/* Canvas Physics Core Engine */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+            <QuantumLoopReactor
+              ref={reactorRef}
+              coolerMultiplier={coolerMultiplier}
+              isOverheated={isOverheated}
+              isLocked={isMiningLocked()}
+              onDiscoveryEvent={handleDiscoveryEvent}
+              tierCode={activeSpinner.tierCode}
+              tierIndex={activeSpinnerIdx}
+            />
+          </div>
 
-              {/* Rotating Impeller */}
-              <div
-                className="absolute inset-4 rounded-full flex items-center justify-center pointer-events-none"
-                style={{
-                  transform: `rotate(${fanRotation}deg)`,
-                }}
-              >
-                {[...Array(4)].map((_, i) => {
-                  const flexSkew = Math.min(8, (coolerMultiplier - 1) * 1.5);
-                  return (
-                    <div
-                      key={i}
-                      className="absolute w-[30px] h-[86px] origin-bottom transition-transform duration-100"
-                      style={{
-                        bottom: '50%',
-                        transform: `rotate(${i * 90}deg) skewX(${flexSkew}deg)`,
-                      }}
-                    >
-                      <svg className="w-full h-full" viewBox="0 0 30 86">
-                        <defs>
-                          <linearGradient id={`rotorGrad-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor={dynamicColor} stopOpacity="0.95" />
-                            <stop offset="40%" stopColor="#1a1c29" stopOpacity="0.9" />
-                            <stop offset="100%" stopColor="#08090d" stopOpacity="0.95" />
-                          </linearGradient>
-                        </defs>
-                        <path
-                          d="M 13 86 L 12 26 L 7 10 L 2 3 L 14 0 L 22 5 L 20 26 L 18 86 Z"
-                          fill={`url(#rotorGrad-${i})`}
-                          stroke={`${dynamicColor}40`}
-                          strokeWidth="0.5"
+          {/* TIER-SPECIFIC ROTORS & FANS OVERLAY ENGINE */}
+          {(() => {
+            const cleanId = activeSpinner.id.replace(/^ton-/, '');
+
+            switch (cleanId) {
+              case 'free-trial': // Tier 0: Titan Core — Experimental 3-Blade Micro-Rotor & Stabilization Fins
+                return (
+                  <>
+                    <div className="absolute inset-0 pointer-events-none z-15">
+                      <svg className="w-full h-full" viewBox="0 0 216 216">
+                        <circle
+                          cx="108"
+                          cy="108"
+                          r="88"
+                          fill="none"
+                          stroke={dynamicColor}
+                          strokeWidth="1"
+                          strokeDasharray="20 120"
+                          opacity="0.3"
+                          style={{
+                            transformOrigin: 'center',
+                            animation: `spin ${Math.max(0.3, 3.5 - coolerMultiplier * 0.2)}s linear infinite`,
+                          }}
                         />
-                        <line x1="15" y1="86" x2="13" y2="3" stroke="#ffffff" strokeWidth="0.8" opacity="0.25" />
-                        <path d="M 2 3 L 14 0 L 22 5" fill="none" stroke={dynamicColor} strokeWidth="1.5" opacity="0.8" />
                       </svg>
                     </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
+                    {/* 3-Blade Micro-Rotor */}
+                    <div
+                      className="absolute inset-4 rounded-full flex items-center justify-center pointer-events-none z-15"
+                      style={{ transform: `rotate(${fanRotation}deg)` }}
+                    >
+                      {[...Array(3)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-[24px] h-[76px] origin-bottom transition-transform duration-100"
+                          style={{
+                            bottom: '50%',
+                            transform: `rotate(${i * 120}deg)`,
+                          }}
+                        >
+                          <svg className="w-full h-full" viewBox="0 0 24 76">
+                            <path
+                              d="M 12 76 L 9 20 L 2 5 L 12 0 L 22 5 L 15 20 Z"
+                              fill={dynamicColor}
+                              fillOpacity="0.4"
+                              stroke={dynamicColor}
+                              strokeWidth="1"
+                            />
+                            <circle cx="12" cy="5" r="2.5" fill="#ffffff" />
+                          </svg>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
 
-          {/* 2. Cyclone Jet-IV (12-blade dense titanium jet turbine compressor) */}
-          {activeSpinner.id === 'jet-turbine' && (
-            <>
-              {/* Intake air vortex compression rings */}
-              <div className="absolute inset-0 pointer-events-none z-10">
-                <svg className="w-full h-full" viewBox="0 0 216 216">
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="84"
-                    fill="none"
-                    stroke={dynamicColor}
-                    strokeWidth="1"
-                    strokeDasharray="15 60"
-                    opacity="0.35"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin-reverse ${Math.max(0.12, 1.5 - coolerMultiplier * 0.08)}s linear infinite`,
-                    }}
-                  />
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="56"
-                    fill="none"
-                    stroke="#ffffff"
-                    strokeWidth="1.5"
-                    strokeDasharray="8 45"
-                    opacity="0.45"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin ${Math.max(0.08, 1.0 - coolerMultiplier * 0.05)}s linear infinite`,
-                    }}
-                  />
-                </svg>
-              </div>
+              case 'ripple-x14': // Tier 1: Ripple X14 — 10-Blade Titanium Intake Compressor Stage
+                return (
+                  <>
+                    <div className="absolute inset-0 pointer-events-none z-15">
+                      <svg className="w-full h-full" viewBox="0 0 216 216">
+                        <circle
+                          cx="108"
+                          cy="108"
+                          r="92"
+                          fill="none"
+                          stroke={dynamicColor}
+                          strokeWidth="1.8"
+                          strokeDasharray="14 50"
+                          opacity="0.4"
+                          style={{
+                            transformOrigin: 'center',
+                            animation: `spin-reverse ${Math.max(0.15, 1.8 - coolerMultiplier * 0.1)}s linear infinite`,
+                          }}
+                        />
+                      </svg>
+                    </div>
+                    {/* 10 Angled Compressor Blades */}
+                    <div
+                      className="absolute inset-5 rounded-full flex items-center justify-center pointer-events-none z-15"
+                      style={{ transform: `rotate(${fanRotation * 1.2}deg)` }}
+                    >
+                      {[...Array(10)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-[16px] h-[82px] origin-bottom rounded-t-sm"
+                          style={{
+                            bottom: '50%',
+                            transform: `rotate(${i * 36}deg) skewY(18deg)`,
+                            background: `linear-gradient(180deg, ${dynamicColor} 0%, rgba(15,23,42,0.95) 80%)`,
+                            borderTop: `1.5px solid ${dynamicColor}`,
+                            boxShadow: `0 0 8px ${dynamicColor}30`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </>
+                );
 
-              {/* Dense Turbine Impeller */}
-              <div
-                className="absolute inset-6 rounded-full flex items-center justify-center pointer-events-none"
-                style={{
-                  transform: `rotate(${fanRotation}deg)`,
-                }}
-              >
-                {[...Array(12)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-[14px] h-[78px] origin-bottom rounded-t-sm"
-                    style={{
-                      bottom: '50%',
-                      transform: `rotate(${i * 30}deg) skewY(15deg)`,
-                      background: `linear-gradient(180deg, ${dynamicColor} 0%, rgba(10,12,18,0.95) 75%)`,
-                      opacity: 0.9,
-                      boxShadow: `0 0 6px ${dynamicColor}20`,
-                      borderTop: `1px solid ${dynamicColor}`,
-                    }}
-                  />
-                ))}
-              </div>
-            </>
-          )}
+              case 'surge-r28': // Tier 2: Surge R28 — Dual Counter-Rotating Turbine Discs
+                return (
+                  <>
+                    {/* Outer Turbine Stage (Clockwise, 12 Curved Blades) */}
+                    <div
+                      className="absolute inset-4 rounded-full flex items-center justify-center pointer-events-none z-15"
+                      style={{ transform: `rotate(${fanRotation * 1.1}deg)` }}
+                    >
+                      {[...Array(12)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-[14px] h-[84px] origin-bottom rounded-t-full"
+                          style={{
+                            bottom: '50%',
+                            transform: `rotate(${i * 30}deg)`,
+                            background: `linear-gradient(180deg, ${dynamicColor} 0%, rgba(30,20,40,0.85) 85%)`,
+                            opacity: 0.85,
+                            boxShadow: `0 0 6px ${dynamicColor}25`,
+                          }}
+                        />
+                      ))}
+                    </div>
 
-          {/* 3. Coaxial Double-Fan (Dual counter-rotating blade systems) */}
-          {activeSpinner.id === 'co-axial' && (
-            <>
-              {/* Flow-lines between rotors */}
-              <div className="absolute inset-0 pointer-events-none z-10">
-                <svg className="w-full h-full" viewBox="0 0 216 216">
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="76"
-                    fill="none"
-                    stroke={dynamicColor}
-                    strokeWidth="1.5"
-                    strokeDasharray="40 90"
-                    opacity="0.25"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin ${Math.max(0.3, 2.5 - coolerMultiplier * 0.15)}s linear infinite`,
-                    }}
-                  />
-                </svg>
-              </div>
+                    {/* Inner Turbine Stage (Counter-Clockwise, 12 Blades) */}
+                    <div
+                      className="absolute inset-9 rounded-full flex items-center justify-center pointer-events-none z-15"
+                      style={{ transform: `rotate(${-fanRotation * 1.5}deg)` }}
+                    >
+                      {[...Array(12)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-[10px] h-[58px] origin-bottom rounded-t-full"
+                          style={{
+                            bottom: '50%',
+                            transform: `rotate(${i * 30}deg)`,
+                            background: `linear-gradient(180deg, #ffffff 0%, rgba(20,10,30,0.95) 90%)`,
+                            opacity: 0.9,
+                            boxShadow: `0 0 8px #ffffff40`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </>
+                );
 
-              {/* Outer rotor (Clockwise, 5 Blades) */}
-              <div
-                className="absolute inset-5 rounded-full flex items-center justify-center pointer-events-none"
-                style={{
-                  transform: `rotate(${fanRotation}deg)`,
-                }}
-              >
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-[18px] h-[78px] origin-bottom rounded-t-full"
-                    style={{
-                      bottom: '50%',
-                      transform: `rotate(${i * 72}deg)`,
-                      background: `linear-gradient(180deg, ${dynamicColor} 0%, rgba(20,22,30,0.85) 90%)`,
-                      opacity: 0.8,
-                    }}
-                  />
-                ))}
-              </div>
+              case 'torrent-v63': // Tier 3: Torrent V63 — Ducted Marine Hydrofoil Impeller
+                return (
+                  <>
+                    {/* Outer Marine Duct Ring */}
+                    <div className="absolute inset-0 pointer-events-none z-15">
+                      <svg className="w-full h-full" viewBox="0 0 216 216">
+                        <circle
+                          cx="108"
+                          cy="108"
+                          r="90"
+                          fill="none"
+                          stroke={dynamicColor}
+                          strokeWidth="3"
+                          strokeDasharray="45 130"
+                          opacity="0.6"
+                          style={{
+                            transformOrigin: 'center',
+                            animation: `spin ${Math.max(0.12, 1.4 - coolerMultiplier * 0.08)}s linear infinite`,
+                          }}
+                        />
+                      </svg>
+                    </div>
+                    {/* 5 Wide Curved Hydrofoil Impellers */}
+                    <div
+                      className="absolute inset-4 rounded-full flex items-center justify-center pointer-events-none z-15"
+                      style={{ transform: `rotate(${fanRotation * 1.4}deg)` }}
+                    >
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-[32px] h-[80px] origin-bottom"
+                          style={{
+                            bottom: '50%',
+                            transform: `rotate(${i * 72}deg)`,
+                          }}
+                        >
+                          <svg className="w-full h-full" viewBox="0 0 32 80">
+                            <path
+                              d="M 16 80 Q 28 40 32 10 Q 16 0 4 10 Q 8 40 16 80 Z"
+                              fill={dynamicColor}
+                              fillOpacity="0.75"
+                              stroke="#ffffff"
+                              strokeWidth="0.8"
+                            />
+                          </svg>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
 
-              {/* Inner rotor (Counter-Clockwise, 5 Blades) */}
-              <div
-                className="absolute inset-10 rounded-full flex items-center justify-center pointer-events-none z-10"
-                style={{
-                  transform: `rotate(${-fanRotation * 1.3}deg)`,
-                }}
-              >
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-[12px] h-[52px] origin-bottom rounded-t-full"
-                    style={{
-                      bottom: '50%',
-                      transform: `rotate(${i * 72}deg)`,
-                      background: `linear-gradient(180deg, #ffffff 0%, rgba(20,22,30,0.95) 90%)`,
-                      opacity: 0.9,
-                      boxShadow: `0 0 6px ${dynamicColor}30`,
-                    }}
-                  />
-                ))}
-              </div>
-            </>
-          )}
+              case 'cascade-m91': // Tier 4: Cascade M91 — Multi-Axis Gyroscopic Gimbal & Articulated Flywheel
+                return (
+                  <>
+                    {/* Outer Pitch Gimbal Ring */}
+                    <div
+                      className="absolute inset-3 rounded-full border-2 border-dashed border-purple-400/50 pointer-events-none z-15 animate-spin"
+                      style={{ animationDuration: `${Math.max(1.2, 4.0 - coolerMultiplier * 0.3)}s` }}
+                    />
+                    {/* Inner Roll Gimbal Ring */}
+                    <div
+                      className="absolute inset-7 rounded-full border-2 border-cyan-400/60 pointer-events-none z-15"
+                      style={{
+                        transform: `rotate(${-fanRotation * 1.3}deg)`,
+                      }}
+                    />
+                    {/* Central 6-Blade Articulated Flywheel */}
+                    <div
+                      className="absolute inset-8 rounded-full flex items-center justify-center pointer-events-none z-15"
+                      style={{ transform: `rotate(${fanRotation * 1.8}deg)` }}
+                    >
+                      {[...Array(6)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-[18px] h-[64px] origin-bottom rounded-t-xl"
+                          style={{
+                            bottom: '50%',
+                            transform: `rotate(${i * 60}deg)`,
+                            background: `linear-gradient(180deg, #e040fb 0%, rgba(15,23,42,0.95) 85%)`,
+                            boxShadow: `0 0 12px #e040fb60`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </>
+                );
 
-          {/* 4. Tesla Induction Ring (Bladeless electromagnetic plasma inductor) */}
-          {activeSpinner.id === 'plasma-coil' && (
-            <>
-              {/* Electromagnetic high-voltage aura */}
-              <div className="absolute inset-0 pointer-events-none z-10">
-                <svg className="w-full h-full" viewBox="0 0 216 216">
-                  {/* Glowing electric arcs */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="84"
-                    fill="none"
-                    stroke={dynamicColor}
-                    strokeWidth="3.5"
-                    strokeDasharray="60 140"
-                    opacity="0.85"
-                    style={{
-                      transformOrigin: 'center',
-                      filter: `drop-shadow(0 0 10px ${dynamicColor})`,
-                      animation: `spin ${Math.max(0.1, 1.2 - coolerMultiplier * 0.08)}s linear infinite`,
-                    }}
-                  />
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="84"
-                    fill="none"
-                    stroke="#ffffff"
-                    strokeWidth="1.5"
-                    strokeDasharray="30 200"
-                    opacity="0.9"
-                    style={{
-                      transformOrigin: 'center',
-                      filter: `drop-shadow(0 0 6px #ffffff)`,
-                      animation: `spin-reverse ${Math.max(0.08, 0.8 - coolerMultiplier * 0.06)}s linear infinite`,
-                    }}
-                  />
-                  
-                  {/* Secondary thin induction field */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="68"
-                    fill="none"
-                    stroke={dynamicColor}
-                    strokeWidth="1"
-                    strokeDasharray="10 80"
-                    opacity="0.5"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin ${Math.max(0.05, 0.6 - coolerMultiplier * 0.04)}s linear infinite`,
-                    }}
-                  />
-                </svg>
-              </div>
+              case 'streamtitan-2028': // Tier 5: StreamTitan 2028 — Flagship Hyperscale Integrated Array
+              default:
+                return (
+                  <>
+                    {/* Outer 14-Blade Compressor Rotor Ring (CW) */}
+                    <div
+                      className="absolute inset-3 rounded-full flex items-center justify-center pointer-events-none z-15"
+                      style={{ transform: `rotate(${fanRotation * 1.3}deg)` }}
+                    >
+                      {[...Array(14)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-[12px] h-[88px] origin-bottom rounded-t-sm"
+                          style={{
+                            bottom: '50%',
+                            transform: `rotate(${i * (360 / 14)}deg) skewY(12deg)`,
+                            background: `linear-gradient(180deg, ${dynamicColor} 0%, rgba(20,15,5,0.95) 80%)`,
+                            borderTop: `1.5px solid ${dynamicColor}`,
+                            boxShadow: `0 0 8px ${dynamicColor}40`,
+                          }}
+                        />
+                      ))}
+                    </div>
 
-              {/* Spark animations or plasma tracers */}
-              <div className="absolute inset-8 rounded-full border border-dashed border-[#e040fb]/30 animate-pulse pointer-events-none" />
-            </>
-          )}
+                    {/* Inner 14-Blade Counter-Rotating Turbine Disc (CCW) */}
+                    <div
+                      className="absolute inset-8 rounded-full flex items-center justify-center pointer-events-none z-15"
+                      style={{ transform: `rotate(${-fanRotation * 1.7}deg)` }}
+                    >
+                      {[...Array(14)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-[8px] h-[62px] origin-bottom rounded-t-sm"
+                          style={{
+                            bottom: '50%',
+                            transform: `rotate(${i * (360 / 14)}deg)`,
+                            background: `linear-gradient(180deg, #38bdf8 0%, rgba(10,20,30,0.95) 85%)`,
+                            opacity: 0.9,
+                            boxShadow: `0 0 8px #38bdf840`,
+                          }}
+                        />
+                      ))}
+                    </div>
 
-          {/* TON-SPECIFIC SPINNERS */}
-
-          {/* 1. Quantum Core V1 (Blockchain-optimized processing unit) */}
-          {activeSpinner.id === 'quantum-core' && (
-            <>
-              {/* Quantum entanglement rings */}
-              <div className="absolute inset-0 pointer-events-none z-10">
-                <svg className="w-full h-full" viewBox="0 0 216 216">
-                  {/* Outer quantum field */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="88"
-                    fill="none"
-                    stroke={dynamicColor}
-                    strokeWidth="2"
-                    strokeDasharray="40 120"
-                    opacity="0.4"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin ${Math.max(0.2, 2.5 - coolerMultiplier * 0.15)}s linear infinite`,
-                    }}
-                  />
-                  {/* Inner quantum core */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="64"
-                    fill="none"
-                    stroke="#ffffff"
-                    strokeWidth="1.5"
-                    strokeDasharray="20 80"
-                    opacity="0.6"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin-reverse ${Math.max(0.15, 1.8 - coolerMultiplier * 0.12)}s linear infinite`,
-                    }}
-                  />
-                </svg>
-              </div>
-
-              {/* Hexagonal quantum processor */}
-              <div
-                className="absolute inset-6 rounded-full flex items-center justify-center pointer-events-none"
-                style={{
-                  transform: `rotate(${fanRotation}deg)`,
-                }}
-              >
-                {[...Array(6)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-[24px] h-[70px] origin-bottom"
-                    style={{
-                      bottom: '50%',
-                      transform: `rotate(${i * 60}deg)`,
-                      background: `linear-gradient(180deg, ${dynamicColor} 0%, rgba(0,176,255,0.3) 100%)`,
-                      opacity: 0.85,
-                      clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-                      boxShadow: `0 0 8px ${dynamicColor}30`,
-                    }}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* 2. Neural Network Grid (AI-driven distributed computing) */}
-          {activeSpinner.id === 'neural-net' && (
-            <>
-              {/* Neural network connections */}
-              <div className="absolute inset-0 pointer-events-none z-10">
-                <svg className="w-full h-full" viewBox="0 0 216 216">
-                  {/* Outer synapse ring */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="82"
-                    fill="none"
-                    stroke={dynamicColor}
-                    strokeWidth="1.5"
-                    strokeDasharray="25 70"
-                    opacity="0.35"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin ${Math.max(0.18, 2.2 - coolerMultiplier * 0.14)}s linear infinite`,
-                    }}
-                  />
-                  {/* Inner neural pathways */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="58"
-                    fill="none"
-                    stroke="#ffffff"
-                    strokeWidth="1"
-                    strokeDasharray="15 50"
-                    opacity="0.5"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin-reverse ${Math.max(0.12, 1.5 - coolerMultiplier * 0.1)}s linear infinite`,
-                    }}
-                  />
-                </svg>
-              </div>
-
-              {/* Neural node array */}
-              <div
-                className="absolute inset-5 rounded-full flex items-center justify-center pointer-events-none"
-                style={{
-                  transform: `rotate(${fanRotation}deg)`,
-                }}
-              >
-                {[...Array(8)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-[16px] h-[72px] origin-bottom rounded-full"
-                    style={{
-                      bottom: '50%',
-                      transform: `rotate(${i * 45}deg)`,
-                      background: `linear-gradient(180deg, ${dynamicColor} 0%, rgba(0,229,255,0.4) 100%)`,
-                      opacity: 0.9,
-                      boxShadow: `0 0 10px ${dynamicColor}40`,
-                    }}
-                  />
-                ))}
-                {/* Central neural hub */}
-                <div className="absolute w-12 h-12 rounded-full bg-white/10 border-2 border-dashed border-white/30 animate-pulse" />
-              </div>
-            </>
-          )}
-
-          {/* 3. Crystal Array Matrix (Multi-dimensional crystal lattice) */}
-          {activeSpinner.id === 'crystal-array' && (
-            <>
-              {/* Crystal resonance fields */}
-              <div className="absolute inset-0 pointer-events-none z-10">
-                <svg className="w-full h-full" viewBox="0 0 216 216">
-                  {/* Outer crystal field */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="86"
-                    fill="none"
-                    stroke={dynamicColor}
-                    strokeWidth="2"
-                    strokeDasharray="35 100"
-                    opacity="0.45"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin ${Math.max(0.15, 2.0 - coolerMultiplier * 0.12)}s linear infinite`,
-                    }}
-                  />
-                  {/* Inner crystal lattice */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="62"
-                    fill="none"
-                    stroke="#ffffff"
-                    strokeWidth="1.2"
-                    strokeDasharray="18 60"
-                    opacity="0.6"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin-reverse ${Math.max(0.1, 1.4 - coolerMultiplier * 0.09)}s linear infinite`,
-                    }}
-                  />
-                </svg>
-              </div>
-
-              {/* Crystal shard array */}
-              <div
-                className="absolute inset-4 rounded-full flex items-center justify-center pointer-events-none"
-                style={{
-                  transform: `rotate(${fanRotation}deg)`,
-                }}
-              >
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-[20px] h-[80px] origin-bottom"
-                    style={{
-                      bottom: '50%',
-                      transform: `rotate(${i * 72}deg)`,
-                      background: `linear-gradient(180deg, ${dynamicColor} 0%, rgba(63,81,181,0.5) 100%)`,
-                      opacity: 0.8,
-                      clipPath: 'polygon(50% 0%, 100% 20%, 80% 100%, 20% 100%, 0% 20%)',
-                      boxShadow: `0 0 12px ${dynamicColor}50`,
-                    }}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* 4. Plasma Fusion Reactor (Controlled nuclear fusion) */}
-          {activeSpinner.id === 'plasma-fusion' && (
-            <>
-              {/* Fusion containment field */}
-              <div className="absolute inset-0 pointer-events-none z-10">
-                <svg className="w-full h-full" viewBox="0 0 216 216">
-                  {/* Outer magnetic containment */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="90"
-                    fill="none"
-                    stroke={dynamicColor}
-                    strokeWidth="4"
-                    strokeDasharray="50 130"
-                    opacity="0.7"
-                    style={{
-                      transformOrigin: 'center',
-                      filter: `drop-shadow(0 0 15px ${dynamicColor})`,
-                      animation: `spin ${Math.max(0.08, 1.0 - coolerMultiplier * 0.06)}s linear infinite`,
-                    }}
-                  />
-                  {/* Inner plasma stream */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="70"
-                    fill="none"
-                    stroke="#ffffff"
-                    strokeWidth="2"
-                    strokeDasharray="25 90"
-                    opacity="0.8"
-                    style={{
-                      transformOrigin: 'center',
-                      filter: `drop-shadow(0 0 8px #ffffff)`,
-                      animation: `spin-reverse ${Math.max(0.06, 0.7 - coolerMultiplier * 0.05)}s linear infinite`,
-                    }}
-                  />
-                  {/* Core fusion reaction */}
-                  <circle
-                    cx="108"
-                    cy="108"
-                    r="50"
-                    fill="none"
-                    stroke={dynamicColor}
-                    strokeWidth="1.5"
-                    strokeDasharray="15 60"
-                    opacity="0.5"
-                    style={{
-                      transformOrigin: 'center',
-                      animation: `spin ${Math.max(0.04, 0.5 - coolerMultiplier * 0.04)}s linear infinite`,
-                    }}
-                  />
-                </svg>
-              </div>
-
-              {/* Fusion plasma core */}
-              <div
-                className="absolute inset-8 rounded-full flex items-center justify-center pointer-events-none"
-                style={{
-                  transform: `rotate(${fanRotation}deg)`,
-                }}
-              >
-                {[...Array(10)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-[12px] h-[68px] origin-bottom rounded-full"
-                    style={{
-                      bottom: '50%',
-                      transform: `rotate(${i * 36}deg)`,
-                      background: `linear-gradient(180deg, ${dynamicColor} 0%, rgba(118,255,3,0.6) 100%)`,
-                      opacity: 0.95,
-                      boxShadow: `0 0 15px ${dynamicColor}60`,
-                    }}
-                  />
-                ))}
-                {/* Central fusion core */}
-                <div className="absolute w-16 h-16 rounded-full bg-white/20 border-2 border-dashed border-white/40 animate-pulse" 
-                     style={{
-                       boxShadow: `0 0 30px ${dynamicColor}80, inset 0 0 20px ${dynamicColor}40`,
-                     }} 
-                />
-              </div>
-            </>
-          )}
+                    {/* 8 Autonomous Thermal Cooling Vanes */}
+                    <div
+                      className="absolute inset-1 rounded-full flex items-center justify-center pointer-events-none z-15"
+                      style={{ transform: `rotate(${fanRotation * 0.4}deg)` }}
+                    >
+                      {[...Array(8)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-[16px] h-[98px] origin-bottom"
+                          style={{
+                            bottom: '50%',
+                            transform: `rotate(${i * 45}deg)`,
+                          }}
+                        >
+                          <div
+                            className="w-full h-3 bg-amber-400/80 rounded-t-xs border border-white/40 shadow-[0_0_8px_rgba(251,191,36,0.6)]"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+            }
+          })()}
 
           {/* Center Metal Hub Casing */}
           <div
