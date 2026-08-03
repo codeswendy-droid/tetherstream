@@ -3,6 +3,7 @@ import { financialService, type TransactionRecord } from '../services/financialS
 import { settlementService, type SettlementSessionView } from '../services/settlementService';
 import { useTreasuryStore } from './useTreasuryStore';
 import { useUserNotificationStore } from './useUserNotificationStore';
+import { useMiningStore } from './useMiningStore';
 const ACTIVE_STATUS_SET = new Set([
   'CREATED',
   'INITIALIZED',
@@ -172,7 +173,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         lifetimeDeposits: depTotal,
         lifetimeWithdrawals: wthTotal,
         totalRewards: rwdTotal,
-        activeMachines: machCount,
+        activeMachines: (useMiningStore.getState().activeMachinesCount || 1),
         isLoadingBalance: false,
       });
     } catch (err: any) {

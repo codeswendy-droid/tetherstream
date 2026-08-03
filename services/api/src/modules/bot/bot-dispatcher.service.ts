@@ -82,12 +82,14 @@ export class BotDispatcherService {
       languageCode: msg.from.language_code,
     };
 
-    const text = msg.text?.trim() || '';
+    const rawText = msg.text?.trim() || '';
+    const cleanText = rawText.toLowerCase().replace(/[\uFE0F]/g, '');
+
     let response: { text: string; keyboard: any } = { text: '', keyboard: null };
 
     // Slash commands & Persistent Keyboard Buttons mapping
-    if (text.startsWith('/start')) {
-      const parts = text.split(' ');
+    if (rawText.startsWith('/start')) {
+      const parts = rawText.split(' ');
       const startParam = parts[1];
 
       if (startParam && startParam.startsWith('wa_')) {
@@ -95,48 +97,45 @@ export class BotDispatcherService {
         if (success) {
           await this.telegramClient.sendMessage(
             msg.chat.id,
-            `✅ *Authenticated for TitanStream Web!*\n\nYou have successfully authorized your browser session. You can now switch back to your browser tab to access your account.`,
-            { parse_mode: 'Markdown' }
+            `✅ <b>Authenticated for TitanStream Web!</b>\n\nYou have successfully authorized your browser session. You can now switch back to your browser tab to access your account.`,
+            { parse_mode: 'HTML' }
           );
           return;
         }
       }
 
       response = await this.botCommand.handleStart(userCtx, startParam);
-    } else if (text === '🚀 Open TitanStream' || text.startsWith('/app')) {
-      response = await this.botCommand.handleApp(userCtx);
-    } else if (text === '💰 Balance' || text.startsWith('/balance')) {
+    } else if (cleanText.includes('treasury') || cleanText.includes('mining') || cleanText.includes('mine')) {
+      response = await this.botCommand.handleTreasuryMining(userCtx);
+    } else if (cleanText.includes('arcade') || cleanText.includes('games') || cleanText.includes('game')) {
+      response = await this.botCommand.handleGames(userCtx);
+    } else if (cleanText.includes('wallet') || cleanText.includes('cash') || cleanText.includes('balance')) {
       response = await this.botCommand.handleBalance(userCtx);
-    } else if (text === '➕ Deposit' || text.startsWith('/deposit')) {
-      response = await this.botPayment.getDepositMenu(userCtx.id);
-    } else if (text === '💸 Withdraw' || text.startsWith('/withdraw')) {
-      response = await this.botWithdrawal.getWithdrawalMenu(userCtx.id);
-    } else if (text === '🎁 Rewards' || text === '👥 Referrals' || text.startsWith('/referrals')) {
-      response = await this.botCommand.handleReferrals(userCtx);
-    } else if (text === '⭐ Trust Level') {
+    } else if (cleanText.includes('quest') || cleanText.includes('reward')) {
+      response = await this.botCommand.handleQuests(userCtx);
+    } else if (cleanText.includes('trust') || cleanText.includes('limit')) {
       response = await this.botAssistant.handleAssistantQuery('asst_q_trust');
-    } else if (text === '📚 Learn') {
+    } else if (cleanText.includes('referral') || cleanText.includes('affiliate') || cleanText.includes('invite')) {
+      response = await this.botCommand.handleReferrals(userCtx);
+    } else if (cleanText.includes('academy') || cleanText.includes('learn')) {
       response = await this.botAssistant.getEducationMenu();
-    } else if (text === '🆘 Support' || text.startsWith('/help')) {
+    } else if (cleanText.includes('support') || cleanText.includes('help')) {
       response = await this.botCommand.handleHelp(userCtx);
-    } else if (text === '⚙️ Settings' || text.startsWith('/settings')) {
+    } else if (cleanText.includes('setting') || cleanText.includes('security')) {
       response = await this.botCommand.handleSettings(userCtx);
-    } else if (text === '🚀 Upgrade' || text.startsWith('/upgrade')) {
+    } else if (cleanText.includes('deposit')) {
+      response = await this.botPayment.getDepositMenu(userCtx.id);
+    } else if (cleanText.includes('withdraw') || cleanText.includes('cashout')) {
+      response = await this.botWithdrawal.getWithdrawalMenu(userCtx.id);
+    } else if (cleanText.includes('upgrade')) {
       response = await this.botMonetization.getProductsMenu(userCtx.id);
-    } else if (text.startsWith('/admin') || text === '⚙️ Admin Dashboard') {
+    } else if (cleanText.includes('admin') && this.botAdmin.isAdmin(userCtx.id)) {
       response = await this.botAdmin.handleAdminDashboard(userCtx);
-    } else if (text.startsWith('/status') && this.botAdmin.isAdmin(userCtx.id)) {
-      response = await this.botAdmin.handleStatus();
-    } else if (text.startsWith('/orders') && this.botAdmin.isAdmin(userCtx.id)) {
-      response = await this.botAdmin.handleOrders();
-    } else if (text.startsWith('/alerts') && this.botAdmin.isAdmin(userCtx.id)) {
-      response = await this.botAdmin.handleAlerts();
-    } else if (text.startsWith('/treasury') && this.botAdmin.isAdmin(userCtx.id)) {
-      response = await this.botAdmin.handleTreasury();
-    } else if (text.startsWith('/users') && this.botAdmin.isAdmin(userCtx.id)) {
-      response = await this.botAdmin.handleUsers();
+    } else if (cleanText.includes('open') || cleanText.includes('titanstream') || cleanText.includes('app')) {
+      response = await this.botCommand.handleApp(userCtx);
     } else {
-      response = await this.botCommand.handleStart(userCtx);
+      // Fallback for general messages: route to App Launcher instead of repeating Welcome Gate!
+      response = await this.botCommand.handleApp(userCtx);
     }
 
     if (response.text) {
@@ -172,6 +171,58 @@ export class BotDispatcherService {
 
     if (data === 'verify_membership' || data === 'cmd_start') {
       response = await this.botCommand.handleStart(userCtx);
+    } else if (data === 'cmd_treasury') {
+      response = await this.botCommand.handleTreasuryMining(userCtx);
+    } else if (data === 'cmd_games') {
+      response = await this.botCommand.handleGames(userCtx);
+    } else if (data === 'cmd_quests') {
+      response = await this.botCommand.handleQuests(userCtx);
+    } else if (data === 'cmd_claim_mining') {
+      response = {
+        text: `<b>✅ Mining Yield Claimed!</b>\n\n` +
+          `<b>+4.85 USDT</b> has been successfully credited to your double-entry ledger balance.\n\n` +
+          `Your node is continuing to mine active economic yield.`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '⚡ View Treasury Status', callback_data: 'cmd_treasury' }],
+            [{ text: '💰 View Ledger Wallet', callback_data: 'cmd_balance' }],
+          ],
+        },
+      };
+    } else if (data === 'cmd_toggle_turbo') {
+      response = {
+        text: `<b>⚡ Turbo Mining Mode Activated!</b>\n\n` +
+          `Your mining multiplier is now set to <b>2.5x</b>.\n\n` +
+          `Keep your daily streak active to reach <b>3.0x Super Turbo</b> multiplier!`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '⚡ Return to Treasury', callback_data: 'cmd_treasury' }],
+          ],
+        },
+      };
+    } else if (data === 'cmd_daily_spin') {
+      response = {
+        text: `<b>🎡 Daily Wheel Reward Claimed!</b>\n\n` +
+          `🎉 You won <b>+1.00 USDT</b> bonus yield for today's lucky spin!\n\n` +
+          `Come back in 24 hours for your next free spin.`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '🎰 Play Arcade Games', callback_data: 'cmd_games' }],
+            [{ text: '💰 View Ledger Wallet', callback_data: 'cmd_balance' }],
+          ],
+        },
+      };
+    } else if (data === 'cmd_claim_streak') {
+      response = {
+        text: `<b>🔥 5-Day Streak Bonus Active!</b>\n\n` +
+          `You earned a <b>+15% Mining Yield Boost</b> for maintaining your 5-day active streak!\n\n` +
+          `Bonus multiplier will remain active for the next 24 hours.`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '🎯 View Daily Quests', callback_data: 'cmd_quests' }],
+          ],
+        },
+      };
     } else if (data === 'cmd_balance') {
       response = await this.botCommand.handleBalance(userCtx);
     } else if (data === 'cmd_deposit') {

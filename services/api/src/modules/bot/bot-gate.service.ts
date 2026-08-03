@@ -29,7 +29,7 @@ export class BotGateService {
     const mainChannelUser = process.env.TELEGRAM_CHANNEL_USERNAME || 'titanstream';
 
     this.requiredChannels = [
-      { id: mainChannelId, username: mainChannelUser, label: '📢 Main Community Channel' },
+      { id: mainChannelId, username: mainChannelUser, label: '📢 Join Official Channel' },
     ];
   }
 
@@ -206,13 +206,18 @@ export class BotGateService {
 
       const depositCheck = hasDeposit ? '✅' : '⬜';
 
-      const welcomeText = `<b>Welcome to TitanStream 🚀</b>\n\n` +
-        `Your Telegram-native financial account is active.\n\n` +
-        `<b>Account Progress:</b>\n` +
-        `✅ Join community channel\n` +
-        `✅ Create account & identity\n` +
-        `${depositCheck} Make your first deposit\n\n` +
-        `Click below to launch the Mini App or explore features:`;
+      const welcomeText = `<b>Welcome to TitanStream, ${userCtx.firstName}! 🚀⚡</b>\n\n` +
+        `Your <b>Telegram-Native Financial Account & Yield Engine</b> is active.\n\n` +
+        `<b>🌐 What TitanStream Offers:</b>\n` +
+        `• <b>⚡ Yield Mining Node:</b> Generate continuous passive USDT yield 24/7.\n` +
+        `• <b>🎰 Arcade USDT Games:</b> High-multiplier minigames with instant ledger payouts.\n` +
+        `• <b>💰 Universal Cashouts:</b> Instant 24/7 Mobile Money P2P & Crypto settlements.\n` +
+        `• <b>🎁 Daily Quests:</b> Complete economic missions & build yield streaks.\n\n` +
+        `<b>📋 Account Onboarding Status:</b>\n` +
+        `✅ Community Channel Verified\n` +
+        `✅ Double-Entry Ledger Wallet Initialized\n` +
+        `${depositCheck} First Deposit Completed\n\n` +
+        `Tap <b>Open TitanStream App</b> below or use the main menu to begin:`;
 
       return {
         verified: true,
@@ -221,13 +226,17 @@ export class BotGateService {
           inline_keyboard: [
             [
               {
-                text: '🚀 Open TitanStream Mini App',
+                text: '🚀 Open TitanStream App',
                 web_app: { url: this.webAppUrl },
               },
             ],
             [
-              { text: '➕ Make First Deposit', callback_data: 'cmd_deposit' },
-              { text: '📚 Learn How It Works', callback_data: 'edu_menu' },
+              { text: '➕ Quick Deposit', callback_data: 'cmd_deposit' },
+              { text: '⚡ Mining Rig', callback_data: 'cmd_treasury' },
+              { text: '🎰 Arcade Games', callback_data: 'cmd_games' },
+            ],
+            [
+              { text: '📚 How TitanStream Works', callback_data: 'edu_menu' },
             ],
           ],
         },
@@ -238,7 +247,10 @@ export class BotGateService {
     const channelLink = `https://t.me/${mainChan.username.replace('@', '')}`;
     return {
       verified: false,
-      message: `<b>Welcome to TitanStream 🚀</b>\n\nA Telegram-native liquidity and financial platform.\n\nBefore continuing, join our official community channel:`,
+      message: `<b>Welcome to TitanStream, ${userCtx.firstName}! 🚀</b>\n\n` +
+        `The premier Telegram-native liquidity, daily yield mining, and financial settlement network.\n\n` +
+        `<b>Access Requirement:</b>\n` +
+        `To protect our community and activate your instant double-entry wallet, please join our official Telegram channel first:`,
       keyboard: {
         inline_keyboard: [
           [{ text: mainChan.label, url: channelLink }],

@@ -245,7 +245,7 @@ describe('Telegram Host Bot Production Suite', () => {
 
     it('should display onboarding step checklist on start', async () => {
       const res = await commandService.handleStart({ id: BigInt(123456), firstName: 'TestUser' });
-      expect(res.text).toContain('Account Progress');
+      expect(res.text).toContain('Account Onboarding Status');
       expect(res.keyboard.keyboard).toBeDefined(); // Persistent keyboard attached
     });
   });
@@ -333,7 +333,7 @@ describe('Telegram Host Bot Production Suite', () => {
 
       expect(mockTelegramClient.sendMessage).toHaveBeenCalledWith(
         123456,
-        expect.stringContaining('Your TitanStream Account Balance'),
+        expect.stringContaining('TitanStream Universal Ledger Wallet'),
         expect.anything(),
       );
     });
