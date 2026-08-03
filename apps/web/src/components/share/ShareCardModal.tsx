@@ -46,10 +46,30 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
       url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
     } else if (platform === 'tiktok' || platform === 'instagram') {
       copyToClipboard();
-      showToast(`Message copied! Paste in your ${platform} story or caption.`, 'info');
+      const isTiktok = platform === 'tiktok';
+      openAppScheme(
+        isTiktok ? ['snssdk1233://', 'tiktok://'] : ['instagram://'],
+        isTiktok ? 'https://www.tiktok.com/' : 'https://www.instagram.com/',
+      );
+      showToast(`Message copied! Open ${isTiktok ? 'TikTok' : 'Instagram'} app to share.`, 'info');
       return;
     }
     if (url) window.open(url, '_blank');
+  };
+
+  const openAppScheme = (schemes: string[], webFallback: string) => {
+    const started = Date.now();
+    let launched = false;
+    for (const scheme of schemes) {
+      try {
+        window.open(scheme, '_blank');
+        launched = true;
+      } catch {}
+    }
+    setTimeout(() => {
+      if (launched && Date.now() - started > 1500) return;
+      window.open(webFallback, '_blank');
+    }, 1500);
   };
 
   return (
