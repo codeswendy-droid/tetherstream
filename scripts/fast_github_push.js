@@ -162,6 +162,7 @@ async function main() {
   console.log(`🔄 Updating branch ref ${BRANCH} to ${newCommitRes.sha}...`);
   await apiRequest('PATCH', `/git/refs/heads/${BRANCH}`, {
     sha: newCommitRes.sha,
+    force: true,
   });
 
   console.log(`🎉 SUCCESS! Pushed changes to GitHub repository ${OWNER}/${REPO}:${BRANCH}`);

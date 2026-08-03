@@ -163,7 +163,8 @@ def main():
     else:
         print(f"🔄 Updating branch ref {BRANCH} to {new_commit_sha}...")
         api_request('PATCH', f'/git/refs/heads/{BRANCH}', {
-            'sha': new_commit_sha
+            'sha': new_commit_sha,
+            'force': True
         })
     
     print(f"🎉 SUCCESS! Successfully pushed branch '{BRANCH}' to GitHub repository {OWNER}/{REPO}!")
