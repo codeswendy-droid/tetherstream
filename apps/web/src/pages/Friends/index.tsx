@@ -218,8 +218,8 @@ export const FriendsScreen: React.FC = () => {
               <Star size={20} />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-extrabold text-text-primary">Mining speed boost</span>
-              <span className="text-[11px] text-text-secondary mt-0.5">Your mining speed grows with each friend you bring in</span>
+              <span className="text-xs font-extrabold text-text-primary">Earning speed boost</span>
+              <span className="text-[11px] text-text-secondary mt-0.5">Your earning speed grows with each friend you bring in</span>
             </div>
           </div>
 

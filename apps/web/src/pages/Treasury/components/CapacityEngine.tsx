@@ -46,7 +46,7 @@ export const CapacityEngine: React.FC = () => {
     setTimeout(() => {
       activateDailyCycle();
       setIsProcessing(false);
-      showToast('Daily mining started! +10 Power earned.', 'success');
+      showToast('Machine started! +10 Power earned.', 'success');
     }, 800);
   };
 
@@ -147,7 +147,7 @@ export const CapacityEngine: React.FC = () => {
         <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
           <div className="flex items-center gap-1.5">
             <Battery size={16} className="text-usdt-green" />
-            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">Daily Mining Engine</h2>
+            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">Daily Earnings Engine</h2>
           </div>
           <div className={`text-[10px] font-bold uppercase bg-control-bg px-2.5 py-0.5 rounded-full border border-white/5 font-mono ${
             dailyCycleStatus === 'SETTLEMENT_CLAIMED' ? 'text-usdt-green' : 'text-text-secondary'
@@ -159,7 +159,7 @@ export const CapacityEngine: React.FC = () => {
         {/* Capacity Stats Grid */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5">
-            <div className="text-[10px] text-text-secondary font-bold">Mining Power</div>
+            <div className="text-[10px] text-text-secondary font-bold">Machine Power</div>
             <div className="text-lg font-black text-text-primary font-mono mt-1">
               {effectiveCapacity.toLocaleString()}
             </div>
@@ -169,7 +169,7 @@ export const CapacityEngine: React.FC = () => {
           </div>
 
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5">
-            <div className="text-[10px] text-text-secondary font-bold">Mining Level</div>
+            <div className="text-[10px] text-text-secondary font-bold">Earning Level</div>
             <div className="text-lg font-black text-text-primary mt-1 flex items-center gap-1">
               <span>{getLevelIcon(capacityLevel)}</span>
               <span className={getLevelColor(capacityLevel)}>{capacityLevel}</span>
@@ -203,9 +203,9 @@ export const CapacityEngine: React.FC = () => {
               <div className="w-12 h-12 rounded-full bg-usdt-green/10 text-usdt-green flex items-center justify-center mx-auto mb-3">
                 <Zap size={24} />
               </div>
-              <h3 className="text-sm font-extrabold text-text-primary">Start Daily Mining</h3>
+              <h3 className="text-sm font-extrabold text-text-primary">Start Your Machine</h3>
               <p className="text-xs text-text-secondary mt-1 max-w-[90%] mx-auto">
-                Start mining for today and earn daily rewards!
+                Start your machine for today to generate daily earnings!
               </p>
               <button
                 disabled={isProcessing}
@@ -218,7 +218,7 @@ export const CapacityEngine: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <Sparkles size={14} /> Start Mining
+                    <Sparkles size={14} /> Start Earning
                   </>
                 )}
               </button>
@@ -227,7 +227,7 @@ export const CapacityEngine: React.FC = () => {
 
           {dailyCycleStatus === 'ACTIVATED' && (
             <div className="text-center py-2">
-              <h3 className="text-sm font-extrabold text-text-primary">Increase Your Mining Power</h3>
+              <h3 className="text-sm font-extrabold text-text-primary">Increase Your Machine Power</h3>
               <p className="text-xs text-text-secondary mt-1">
                 Complete simple tasks below to boost your earnings.
               </p>
@@ -266,9 +266,9 @@ export const CapacityEngine: React.FC = () => {
               <div className="w-10 h-10 rounded-full bg-text-secondary/10 text-text-secondary flex items-center justify-center mx-auto mb-2">
                 <Clock size={20} />
               </div>
-              <h3 className="text-sm font-extrabold text-text-primary">Today's Mining Complete</h3>
+              <h3 className="text-sm font-extrabold text-text-primary">Today's Earning Complete</h3>
               <p className="text-xs text-text-secondary mt-1">
-                Come back tomorrow to start mining again!
+                Come back tomorrow to start your machine again!
               </p>
             </div>
           )}
@@ -404,7 +404,7 @@ export const CapacityEngine: React.FC = () => {
           </div>
           <div className="mt-3 pt-3 border-t border-white/5">
             <div className="text-[10px] text-text-tertiary leading-relaxed">
-              Increase your mining power to unlock higher levels with better multipliers.
+              Increase your machine power to unlock higher levels with better multipliers.
             </div>
           </div>
         </div>

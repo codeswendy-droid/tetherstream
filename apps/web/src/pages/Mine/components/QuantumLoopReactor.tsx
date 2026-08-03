@@ -471,7 +471,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
               'Speed Turbines Synchronized',
               'Machine Cooling Running Smooth',
               'Stabilizers Perfectly Balanced',
-              'Mining Speed Boost Active',
+              'Earning Speed Boost Active',
             ];
             const item = DISCOVERIES[Math.floor(Math.random() * DISCOVERIES.length)];
             audioSynth.playDiscoveryChime();

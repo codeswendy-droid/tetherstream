@@ -204,8 +204,8 @@ export const BoostScreen: React.FC = () => {
             <Gauge size={22} />
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] font-black text-text-tertiary uppercase tracking-wider">Total Mining Power</span>
-            <span className="text-xl font-black text-text-primary font-mono mt-0.5">{((Number(baseSpeedGhs) || 0) * 10).toFixed(0)} Mining Power</span>
+            <span className="text-[10px] font-black text-text-tertiary uppercase tracking-wider">Total Machine Power</span>
+            <span className="text-xl font-black text-text-primary font-mono mt-0.5">{((Number(baseSpeedGhs) || 0) * 10).toFixed(0)} Machine Power</span>
           </div>
         </div>
 
@@ -340,7 +340,7 @@ export const BoostScreen: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex justify-between text-[10px] font-black uppercase tracking-wider">
                     <span className="text-text-tertiary flex items-center gap-1">
-                      <Layers size={11} className="text-usdt-green" /> Mining Power
+                      <Layers size={11} className="text-usdt-green" /> Machine Power
                     </span>
                     <span className="text-text-primary font-mono">{machine.computeCapacityText}</span>
                   </div>

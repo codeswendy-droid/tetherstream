@@ -1,5 +1,3 @@
-import { getDualCurrencyYield } from '../store/useCountryStore';
-
 export interface FrontendMachineModel {
   id: string;
   tierCode: string;
@@ -25,13 +23,9 @@ export interface FrontendMachineModel {
   capacityScore: number;
   comparisonText?: string;
   isPopular?: boolean;
-  status: 'ACTIVE' | 'AVAILABLE' | 'LOCKED' | 'MAINTENANCE';
+  status: 'ACTIVE' | 'AVAILABLE' | 'LOCKED';
   spinnerSpeedMultiplier: number;
-  
-  // Generic business configuration rules
-  earningsCap?: number;
-  durationHours?: number;
-  passiveYieldRate?: number;
+  passiveYieldRate: number;
   promoYieldRate?: number;
   promoOutputCap?: number;
   promoSpinnerSpeedMultiplier?: number;
@@ -48,12 +42,12 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     capacityGhs: 1.0,
     powerRatingW: 10,
     description: 'Free starter machine that earns daily money automatically as soon as you open the app.',
-    technicalSummary: 'Free starter machine with basic mining power to generate initial earnings.',
+    technicalSummary: 'Free starter machine with basic power to generate initial earnings.',
     simpleExplanation: 'Your free starter machine that earns daily money automatically.',
     personality: 'Free starter machine.',
     dailyYieldUsdt: 2.0,
     performanceLevel: 'Starter Level',
-    computeCapacityText: '10 Mining Power',
+    computeCapacityText: '10 Machine Power',
     processingPriority: 'Standard Queue',
     cloudWorkloadRating: 'Basic Work',
     dailyOutputRating: 'Basic Earnings',
@@ -83,11 +77,11 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     personality: 'Great for steady daily earnings.',
     dailyYieldUsdt: 0.27,
     performanceLevel: 'Level 1 Speed',
-    computeCapacityText: '24 Mining Power',
+    computeCapacityText: '24 Machine Power',
     processingPriority: 'Standard Speed',
     cloudWorkloadRating: 'Starter Work',
     dailyOutputRating: 'Starter Earnings',
-    workloadClass: 'Level 1 Mining',
+    workloadClass: 'Level 1 Earning',
     processingIndex: 'PX-14',
     fabricThroughput: '12 Speed Units',
     capacityScore: 35,
@@ -110,11 +104,11 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     personality: 'Designed for higher daily earnings.',
     dailyYieldUsdt: 1.40,
     performanceLevel: 'Level 2 Speed',
-    computeCapacityText: '120 Mining Power',
+    computeCapacityText: '120 Machine Power',
     processingPriority: 'Fast Queue',
     cloudWorkloadRating: 'Fast Processing',
     dailyOutputRating: 'Higher Earnings',
-    workloadClass: 'Level 2 Mining',
+    workloadClass: 'Level 2 Earning',
     processingIndex: 'PX-28',
     fabricThroughput: '48 Speed Units',
     capacityScore: 60,
@@ -138,11 +132,11 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     personality: 'High-performance machine for strong earnings.',
     dailyYieldUsdt: 7.50,
     performanceLevel: 'Level 3 Speed',
-    computeCapacityText: '620 Mining Power',
+    computeCapacityText: '620 Machine Power',
     processingPriority: 'Super Speed Queue',
     cloudWorkloadRating: 'High-Speed Work',
     dailyOutputRating: 'High Earnings',
-    workloadClass: 'Level 3 Mining',
+    workloadClass: 'Level 3 Earning',
     processingIndex: 'PX-63',
     fabricThroughput: '240 Speed Units',
     capacityScore: 82,
@@ -162,16 +156,16 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     capacityGhs: 550.0,
     powerRatingW: 4500,
     description: 'Supercomputing machine with multi-axis gimbals and heavy-duty magnetic bearings.',
-    technicalSummary: 'Gyroscopic magnetic bearing system providing ultra-fast mining speed.',
+    technicalSummary: 'Gyroscopic magnetic bearing system providing ultra-fast earning speed.',
     simpleExplanation: 'Gyroscopic stabilization allows this machine to spin fast and earn big.',
     personality: 'Pro machine for serious daily profits.',
     dailyYieldUsdt: 32.00,
     performanceLevel: 'Level 4 Pro Speed',
-    computeCapacityText: '2,600 Mining Power',
+    computeCapacityText: '2,600 Machine Power',
     processingPriority: 'Top Speed Queue',
     cloudWorkloadRating: 'Pro Speed Work',
     dailyOutputRating: 'Pro Earnings',
-    workloadClass: 'Level 4 Mining',
+    workloadClass: 'Level 4 Earning',
     processingIndex: 'PX-91',
     fabricThroughput: '960 Speed Units',
     capacityScore: 94,
@@ -195,11 +189,11 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     personality: 'Top flagship machine for maximum earnings.',
     dailyYieldUsdt: 85.00,
     performanceLevel: 'Maximum Power',
-    computeCapacityText: '7,500 Mining Power',
+    computeCapacityText: '7,500 Machine Power',
     processingPriority: 'Maximum Speed Queue',
     cloudWorkloadRating: 'Ultra-Speed Work',
     dailyOutputRating: 'Maximum Earnings',
-    workloadClass: 'Level 5 Mining',
+    workloadClass: 'Level 5 Earning',
     processingIndex: 'PX-2028',
     fabricThroughput: '2,500 Speed Units',
     capacityScore: 99,
@@ -209,22 +203,3 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     passiveYieldRate: 0.0001,
   },
 ];
-
-// Helper to compute full yield details for a machine model
-export const getMachineYieldDetails = (machine: FrontendMachineModel) => {
-  const dailyUsdt = machine.dailyYieldUsdt;
-  const weeklyUsdt = dailyUsdt * 7;
-  const monthlyUsdt = dailyUsdt * 30;
-  const annualUsdt = dailyUsdt * 365;
-
-  const estimatedRoiPercent = Math.round((monthlyUsdt / machine.priceUsdt) * 100);
-
-  return {
-    price: getDualCurrencyYield(machine.priceUsdt),
-    daily: getDualCurrencyYield(dailyUsdt),
-    weekly: getDualCurrencyYield(weeklyUsdt),
-    monthly: getDualCurrencyYield(monthlyUsdt),
-    annual: getDualCurrencyYield(annualUsdt),
-    roiPercent: estimatedRoiPercent,
-  };
-};

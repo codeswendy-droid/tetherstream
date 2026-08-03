@@ -59,7 +59,7 @@ export const BalanceDisplay: React.FC = () => {
           <span className="absolute w-3 h-3 rounded-full bg-usdt-green opacity-75 animate-ping" />
           <span className="relative w-2 h-2 rounded-full bg-usdt-green" />
         </div>
-        <span>{computeUnits} Mining Power</span>
+        <span>{computeUnits} Machine Power</span>
       </div>
     </div>
   );

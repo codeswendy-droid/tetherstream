@@ -22,7 +22,7 @@ export const BottomNav: React.FC = () => {
   const navItems: NavItem[] = [
     { id: 'wallet', label: 'Wallet', icon: <Wallet size={18} /> },
     { id: 'growth', label: 'Safety', icon: <ShieldCheck size={18} /> },
-    { id: 'mine', label: 'Mining', icon: <Cpu size={19} /> },
+    { id: 'mine', label: 'Machines', icon: <Cpu size={19} /> },
     { id: 'treasury', label: 'Rewards', icon: <Vault size={18} />, badge: claimableMissionsCount },
     { id: 'boost', label: 'Shop', icon: <Zap size={18} /> },
   ];

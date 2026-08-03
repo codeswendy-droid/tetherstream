@@ -70,7 +70,7 @@ export const TreasuryScreen: React.FC = () => {
     useTreasuryStore.getState().adjustTrustScore(3);
 
     setShowDepositModal(false);
-    showToast(`Added ${(Number(depVal) || 0).toFixed(2)} USDT! 1.5× Mining Speed Boost active.`, 'success');
+    showToast(`Added ${(Number(depVal) || 0).toFixed(2)} USDT! 1.5× Earning Speed Boost active.`, 'success');
   };
 
   return (
@@ -116,7 +116,7 @@ export const TreasuryScreen: React.FC = () => {
 
         <div className="grid grid-cols-3 gap-2 mt-3 pt-1 text-center">
           <div className="bg-control-bg/40 p-2 rounded-xl border border-white/5">
-            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Mining Speed</div>
+            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Earning Speed</div>
             <div className="text-sm font-black text-text-primary font-mono mt-0.5">
               {((Number(baseSpeedGhs || 0) * (dailyBoostActive ? 1.5 : 1.0)) * 10).toFixed(0)} Speed
             </div>

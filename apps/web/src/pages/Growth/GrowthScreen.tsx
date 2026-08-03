@@ -180,7 +180,7 @@ export const GrowthScreen: React.FC = () => {
         {/* Daily Status */}
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="p-2.5 rounded-2xl bg-app-bg/50 border border-white/5 space-y-0.5">
-            <div className="text-[10px] text-text-tertiary font-bold">Mining Power</div>
+            <div className="text-[10px] text-text-tertiary font-bold">Machine Power</div>
             <div className="font-mono font-extrabold text-usdt-green flex items-center gap-1">
               <CheckCircle size={12} />
               <span>{hasPurchasedMachine ? `${((Number(baseSpeedGhs) || 0) * 10).toFixed(0)} Power Active` : '10 Power (Starter Machine)'}</span>
