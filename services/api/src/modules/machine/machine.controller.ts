@@ -28,7 +28,8 @@ export class MachineController {
   async purchaseMachine(
     @TelegramUserId() telegramUserId: bigint,
     @Body('tierCode') tierCode: string,
+    @Body('isSandbox') isSandbox?: boolean,
   ) {
-    return this.service.purchaseMachine(telegramUserId, tierCode);
+    return this.service.purchaseMachine(telegramUserId, tierCode, isSandbox);
   }
 }

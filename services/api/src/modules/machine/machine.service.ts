@@ -269,11 +269,36 @@ export class MachineService {
     return createdMachine;
   }
 
-  async purchaseMachine(telegramUserId: bigint, tierCode: string) {
+  async purchaseMachine(telegramUserId: bigint, tierCode: string, isSandbox?: boolean) {
     const tier = this.catalog.find((t) => t.tierCode === tierCode);
     if (!tier) throw new NotFoundException(`Machine tier ${tierCode} not found`);
 
     const userIdStr = telegramUserId.toString();
+
+    // If sandbox mode is explicitly requested, fulfill machine ownership immediately
+    if (isSandbox) {
+      const createdMachine = await this.fulfillMachineOwnershipAfterPayment(telegramUserId, tier.tierCode, tier.priceUsdt);
+      const newMachineAsset: UserMachineAsset = {
+        id: createdMachine.id,
+        telegramUserId: userIdStr,
+        tierCode: createdMachine.tierCode,
+        name: createdMachine.name,
+        purchasePrice: createdMachine.purchasePrice.toNumber(),
+        currency: createdMachine.currency,
+        status: createdMachine.status as any,
+        capacityGhs: createdMachine.capacityGhs.toNumber(),
+        lifetimeEarnings: createdMachine.lifetimeEarnings.toNumber(),
+        purchasedAt: createdMachine.purchasedAt.toISOString(),
+        activatedAt: createdMachine.activatedAt.toISOString(),
+      };
+
+      return {
+        success: true,
+        requiresFunding: false,
+        machine: newMachineAsset,
+        message: `[Sandbox] Machine ${tier.name} purchased and activated successfully!`,
+      };
+    }
 
     // Check user available balance
     const account = await this.prisma.financialAccount.findUnique({

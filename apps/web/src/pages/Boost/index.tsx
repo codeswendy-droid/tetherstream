@@ -115,55 +115,55 @@ export const BoostScreen: React.FC = () => {
     }
   };
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (isSandbox: boolean = false) => {
     if (!selectedMachine) return;
     hapticFeedback.notificationOccurred('success');
 
     try {
-      const res = await machineService.purchaseMachine(selectedMachine.tierCode);
-      if (res.success && res.machine) {
-        upgradeBaseSpeed(res.machine.capacityGhs, res.machine.tierCode, res.machine);
+      const res = await machineService.purchaseMachine(selectedMachine.tierCode, isSandbox);
+      if (!res.success || !res.machine) {
+        showToast(res.message || 'Purchase could not be verified by backend', 'error');
+        return;
       }
+
+      upgradeBaseSpeed(res.machine.capacityGhs, res.machine.tierCode, res.machine);
       await Promise.all([
         fetchUserMachines(),
         fetchMiningState(),
         useWalletStore.getState().fetchBalanceFromEngine(),
       ]);
-    } catch (err) {
-      console.warn('Backend sync warning on purchase confirm:', err);
-      await Promise.all([
-        fetchUserMachines(),
-        fetchMiningState(),
-      ]);
+
+      adjustTreasuryStats('BOOST', selectedMachine.priceUsdt);
+      adjustTrustScore(5);
+
+      // Create transaction record
+      const newTx = {
+        id: `tx-mach-${Date.now()}`,
+        financialAccountId: 'acc-main',
+        type: 'MACHINE_PURCHASE',
+        asset: 'USDT',
+        amount: (Number(selectedMachine?.priceUsdt) || 0).toFixed(2),
+        status: 'COMPLETED',
+        reference: invoiceId,
+        createdAt: new Date().toISOString(),
+        description: `Activated ${selectedMachine.name} (${selectedMachine.capacityGhs} GH/s)`
+      };
+
+      useWalletStore.getState().updateBalance({
+        transactions: [newTx, ...transactions]
+      });
+
+      setInvoiceStatus('PAID');
+      showToast(`${selectedMachine.name} activated successfully!`, 'success');
+
+      setTimeout(() => {
+        setShowCheckout(false);
+        setSelectedMachine(null);
+      }, 2000);
+    } catch (err: any) {
+      console.warn('Backend sync error on purchase confirm:', err);
+      showToast(err?.message || 'Failed to complete machine activation with server', 'error');
     }
-
-    adjustTreasuryStats('BOOST', selectedMachine.priceUsdt);
-    adjustTrustScore(5);
-
-    // Create transaction record
-    const newTx = {
-      id: `tx-mach-${Date.now()}`,
-      financialAccountId: 'acc-main',
-      type: 'MACHINE_PURCHASE',
-      asset: 'USDT',
-      amount: (Number(selectedMachine?.priceUsdt) || 0).toFixed(2),
-      status: 'COMPLETED',
-      reference: invoiceId,
-      createdAt: new Date().toISOString(),
-      description: `Activated ${selectedMachine.name} (${selectedMachine.capacityGhs} GH/s)`
-    };
-
-    useWalletStore.getState().updateBalance({
-      transactions: [newTx, ...transactions]
-    });
-
-    setInvoiceStatus('PAID');
-    showToast(`${selectedMachine.name} activated successfully!`, 'success');
-
-    setTimeout(() => {
-      setShowCheckout(false);
-      setSelectedMachine(null);
-    }, 2000);
   };
 
   return (
@@ -609,7 +609,7 @@ export const BoostScreen: React.FC = () => {
                   <div className="pt-2 border-t border-white/5">
                     <button
                       type="button"
-                      onClick={handlePaymentSuccess}
+                      onClick={() => handlePaymentSuccess(true)}
                       className="w-full py-3 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md hover:brightness-110 press-feedback animate-pulse"
                     >
                       <Sparkles size={14} />
