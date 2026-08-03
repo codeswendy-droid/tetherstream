@@ -12,6 +12,7 @@ interface GrowthState {
   referrals: ReferralSummary | null;
   rewards: RewardItem[];
   qualification: QualificationStatus | null;
+  dashboardData: any | null;
   isLoading: boolean;
   error: string | null;
 
@@ -19,6 +20,7 @@ interface GrowthState {
   fetchReferrals: () => Promise<void>;
   fetchRewards: () => Promise<void>;
   fetchQualification: () => Promise<void>;
+  fetchDashboardData: () => Promise<void>;
 }
 
 export const useGrowthStore = create<GrowthState>((set) => ({
@@ -26,6 +28,7 @@ export const useGrowthStore = create<GrowthState>((set) => ({
   referrals: null,
   rewards: [],
   qualification: null,
+  dashboardData: null,
   isLoading: false,
   error: null,
 
@@ -63,6 +66,15 @@ export const useGrowthStore = create<GrowthState>((set) => ({
       set({ qualification: data });
     } catch (err: any) {
       console.warn('Failed to load qualification:', err?.message);
+    }
+  },
+
+  fetchDashboardData: async () => {
+    try {
+      const data = await growthService.getDashboard();
+      set({ dashboardData: data });
+    } catch (err: any) {
+      console.warn('Failed to load growth dashboard:', err?.message);
     }
   },
 }));

@@ -112,6 +112,11 @@ export const growthService = {
     return res.data.data;
   },
 
+  async getDashboard(): Promise<any> {
+    const res = await api.get('/growth/dashboard');
+    return res.data.data;
+  },
+
   async getAnalyticsOverview(): Promise<GrowthAnalyticsOverview> {
     const res = await api.get('/admin/growth/analytics-overview');
     return res.data.data;

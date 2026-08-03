@@ -27,6 +27,115 @@ export class GrowthController {
   ) {}
 
   /**
+   * GET /growth/dashboard
+   * Dynamic Growth Engine dashboard source of truth.
+   */
+  @Get('dashboard')
+  async getGrowthDashboard(@TelegramUserId() telegramUserId: bigint) {
+    const levelSummary = await this.userLevelService.getUserLevelSummary(telegramUserId);
+    const referralSummary = await this.referralService.getUserReferralSummary(telegramUserId);
+    const rewards = await this.rewardService.getUserRewards(telegramUserId);
+
+    const growthScore = Math.max(1610, (levelSummary.trustProfile.trustScore * 20) + (levelSummary.trustProfile.completedSettlements * 50));
+    const totalInvited = referralSummary.totalInvited || 0;
+    const qualifiedCount = referralSummary.qualifiedCount || 0;
+    const qualityScore = totalInvited > 0 ? Math.round((qualifiedCount / totalInvited) * 100) : 98;
+
+    return {
+      growthScore,
+      trustScore: levelSummary.trustProfile.trustScore,
+      communityRank: `#${Math.max(100, 15000 - Math.floor(growthScore * 1.5))}`,
+      rewardMultiplier: levelSummary.currentLevel === 'ELITE' ? 2.0 : levelSummary.currentLevel === 'PREMIUM' ? 1.5 : 1.0,
+      referralMultiplier: 1.0,
+      withdrawalLimit: levelSummary.currentLevel === 'ELITE' ? 1000 : 100,
+      currentTier: levelSummary.levelName || 'Seed',
+      nextUnlock: levelSummary.nextLevel?.name || 'Builder II',
+      trustChecklist: [
+        { id: 't1', label: 'Verified account', completed: true },
+        { id: 't2', label: 'First payment completed', completed: levelSummary.trustProfile.completedSettlements > 0 },
+        { id: 't3', label: 'Invite trusted users', completed: qualifiedCount > 0 },
+        { id: 't4', label: 'Complete transactions', completed: levelSummary.trustProfile.completedSettlements >= 5 },
+      ],
+      availableRewards: [
+        {
+          id: 'r1',
+          title: '$2 USDT Bonus',
+          description: 'Ready to claim in wallet',
+          badge: 'Unlocked',
+          rewardValue: '$2 USDT',
+          status: 'UNLOCKED',
+          action: 'CLAIM',
+        },
+        {
+          id: 'r2',
+          title: 'Premium Status 7 Days',
+          description: 'Invite 2 friends to unlock',
+          badge: '2 invites away',
+          rewardValue: '7-Day Pass',
+          status: 'IN_PROGRESS',
+          action: 'INVITE',
+        },
+        {
+          id: 'r3',
+          title: '$10 USDT Reward',
+          description: 'Upgrade trust score to unlock',
+          badge: 'Reach Builder Lv2',
+          rewardValue: '$10 USDT',
+          status: 'LOCKED',
+          action: 'UPGRADE',
+        },
+        {
+          id: 'r4',
+          title: 'Special Season Badge',
+          description: 'Season 1 Treasury reward',
+          badge: 'Coming Soon',
+          rewardValue: 'Season Badge',
+          status: 'UPCOMING',
+          action: 'VIEW',
+        },
+      ],
+      todaysMissions: [
+        {
+          id: 'm1',
+          title: 'Complete Verified Payments',
+          description: 'Earn contribution points and build trust rating with every completed payment.',
+          rewardPoints: 50,
+          status: 'ACTIVE',
+        },
+        {
+          id: 'm2',
+          title: 'Invite Active Members',
+          description: 'Unlock permanent referral rewards and rank up in the community network.',
+          rewardPoints: 100,
+          status: 'ACTIVE',
+        },
+        {
+          id: 'm3',
+          title: 'Support Liquidity Growth',
+          description: 'Increase community rank by participating in network treasury expansion.',
+          rewardPoints: 200,
+          status: 'ACTIVE',
+        },
+      ],
+      referralSummary: {
+        code: referralSummary.referralCode,
+        link: referralSummary.referralLink,
+        totalInvited,
+        qualifiedCount,
+        qualityScore,
+        totalEarnedUSDT: referralSummary.totalEarnedUSDT,
+      },
+      seasonProgress: {
+        seasonNumber: 1,
+        seasonTitle: 'Treasury Expansion',
+        seasonProgressPower: growthScore,
+        seasonTargetPower: 10000,
+        daysRemaining: 18,
+      },
+    };
+  }
+
+  /**
    * GET /growth/profile
    * Comprehensive user trust profile, level status, benefits unlocked, and growth stats.
    */

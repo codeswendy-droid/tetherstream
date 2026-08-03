@@ -14,10 +14,12 @@ import type { MissionItem } from '../../store/useTreasuryStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useMiningStore } from '../../store/useMiningStore';
 import { useWalletStore } from '../../store/useWalletStore';
+import { useGrowthStore } from '../../store/useGrowthStore';
 import { showToast } from '../../components/Toast';
 import { CapacityEngine } from './components/CapacityEngine';
 
 export const TreasuryScreen: React.FC = () => {
+  const { fetchDashboardData, dashboardData } = useGrowthStore();
   const {
     dailyBoostActive,
     powerEarnedToday,
@@ -46,10 +48,11 @@ export const TreasuryScreen: React.FC = () => {
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState('100');
 
-  // Fetch real treasury state from backend on mount
+  // Fetch real treasury state & dynamic Growth Engine dashboard from backend on mount
   useEffect(() => {
     fetchTreasuryState();
-  }, [fetchTreasuryState]);
+    fetchDashboardData();
+  }, [fetchTreasuryState, fetchDashboardData]);
 
   const handleDepositSubmit = () => {
     const depVal = parseFloat(depositAmount);
