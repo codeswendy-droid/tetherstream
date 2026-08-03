@@ -9,7 +9,12 @@ import {
   Loader2,
   Sparkles,
   Package,
-  Crown
+  Crown,
+  Gift,
+  ShieldCheck,
+  Award,
+  ChevronRight,
+  Check
 } from 'lucide-react';
 import { useCapacityStore, type CapacityOpportunity, type CapacityLevel } from '../../../store/useCapacityStore';
 import { useMiningStore } from '../../../store/useMiningStore';
@@ -46,7 +51,7 @@ export const CapacityEngine: React.FC = () => {
     setTimeout(() => {
       activateDailyCycle();
       setIsProcessing(false);
-      showToast('Machine started! +10 Power earned.', 'success');
+      showToast('Daily Rewards activated! +10 Growth Points earned.', 'success');
     }, 800);
   };
 
@@ -55,7 +60,7 @@ export const CapacityEngine: React.FC = () => {
     setTimeout(() => {
       claimSettlement();
       setIsProcessing(false);
-      showToast('Daily rewards collected! Your earnings are updated.', 'success');
+      showToast('Daily growth rewards collected! Your financial balance is updated.', 'success');
     }, 800);
   };
 
@@ -65,17 +70,17 @@ export const CapacityEngine: React.FC = () => {
       switch (opportunity.source) {
         case 'CAPACITY_BOOST':
           purchaseCapacityBoost(opportunity.reward, opportunity.price);
-          showToast(`Power Boost purchased! +${opportunity.reward} Power for 24h.`, 'success');
+          showToast(`Growth Boost purchased! +${opportunity.reward} points for 24h.`, 'success');
           setActiveTab('boost');
           break;
         case 'CAPACITY_PACK':
           purchaseCapacityPack(opportunity.reward, opportunity.price);
-          showToast(`Power Pack purchased! +${opportunity.reward} permanent Power.`, 'success');
+          showToast(`Growth Pack purchased! +${opportunity.reward} permanent points.`, 'success');
           setActiveTab('boost');
           break;
         case 'REFERRAL_ACCELERATOR':
           purchaseReferralAccelerator(7, opportunity.price);
-          showToast(`Friend Accelerator activated! 7-day power multiplier.`, 'success');
+          showToast(`Friend Accelerator activated! 7-day reward multiplier.`, 'success');
           setActiveTab('friends');
           break;
         default:
@@ -97,12 +102,12 @@ export const CapacityEngine: React.FC = () => {
         case 'DAILY_LOGIN':
         case 'MINING_ACTIVE':
           addCapacity(opportunity.source, opportunity.reward, opportunity.description);
-          showToast(`+${opportunity.reward} Power earned!`, 'success');
+          showToast(`+${opportunity.reward} Growth Points earned!`, 'success');
           setActiveTab('mine');
           break;
         default:
           addCapacity(opportunity.source, opportunity.reward, opportunity.description);
-          showToast(`+${opportunity.reward} Power earned!`, 'success');
+          showToast(`+${opportunity.reward} Growth Points earned!`, 'success');
           setActiveTab('mine');
       }
     }
@@ -136,7 +141,7 @@ export const CapacityEngine: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Capacity Overview Card */}
+      {/* Daily Reward Engine Card */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -147,7 +152,7 @@ export const CapacityEngine: React.FC = () => {
         <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
           <div className="flex items-center gap-1.5">
             <Battery size={16} className="text-usdt-green" />
-            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">Daily Earnings Engine</h2>
+            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">DAILY REWARD ENGINE</h2>
           </div>
           <div className={`text-[10px] font-bold uppercase bg-control-bg px-2.5 py-0.5 rounded-full border border-white/5 font-mono ${
             dailyCycleStatus === 'SETTLEMENT_CLAIMED' ? 'text-usdt-green' : 'text-text-secondary'
@@ -156,42 +161,42 @@ export const CapacityEngine: React.FC = () => {
           </div>
         </div>
 
-        {/* Capacity Stats Grid */}
+        {/* Growth Stats Grid */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5">
-            <div className="text-[10px] text-text-secondary font-bold">Machine Power</div>
+            <div className="text-[10px] text-text-secondary font-bold">Growth Score</div>
             <div className="text-lg font-black text-text-primary font-mono mt-1">
               {effectiveCapacity.toLocaleString()}
             </div>
             <div className="text-[8px] text-usdt-green mt-0.5 font-mono">
-              +{todayCapacityEarned} Power Today
+              +{todayCapacityEarned} Points Today
             </div>
           </div>
 
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5">
-            <div className="text-[10px] text-text-secondary font-bold">Earning Level</div>
+            <div className="text-[10px] text-text-secondary font-bold">Current Tier</div>
             <div className="text-lg font-black text-text-primary mt-1 flex items-center gap-1">
               <span>{getLevelIcon(capacityLevel)}</span>
               <span className={getLevelColor(capacityLevel)}>{capacityLevel}</span>
             </div>
-            <div className="text-[8px] text-text-tertiary mt-0.5 font-mono">
-              {consecutiveDays} Day Streak
+            <div className="text-[8px] text-usdt-green font-mono font-bold mt-0.5">
+              Next Unlock: Builder II
             </div>
           </div>
         </div>
 
-        {/* Multipliers Display */}
+        {/* Benefits Display */}
         <div className="flex gap-2 mb-4">
           <div className="flex-1 bg-usdt-green/10 border border-usdt-green/20 rounded-xl p-2 text-center">
-            <div className="text-[9px] text-usdt-green font-bold uppercase">Earnings</div>
+            <div className="text-[9px] text-usdt-green font-bold uppercase">Reward Multiplier</div>
             <div className="text-sm font-black text-usdt-green font-mono">{earningMultiplier}×</div>
           </div>
           <div className="flex-1 bg-purple-500/10 border border-purple-500/20 rounded-xl p-2 text-center">
-            <div className="text-[9px] text-purple-400 font-bold uppercase">Friend Bonus</div>
+            <div className="text-[9px] text-purple-400 font-bold uppercase">Referral Bonus</div>
             <div className="text-sm font-black text-purple-400 font-mono">{referralMultiplier}×</div>
           </div>
           <div className="flex-1 bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 text-center">
-            <div className="text-[9px] text-cyan-400 font-bold uppercase">Take Out Limit</div>
+            <div className="text-[9px] text-cyan-400 font-bold uppercase">Withdrawal Access</div>
             <div className="text-sm font-black text-cyan-400 font-mono">${withdrawalLimit}</div>
           </div>
         </div>
@@ -203,9 +208,9 @@ export const CapacityEngine: React.FC = () => {
               <div className="w-12 h-12 rounded-full bg-usdt-green/10 text-usdt-green flex items-center justify-center mx-auto mb-3">
                 <Zap size={24} />
               </div>
-              <h3 className="text-sm font-extrabold text-text-primary">Start Your Machine</h3>
+              <h3 className="text-sm font-extrabold text-text-primary">Activate Daily Rewards</h3>
               <p className="text-xs text-text-secondary mt-1 max-w-[90%] mx-auto">
-                Start your machine for today to generate daily earnings!
+                Activate daily rewards to grow your financial reputation!
               </p>
               <button
                 disabled={isProcessing}
@@ -214,11 +219,11 @@ export const CapacityEngine: React.FC = () => {
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 size={14} className="animate-spin" /> Starting...
+                    <Loader2 size={14} className="animate-spin" /> Activating...
                   </>
                 ) : (
                   <>
-                    <Sparkles size={14} /> Start Earning
+                    <Sparkles size={14} /> Activate Daily Rewards
                   </>
                 )}
               </button>
@@ -227,9 +232,9 @@ export const CapacityEngine: React.FC = () => {
 
           {dailyCycleStatus === 'ACTIVATED' && (
             <div className="text-center py-2">
-              <h3 className="text-sm font-extrabold text-text-primary">Increase Your Machine Power</h3>
+              <h3 className="text-sm font-extrabold text-text-primary">Complete Today's Missions</h3>
               <p className="text-xs text-text-secondary mt-1">
-                Complete simple tasks below to boost your earnings.
+                Complete simple tasks below to boost your growth velocity.
               </p>
             </div>
           )}
@@ -239,9 +244,9 @@ export const CapacityEngine: React.FC = () => {
               <div className="w-10 h-10 rounded-full bg-usdt-green/10 text-usdt-green flex items-center justify-center mx-auto mb-2">
                 <TrendingUp size={20} />
               </div>
-              <h3 className="text-sm font-extrabold text-text-primary">Ready to Collect</h3>
+              <h3 className="text-sm font-extrabold text-text-primary">Claim Today's Opportunities</h3>
               <p className="text-xs text-text-secondary mt-1">
-                You've earned +{todayCapacityEarned} power today! Collect your rewards to boost your earnings.
+                You've earned +{todayCapacityEarned} Growth Points today! Collect your rewards to boost your tier.
               </p>
               <button
                 disabled={isProcessing}
@@ -266,16 +271,119 @@ export const CapacityEngine: React.FC = () => {
               <div className="w-10 h-10 rounded-full bg-text-secondary/10 text-text-secondary flex items-center justify-center mx-auto mb-2">
                 <Clock size={20} />
               </div>
-              <h3 className="text-sm font-extrabold text-text-primary">Today's Earning Complete</h3>
+              <h3 className="text-sm font-extrabold text-text-primary">Today's Growth Complete</h3>
               <p className="text-xs text-text-secondary mt-1">
-                Come back tomorrow to start your machine again!
+                Come back tomorrow to start your next growth cycle!
               </p>
             </div>
           )}
         </div>
       </motion.div>
 
-      {/* Capacity Opportunities */}
+      {/* NEW SECTION: AVAILABLE REWARDS */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08 }}
+        className="web3-card rounded-2xl p-4 relative overflow-hidden space-y-3"
+      >
+        <div className="flex items-center justify-between border-b border-white/5 pb-2">
+          <div className="flex items-center gap-1.5">
+            <Gift size={16} className="text-usdt-green" />
+            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">AVAILABLE REWARDS</h2>
+          </div>
+          <span className="text-[10px] font-mono font-bold text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-2 py-0.5 rounded-full">
+            4 Rewards
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5">
+          {/* Reward 1 */}
+          <div className="bg-control-bg/40 border border-usdt-green/30 p-3 rounded-2xl relative overflow-hidden flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-lg">💰</span>
+              <span className="text-[9px] font-bold uppercase bg-usdt-green/20 text-usdt-green px-2 py-0.5 rounded-full border border-usdt-green/30">
+                Unlocked
+              </span>
+            </div>
+            <div>
+              <div className="text-xs font-black text-text-primary">$2 USDT Bonus</div>
+              <div className="text-[10px] text-text-secondary mt-0.5">Ready to claim in wallet</div>
+            </div>
+            <button
+              onClick={() => {
+                showToast('Claimed $2 USDT Bonus into your Wallet!', 'success');
+                setActiveTab('wallet');
+              }}
+              className="mt-2.5 w-full py-1.5 rounded-xl bg-usdt-green text-app-bg text-[10px] font-extrabold press-feedback shadow-sm"
+            >
+              Claim Now
+            </button>
+          </div>
+
+          {/* Reward 2 */}
+          <div className="bg-control-bg/30 border border-white/10 p-3 rounded-2xl relative overflow-hidden flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-lg">⭐</span>
+              <span className="text-[9px] font-bold uppercase bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20">
+                2 invites away
+              </span>
+            </div>
+            <div>
+              <div className="text-xs font-black text-text-primary">Premium Status 7 Days</div>
+              <div className="text-[10px] text-text-secondary mt-0.5">Invite 2 friends to unlock</div>
+            </div>
+            <button
+              onClick={() => setActiveTab('friends')}
+              className="mt-2.5 w-full py-1.5 rounded-xl bg-control-bg border border-white/10 text-text-primary text-[10px] font-extrabold press-feedback hover:border-usdt-green/30"
+            >
+              Invite Friends
+            </button>
+          </div>
+
+          {/* Reward 3 */}
+          <div className="bg-control-bg/30 border border-white/10 p-3 rounded-2xl relative overflow-hidden flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-lg">🏆</span>
+              <span className="text-[9px] font-bold uppercase bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded-full border border-purple-500/20">
+                Reach Builder Lv2
+              </span>
+            </div>
+            <div>
+              <div className="text-xs font-black text-text-primary">$10 USDT Reward</div>
+              <div className="text-[10px] text-text-secondary mt-0.5">Upgrade trust score to unlock</div>
+            </div>
+            <button
+              disabled
+              className="mt-2.5 w-full py-1.5 rounded-xl bg-control-bg/40 border border-white/5 text-text-tertiary text-[10px] font-extrabold cursor-not-allowed"
+            >
+              Locked
+            </button>
+          </div>
+
+          {/* Reward 4 */}
+          <div className="bg-control-bg/30 border border-white/10 p-3 rounded-2xl relative overflow-hidden flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-lg">🎖️</span>
+              <span className="text-[9px] font-bold uppercase bg-sky-500/10 text-sky-400 px-2 py-0.5 rounded-full border border-sky-500/20">
+                Coming Soon
+              </span>
+            </div>
+            <div>
+              <div className="text-xs font-black text-text-primary">Special Season Badge</div>
+              <div className="text-[10px] text-text-secondary mt-0.5">Season 1 Treasury reward</div>
+            </div>
+            <button
+              disabled
+              className="mt-2.5 w-full py-1.5 rounded-xl bg-control-bg/40 border border-white/5 text-text-tertiary text-[10px] font-extrabold cursor-not-allowed"
+            >
+              Upcoming
+            </button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Growth Opportunities & Tasks */}
       {dailyCycleStatus !== 'NOT_ACTIVATED' && (
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -341,7 +449,7 @@ export const CapacityEngine: React.FC = () => {
                     {opportunity.isPaid && opportunity.price ? (
                       <div className="flex flex-col items-end">
                         <span className="text-xs font-black text-gold font-mono">${(Number(opportunity.price) || 0).toFixed(2)}</span>
-                        <span className="text-[9px] text-text-tertiary">+{opportunity.reward} Power</span>
+                        <span className="text-[9px] text-text-tertiary">+{opportunity.reward} Points</span>
                       </div>
                     ) : (
                       <span className="text-xs font-mono font-black text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-2 py-0.5 rounded-full">
@@ -372,7 +480,7 @@ export const CapacityEngine: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Capacity Level Benefits */}
+      {/* TITAN BENEFITS */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -382,7 +490,7 @@ export const CapacityEngine: React.FC = () => {
         <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
           <div className="flex items-center gap-1.5">
             <Crown size={16} className="text-gold" />
-            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">Level Perks</h2>
+            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">TITAN BENEFITS</h2>
           </div>
           <span className={`text-[10px] font-bold uppercase bg-control-bg px-2.5 py-0.5 rounded-full border border-white/5 font-mono ${getLevelColor(capacityLevel)}`}>
             {capacityLevel}
@@ -391,20 +499,20 @@ export const CapacityEngine: React.FC = () => {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-text-secondary">Earning Multiplier</span>
+            <span className="text-text-secondary">Reward Multiplier</span>
             <span className={`font-black font-mono ${getLevelColor(capacityLevel)}`}>{earningMultiplier}×</span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-text-secondary">Friend Bonus</span>
+            <span className="text-text-secondary">Referral Bonus</span>
             <span className={`font-black font-mono ${getLevelColor(capacityLevel)}`}>{referralMultiplier}×</span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-text-secondary">Take Out Limit</span>
+            <span className="text-text-secondary">Withdrawal Access</span>
             <span className={`font-black font-mono ${getLevelColor(capacityLevel)}`}>${withdrawalLimit}</span>
           </div>
           <div className="mt-3 pt-3 border-t border-white/5">
             <div className="text-[10px] text-text-tertiary leading-relaxed">
-              Increase your machine power to unlock higher levels with better multipliers.
+              Unlock higher tiers by building trust. Higher levels provide improved multipliers and increased limits.
             </div>
           </div>
         </div>
@@ -412,3 +520,4 @@ export const CapacityEngine: React.FC = () => {
     </div>
   );
 };
+

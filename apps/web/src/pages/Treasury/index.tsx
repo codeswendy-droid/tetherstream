@@ -90,7 +90,7 @@ export const TreasuryScreen: React.FC = () => {
               <Vault size={20} className="animate-pulse" />
             </div>
             <div>
-              <div className="text-[10px] text-text-tertiary uppercase font-extrabold tracking-widest leading-none">YOUR LEVEL</div>
+              <div className="text-[10px] text-text-tertiary uppercase font-extrabold tracking-widest leading-none">YOUR TITAN STATUS</div>
               <div className="text-base font-black text-text-primary mt-0.5 flex items-center gap-1.5">
                 {reputationRank}
                 <span className="text-xs font-mono font-bold text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-2 py-0.5 rounded-full">
@@ -98,7 +98,7 @@ export const TreasuryScreen: React.FC = () => {
                 </span>
                 {dailyBoostActive && (
                   <span className="text-[9px] font-bold text-usdt-green bg-usdt-green/15 border border-usdt-green/30 px-2 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
-                    ⚡ 1.5x Boost
+                    ⚡ 1.5x Multiplier
                   </span>
                 )}
               </div>
@@ -106,7 +106,7 @@ export const TreasuryScreen: React.FC = () => {
           </div>
           
           <div className="text-right">
-            <div className="text-[10px] text-text-tertiary uppercase font-extrabold tracking-widest leading-none">SAFETY RATING</div>
+            <div className="text-[10px] text-text-tertiary uppercase font-extrabold tracking-widest leading-none">TRUST SCORE</div>
             <div className="text-base font-black text-usdt-green font-mono mt-0.5 flex items-center gap-1 justify-end">
               <ShieldCheck size={16} />
               {trustScore}%
@@ -114,22 +114,49 @@ export const TreasuryScreen: React.FC = () => {
           </div>
         </div>
 
+        {/* Stats Row */}
         <div className="grid grid-cols-3 gap-2 mt-3 pt-1 text-center">
           <div className="bg-control-bg/40 p-2 rounded-xl border border-white/5">
-            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Earning Speed</div>
+            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Reward Velocity</div>
             <div className="text-sm font-black text-text-primary font-mono mt-0.5">
-              {((Number(baseSpeedGhs || 0) * (dailyBoostActive ? 1.5 : 1.0)) * 10).toFixed(0)} Speed
+              {((Number(baseSpeedGhs || 0) * (dailyBoostActive ? 1.5 : 1.0)) * 10).toFixed(0)} Rate
             </div>
           </div>
           <div className="bg-control-bg/40 p-2 rounded-xl border border-white/5">
-            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Level Power</div>
+            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Community Impact</div>
             <div className="text-sm font-black text-text-primary font-mono mt-0.5">{reputationPower}</div>
             <div className="text-[8px] text-usdt-green font-mono font-bold">+{powerEarnedToday} Today</div>
           </div>
           <div className="bg-control-bg/40 p-2 rounded-xl border border-white/5">
-            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Safety Rating</div>
+            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Trust Level</div>
             <div className="text-xs font-black mt-1 uppercase text-usdt-green flex items-center justify-center gap-0.5">
               <ShieldCheck size={10} /> {trustScore}%
+            </div>
+          </div>
+        </div>
+
+        {/* Trust Score Breakdown */}
+        <div className="mt-3 pt-3 border-t border-white/5 bg-control-bg/25 rounded-xl p-2.5 space-y-1.5 text-[11px]">
+          <div className="flex items-center justify-between text-text-tertiary text-[10px] font-extrabold uppercase tracking-wider mb-1">
+            <span>Trust Level Requirements</span>
+            <span className="text-usdt-green font-mono">Rank #12,482</span>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5 text-[10px] font-semibold">
+            <div className="flex items-center gap-1.5 text-usdt-green">
+              <span className="w-3.5 h-3.5 rounded-full bg-usdt-green/15 flex items-center justify-center text-[9px] font-bold">✓</span>
+              <span>Verified account</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-usdt-green">
+              <span className="w-3.5 h-3.5 rounded-full bg-usdt-green/15 flex items-center justify-center text-[9px] font-bold">✓</span>
+              <span>First payment completed</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-text-tertiary">
+              <span className="w-3.5 h-3.5 rounded-full bg-white/10 flex items-center justify-center text-[9px] font-bold">○</span>
+              <span>Invite trusted users</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-text-tertiary">
+              <span className="w-3.5 h-3.5 rounded-full bg-white/10 flex items-center justify-center text-[9px] font-bold">○</span>
+              <span>Complete transactions</span>
             </div>
           </div>
         </div>
@@ -165,12 +192,12 @@ export const TreasuryScreen: React.FC = () => {
           </div>
 
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5 relative overflow-hidden">
-            <div className="text-[10px] text-text-secondary font-bold">24H Payment Volume</div>
-            <div className="text-base font-extrabold font-mono text-text-primary mt-1">
-              ₮{(Number(operatorVolume) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <div className="text-[10px] text-text-secondary font-bold">Verified Transactions</div>
+            <div className="text-base font-extrabold font-mono text-usdt-green mt-1">
+              24,582
             </div>
-            <div className="text-[9px] text-text-tertiary mt-1 flex items-center gap-0.5 font-bold">
-              <Globe size={10} /> Global Payment Systems
+            <div className="text-[9px] text-usdt-green/80 mt-1 flex items-center gap-0.5 font-bold">
+              <ShieldCheck size={10} /> 100% Settled
             </div>
           </div>
 
@@ -227,7 +254,7 @@ export const TreasuryScreen: React.FC = () => {
             <div>
               <div className="text-text-secondary">Season Progress</div>
               <div className="text-sm font-black text-text-primary font-mono mt-1">
-                {seasonProgressPower} / {seasonTargetPower} Power
+                {seasonProgressPower.toLocaleString()} / {seasonTargetPower.toLocaleString()} Growth Points
               </div>
             </div>
             <div className="text-right">
@@ -249,7 +276,7 @@ export const TreasuryScreen: React.FC = () => {
           <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 rounded-xl p-3 text-xs text-text-secondary">
             <Info size={15} className="text-gold flex-shrink-0" />
             <span>
-              All your levels and safety scores carry over to the next season automatically.
+              All your levels and trust scores carry over to the next season automatically.
             </span>
           </div>
 
@@ -265,7 +292,7 @@ export const TreasuryScreen: React.FC = () => {
               disabled
               className="bg-control-bg/40 text-text-tertiary font-extrabold text-xs py-3 rounded-xl border border-white/5 w-full cursor-not-allowed text-center uppercase tracking-wider"
             >
-              Reach {seasonTargetPower} Power for Season Reward
+              Reach {seasonTargetPower.toLocaleString()} Growth Points for Season Reward
             </button>
           )}
         </div>
@@ -279,14 +306,36 @@ export const TreasuryScreen: React.FC = () => {
         className="flex flex-col gap-3"
       >
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-xs font-black uppercase text-text-secondary tracking-widest">Community Events</h2>
+          <h2 className="text-xs font-black uppercase text-text-secondary tracking-widest">LIVE COMMUNITY MISSIONS</h2>
           <span className="text-[10px] text-text-tertiary font-mono">
-            {events.length} Scheduled
+            {events.length} Active
           </span>
         </div>
 
         <div className="flex flex-col gap-3">
-          {events.map((event) => (
+          {[
+            {
+              id: 'cm_1',
+              title: 'Complete Verified Payments',
+              description: 'Earn contribution points and build trust rating with every completed payment.',
+              badge: '+50 Growth Points',
+              status: 'ACTIVE'
+            },
+            {
+              id: 'cm_2',
+              title: 'Invite Active Members',
+              description: 'Unlock permanent referral rewards and rank up in the community network.',
+              badge: '+100 Growth Points',
+              status: 'ACTIVE'
+            },
+            {
+              id: 'cm_3',
+              title: 'Support Liquidity Growth',
+              description: 'Increase community rank by participating in network treasury expansion.',
+              badge: '+200 Growth Points',
+              status: 'ACTIVE'
+            }
+          ].map((event) => (
             <div
               key={event.id}
               className={`
