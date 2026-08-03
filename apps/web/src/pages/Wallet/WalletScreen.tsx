@@ -16,7 +16,8 @@ import {
   Sparkles,
   Share2,
   Trophy,
-  Zap
+  Zap,
+  X
 } from 'lucide-react';
 import { useWalletStore } from '../../store/useWalletStore';
 import { useMiningStore } from '../../store/useMiningStore';
@@ -24,6 +25,7 @@ import { useNavigationStore } from '../../store/useNavigationStore';
 import { FundingModal } from '../../components/funding/FundingModal';
 import { WithdrawModal } from '../../components/funding/WithdrawModal';
 import { TransactionHistoryView } from '../../components/funding/TransactionHistoryView';
+import { PlatformStatistics } from '../../components/funding/PlatformStatistics';
 import { SettlementTracker } from '../../components/funding/SettlementTracker';
 import { useTelegram } from '../../context/TelegramContext';
 import { CurrencyDisplay } from '../../components/DualCurrencyDisplay';
@@ -226,6 +228,45 @@ export const WalletScreen: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Platform-wide statistics */}
+      <PlatformStatistics />
+
+      {/* Transaction History Modal */}
+      <AnimatePresence>
+        {isHistoryModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsHistoryModalOpen(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="relative w-full max-w-md glass-panel border border-white/15 p-5 rounded-3xl shadow-2xl bg-[#0d0e15] z-10 max-h-[85vh] overflow-y-auto no-scrollbar"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-extrabold text-text-primary flex items-center gap-1.5">
+                  <History size={16} className="text-usdt-green" />
+                  Wallet History
+                </h3>
+                <button
+                  onClick={() => setIsHistoryModalOpen(false)}
+                  className="p-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 press-feedback"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <TransactionHistoryView onClose={() => setIsHistoryModalOpen(false)} />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Social Share Modal */}
       <ShareCardModal
