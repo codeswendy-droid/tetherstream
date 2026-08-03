@@ -328,6 +328,7 @@ model User {
   identityId            String?            @map("identity_id")
   identity              UniversalIdentity? @relation(fields: [identityId], references: [id], onDelete: SetNull)
   userPreferences       UserPreferences?
+  userMachines          UserMachine[]
 
   @@index([state])
   @@index([createdAt])
@@ -1242,6 +1243,8 @@ enum BenefitType {
 enum NotificationChannel {
   TELEGRAM
   IN_APP
+  WHATSAPP
+  PUSH
 }
 
 model GrowthEvent {
@@ -1698,12 +1701,6 @@ enum IdentityProvider {
 enum AuthMethod {
   TELEGRAM
   WHATSAPP
-}
-
-enum NotificationChannel {
-  TELEGRAM
-  WHATSAPP
-  PUSH
 }
 
 enum ShareChannel {
