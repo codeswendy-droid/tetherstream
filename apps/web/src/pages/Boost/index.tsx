@@ -96,10 +96,14 @@ export const BoostScreen: React.FC = () => {
       const res = await machineService.purchaseMachine(selectedMachine.tierCode);
       if (res.success) {
         hapticFeedback.notificationOccurred('success');
-        upgradeBaseSpeed(selectedMachine.capacityGhs, selectedMachine.tierCode);
-        await fetchUserMachines();
-        await fetchMiningState();
-        await useWalletStore.getState().fetchBalanceFromEngine();
+        if (res.machine) {
+          upgradeBaseSpeed(res.machine.capacityGhs, res.machine.tierCode, res.machine);
+        }
+        await Promise.all([
+          fetchUserMachines(),
+          fetchMiningState(),
+          useWalletStore.getState().fetchBalanceFromEngine(),
+        ]);
         setInvoiceStatus('PAID');
         showToast(`Machine ${selectedMachine.name} activated!`, 'success');
       } else if (res.requiresFunding) {
@@ -117,20 +121,20 @@ export const BoostScreen: React.FC = () => {
 
     try {
       const res = await machineService.purchaseMachine(selectedMachine.tierCode);
-      if (res.success) {
-        upgradeBaseSpeed(selectedMachine.capacityGhs, selectedMachine.tierCode);
-        await fetchUserMachines();
-        await fetchMiningState();
-        await useWalletStore.getState().fetchBalanceFromEngine();
-      } else {
-        upgradeBaseSpeed(selectedMachine.capacityGhs, selectedMachine.tierCode);
-        await fetchUserMachines();
-        await fetchMiningState();
+      if (res.success && res.machine) {
+        upgradeBaseSpeed(res.machine.capacityGhs, res.machine.tierCode, res.machine);
       }
+      await Promise.all([
+        fetchUserMachines(),
+        fetchMiningState(),
+        useWalletStore.getState().fetchBalanceFromEngine(),
+      ]);
     } catch (err) {
-      console.warn('Sandbox simulation backend sync error:', err);
-      upgradeBaseSpeed(selectedMachine.capacityGhs, selectedMachine.tierCode);
-      await fetchUserMachines();
+      console.warn('Backend sync warning on purchase confirm:', err);
+      await Promise.all([
+        fetchUserMachines(),
+        fetchMiningState(),
+      ]);
     }
 
     adjustTreasuryStats('BOOST', selectedMachine.priceUsdt);

@@ -19,6 +19,7 @@ import { UserLevelService } from '../growth/user-level.service';
 import { SupportService } from '../admin/services/support.service';
 import { WithdrawalService } from '../financial/withdrawal.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
+import { WebAuthSessionService } from '../auth/web-auth-session.service';
 
 describe('Telegram Host Bot Production Suite', () => {
   let gateService: BotGateService;
@@ -213,6 +214,7 @@ describe('Telegram Host Bot Production Suite', () => {
         BotWithdrawalService,
         BotMonetizationService,
         BotDispatcherService,
+        { provide: WebAuthSessionService, useValue: { authorizeWebSessionViaTelegram: jest.fn().mockResolvedValue(true) } },
         { provide: WithdrawalService, useValue: mockWithdrawalService },
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: AuditService, useValue: mockAuditService },
