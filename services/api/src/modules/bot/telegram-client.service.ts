@@ -151,6 +151,36 @@ export class TelegramClientService implements OnModuleInit {
     }
   }
 
+  async sendPhoto(
+    chatId: string | number,
+    photoUrl: string,
+    options: {
+      caption?: string;
+      parse_mode?: 'Markdown' | 'MarkdownV2' | 'HTML';
+      reply_markup?: SendMessageOptions['reply_markup'];
+    } = {},
+  ): Promise<{ ok: boolean; message_id?: number; description?: string }> {
+    if (this.botToken === 'MOCK_BOT_TOKEN') {
+      this.logger.debug(`[MOCK] sendPhoto to ${chatId}: ${photoUrl.slice(0, 60)}...`);
+      return { ok: true, message_id: Math.floor(Math.random() * 100000) };
+    }
+
+    try {
+      const body: Record<string, any> = {
+        chat_id: chatId,
+        photo: photoUrl,
+      };
+      if (options.caption) body.caption = options.caption;
+      body.parse_mode = options.parse_mode || 'HTML';
+      if (options.reply_markup) body.reply_markup = options.reply_markup;
+
+      return await this.callApi('sendPhoto', body);
+    } catch (error) {
+      this.logger.error(`Error in sendPhoto to ${chatId}: ${error.message}`);
+      return { ok: false, description: error.message };
+    }
+  }
+
   private async callApi(method: string, payload: Record<string, any>, retries = 3): Promise<any> {
     const url = `${this.baseUrl}/${method}`;
     for (let attempt = 1; attempt <= retries; attempt++) {
