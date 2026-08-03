@@ -276,7 +276,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <div className="fixed inset-0 z-50 bg-[#06070b] flex flex-col items-center justify-center select-none">
         <Loader2 size={32} className="text-usdt-green animate-spin mb-4" />
         <p className="text-text-secondary text-sm font-medium">
-          {isMiniApp ? 'Verifying your identity…' : 'Authenticating…'}
+          {isMiniApp ? 'Signing you in…' : 'Signing you in…'}
         </p>
         <p className="text-text-tertiary text-xs mt-2 opacity-60">Powered by Telegram</p>
       </div>
@@ -289,7 +289,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <div className="fixed inset-0 z-50 bg-[#06070b] flex flex-col items-center justify-center select-none px-8">
         <div className="flex items-center gap-3 text-red-400 mb-4">
           <AlertCircle size={22} />
-          <p className="text-sm font-semibold">Authentication Failed</p>
+          <p className="text-sm font-semibold">Please Sign In Again</p>
         </div>
         <p className="text-text-tertiary text-xs text-center max-w-xs mb-8 leading-relaxed">{authError}</p>
         <button
@@ -341,7 +341,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </div>
           <h1 className="text-[34px] font-black text-text-primary tracking-tight font-sans leading-none">TitanStream</h1>
           <p className="text-[15px] text-text-secondary mt-3 font-semibold font-sans leading-snug">
-            Participate in the<br />Cloud Computing Economy
+            Earn Daily Money<br />Automatically
           </p>
         </motion.div>
 
@@ -365,7 +365,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
             className="w-full py-4 px-6 rounded-2xl bg-[#2AABEE] hover:bg-[#229ED9] text-white font-extrabold text-base flex items-center justify-center gap-3 shadow-lg shadow-[#2AABEE]/25 transition-all active:scale-[0.98]"
           >
             <Send size={18} className="fill-current" />
-            <span>Login via Telegram App</span>
+            <span>Sign in with Telegram</span>
           </button>
 
           {isWaitingForTelegramAuth && (
@@ -375,13 +375,13 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
               className="flex items-center gap-2 p-3 rounded-xl bg-[#2AABEE]/10 border border-[#2AABEE]/30 text-[#2AABEE] text-xs font-semibold w-full text-center justify-center"
             >
               <Loader2 size={14} className="animate-spin" />
-              <span>Waiting for Telegram authorization...</span>
+              <span>Waiting for Telegram sign in...</span>
             </motion.div>
           )}
 
           <div className="flex items-center justify-center gap-2 text-[10px] text-text-tertiary font-medium mt-1">
             <ShieldCheck size={12} className="text-usdt-green/50" />
-            <span>1-Click Deep Link • No passwords needed</span>
+            <span>Safe & Secure • No passwords needed</span>
           </div>
         </motion.div>
 

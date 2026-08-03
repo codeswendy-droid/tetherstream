@@ -12,21 +12,21 @@ export const MachineEducationModal: React.FC<MachineEducationModalProps> = ({ is
 
   const cards = [
     {
-      title: 'Cloud Demand',
+      title: 'How Money Is Made',
       icon: <Server size={36} className="text-usdt-green" />,
-      sentence: 'Cloud companies rent computing power every day.',
+      sentence: 'Companies rent computing power every day to run their apps and services.',
     },
     {
-      title: 'Capacity Allocation',
+      title: 'Your Machine',
       icon: <Cpu size={36} className="text-cyan-400" />,
       sentence:
-        'Your machine gives you access to a share of that computing capacity, and projected earnings are based on the platform\'s economic model.',
+        'Your machine works for you automatically 24/7 to generate daily money.',
     },
     {
-      title: 'Capacity Scaling',
+      title: 'Bigger Machines',
       icon: <Zap size={36} className="text-amber-400" />,
       sentence:
-        'Larger machines can process more work, which is why they have higher projected daily earnings.',
+        'Bigger machines have higher mining power and earn more money each day.',
     },
   ];
 
@@ -58,7 +58,7 @@ export const MachineEducationModal: React.FC<MachineEducationModalProps> = ({ is
             <div className="flex items-center gap-2">
               <Sparkles size={16} className="text-usdt-green" />
               <span className="text-xs font-black uppercase tracking-wider text-text-primary">
-                Cloud Machine Overview ({currentStep + 1}/3)
+                How Machines Work ({currentStep + 1}/3)
               </span>
             </div>
             <button
@@ -69,7 +69,7 @@ export const MachineEducationModal: React.FC<MachineEducationModalProps> = ({ is
             </button>
           </div>
 
-          {/* Card Body — Exactly One Sentence */}
+          {/* Card Body */}
           <div className="flex flex-col items-center text-center space-y-4 py-3">
             <div className="w-16 h-16 rounded-2xl bg-usdt-green/10 border border-usdt-green/30 flex items-center justify-center shadow-lg shadow-usdt-green/10">
               {currentCard.icon}
@@ -99,7 +99,7 @@ export const MachineEducationModal: React.FC<MachineEducationModalProps> = ({ is
               onClick={handleNext}
               className="px-5 py-2 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-usdt-green/20 hover:brightness-110 active:scale-95 transition-all"
             >
-              <span>{currentStep === cards.length - 1 ? 'Get Started' : 'Next'}</span>
+              <span>{currentStep === cards.length - 1 ? 'Start' : 'Next'}</span>
               <ChevronRight size={14} />
             </button>
           </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   ShieldCheck,
   Award,
@@ -10,9 +10,7 @@ import {
   Share2,
   ChevronRight,
   Sparkles,
-  Zap,
   TrendingUp,
-  Clock,
   CheckCircle,
   Lock,
   Unlock,
@@ -33,7 +31,7 @@ import { showToast } from '../../components/Toast';
 
 export const GrowthScreen: React.FC = () => {
   const { hasPurchasedMachine, baseSpeedGhs, unclaimedBalance } = useMiningStore();
-  const { profile, referrals, rewards, qualification, isLoading, fetchGrowthProfile, fetchReferrals, fetchRewards, fetchQualification } = useGrowthStore();
+  const { profile, referrals, qualification, isLoading, fetchGrowthProfile, fetchReferrals, fetchRewards, fetchQualification } = useGrowthStore();
   const { hapticFeedback, webApp } = useTelegram();
   const [activeTab, setActiveTab] = useState<'trust' | 'referrals' | 'rewards'>('trust');
   const [copied, setCopied] = useState(false);
@@ -85,21 +83,21 @@ export const GrowthScreen: React.FC = () => {
     claimQuest(quest.id);
     decrementBadge(quest.type);
     useTreasuryStore.getState().adjustTrustScore(2);
-    showToast(`Claimed +${quest.rewardValue} Crystals & +2 Trust Score!`, 'success');
+    showToast(`Claimed +${quest.rewardValue} Crystals & +2 Safety Score!`, 'success');
   };
 
   const handleQuestAction = (quest: QuestItem) => {
     hapticFeedback.selectionChanged();
     if (quest.actionLabel === 'Play') {
       openGames();
-      showToast('Opening Mini-Games lobby...', 'info');
+      showToast('Opening Mini-Games...', 'info');
     } else if (quest.actionLabel === 'Add') {
       incrementProgress(quest.id, 1);
-      showToast('Shortcut successfully added to Home Screen!', 'success');
+      showToast('Shortcut added to Home Screen!', 'success');
       useTreasuryStore.getState().adjustTrustScore(1);
     } else if (quest.actionLabel === 'Post story') {
       incrementProgress(quest.id, 1);
-      showToast('Story successfully shared on Telegram!', 'success');
+      showToast('Story shared on Telegram!', 'success');
       useTreasuryStore.getState().adjustTrustScore(1);
     } else if (quest.externalUrl) {
       window.open(quest.externalUrl, '_blank');
@@ -129,7 +127,7 @@ export const GrowthScreen: React.FC = () => {
     if (!profile?.referrals.link) return;
     hapticFeedback.impactOccurred('medium');
     const text = encodeURIComponent(
-      `Join me on TitanStream to earn and settle USDT instantly with zero friction! Use my referral code: ${profile.referrals.code}`,
+      `Join me on Titan Stream to earn daily money with easy mobile money payouts! Use my code: ${profile.referrals.code}`,
     );
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(profile.referrals.link)}&text=${text}`;
     if (webApp?.openTelegramLink) {
@@ -159,37 +157,37 @@ export const GrowthScreen: React.FC = () => {
       {/* Header Banner */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-black text-text-primary tracking-tight">Trust & Growth Hub</h1>
-          <p className="text-xs text-text-tertiary">Build your reputation, unlock perks & earn USDT</p>
+          <h1 className="text-xl font-black text-text-primary tracking-tight">Security & Growth</h1>
+          <p className="text-xs text-text-tertiary">Build your safety score, unlock perks & earn money</p>
         </div>
         <div className="w-10 h-10 rounded-2xl bg-usdt-green/15 border border-usdt-green/30 text-usdt-green flex items-center justify-center font-bold">
           <Award size={22} />
         </div>
       </div>
 
-      {/* Daily Loop & Platform Brain Decision Engine */}
+      {/* Daily Summary */}
       <div className="glass-panel p-4.5 rounded-3xl border border-usdt-green/30 bg-gradient-to-br from-usdt-green/10 via-card-bg to-control-bg/60 space-y-3">
         <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
           <div className="flex items-center gap-2">
             <span className="text-sm">☀️</span>
-            <span className="text-xs font-black text-text-primary">Today's Daily Cloud Loop</span>
+            <span className="text-xs font-black text-text-primary">Today's Daily Summary</span>
           </div>
           <span className="text-[10px] font-mono font-bold text-usdt-green bg-usdt-green/20 px-2 py-0.5 rounded-full border border-usdt-green/30">
-            Active Stream
+            Active
           </span>
         </div>
 
-        {/* Daily Cloud Status */}
+        {/* Daily Status */}
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="p-2.5 rounded-2xl bg-app-bg/50 border border-white/5 space-y-0.5">
-            <div className="text-[10px] text-text-tertiary font-bold">Active Computing Capacity</div>
+            <div className="text-[10px] text-text-tertiary font-bold">Mining Power</div>
             <div className="font-mono font-extrabold text-usdt-green flex items-center gap-1">
               <CheckCircle size={12} />
-              <span>{hasPurchasedMachine ? `${((Number(baseSpeedGhs) || 0) * 10).toFixed(0)} CU Active` : 'Titan Core (10 CU)'}</span>
+              <span>{hasPurchasedMachine ? `${((Number(baseSpeedGhs) || 0) * 10).toFixed(0)} Power Active` : '10 Power (Starter Machine)'}</span>
             </div>
           </div>
           <div className="p-2.5 rounded-2xl bg-app-bg/50 border border-white/5 space-y-0.5">
-            <div className="text-[10px] text-text-tertiary font-bold font-sans">Accumulated Yield</div>
+            <div className="text-[10px] text-text-tertiary font-bold font-sans">Total Earnings</div>
             <div className="font-mono font-extrabold text-text-primary flex items-center gap-1">
               <CheckCircle size={12} className="text-usdt-green" />
               <CurrencyDisplay amount={unclaimedBalance + (Number(usdtBalance) || 0)} size="sm" />
@@ -197,13 +195,13 @@ export const GrowthScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Platform Brain — Recommender System Opportunities */}
+        {/* Recommender System Opportunities */}
         <div className="p-3 rounded-2xl bg-usdt-green/15 border border-usdt-green/30 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold text-usdt-green uppercase tracking-wider flex items-center gap-1">
-              <Sparkles size={13} /> Platform Brain Recommendation
+              <Sparkles size={13} /> Recommended Actions
             </span>
-            <span className="text-[9px] font-mono text-text-tertiary">Next Best Action</span>
+            <span className="text-[9px] font-mono text-text-tertiary">Next Step</span>
           </div>
           <div className="space-y-1.5 text-xs text-text-primary font-medium">
             <button
@@ -213,7 +211,7 @@ export const GrowthScreen: React.FC = () => {
               }}
               className="w-full press-feedback flex items-center justify-between bg-black/20 hover:bg-black/40 p-2 rounded-xl border border-white/5 text-left transition-all cursor-pointer"
             >
-              <span>• Complete today's cloud snapshot</span>
+              <span>• Complete today's daily check-in</span>
               <span className="text-[10px] font-bold text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-2 py-0.5 rounded-lg">+💎 Crystals</span>
             </button>
             <button
@@ -223,8 +221,8 @@ export const GrowthScreen: React.FC = () => {
               }}
               className="w-full press-feedback flex items-center justify-between bg-black/20 hover:bg-black/40 p-2 rounded-xl border border-white/5 text-left transition-all cursor-pointer"
             >
-              <span>• Invite 1 friend to network</span>
-              <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-lg">+$5.00 USDT</span>
+              <span>• Invite 1 friend</span>
+              <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-lg font-mono">+$5.00</span>
             </button>
             <button
               onClick={() => {
@@ -233,8 +231,8 @@ export const GrowthScreen: React.FC = () => {
               }}
               className="w-full press-feedback flex items-center justify-between bg-black/20 hover:bg-black/40 p-2 rounded-xl border border-white/5 text-left transition-all cursor-pointer"
             >
-              <span>• Upgrade your Machine to Pro Unit</span>
-              <span className="text-[10px] font-bold text-sky-300 bg-sky-300/10 border border-sky-300/20 px-2 py-0.5 rounded-lg">Boost Hashrate</span>
+              <span>• Buy a faster machine</span>
+              <span className="text-[10px] font-bold text-sky-300 bg-sky-300/10 border border-sky-300/20 px-2 py-0.5 rounded-lg">Boost Power</span>
             </button>
           </div>
         </div>
@@ -243,8 +241,8 @@ export const GrowthScreen: React.FC = () => {
       {/* Main Tabs */}
       <div className="grid grid-cols-3 gap-1.5 p-1 bg-control-bg rounded-2xl border border-white/10 text-xs font-bold">
         {[
-          { key: 'trust', label: 'Trust & Level', icon: ShieldCheck },
-          { key: 'referrals', label: 'Referrals', icon: Users },
+          { key: 'trust', label: 'Safety', icon: ShieldCheck },
+          { key: 'referrals', label: 'Friends', icon: Users },
           { key: 'rewards', label: 'Quests', icon: Gift },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -278,16 +276,16 @@ export const GrowthScreen: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* TAB 1: TRUST & LEVEL */}
+          {/* TAB 1: SAFETY & LEVEL */}
           {activeTab === 'trust' && (
             <div className="space-y-4">
-              {/* Trust Score Hero Card */}
+              {/* Safety Rating Hero Card */}
               <div className="glass-panel p-5 rounded-3xl border border-white/10 relative overflow-hidden space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <ShieldCheck size={20} className="text-usdt-green" />
                     <span className="text-xs font-mono font-extrabold uppercase tracking-wider text-text-tertiary">
-                      Reputation Profile
+                      Security Profile
                     </span>
                   </div>
 
@@ -308,7 +306,7 @@ export const GrowthScreen: React.FC = () => {
                     </div>
                     <div className="text-xs font-semibold text-usdt-green mt-0.5 flex items-center gap-1">
                       <TrendingUp size={13} />
-                      <span>Verified Platform Reputation</span>
+                      <span>Verified Safety Rating</span>
                     </div>
                   </div>
 
@@ -321,7 +319,7 @@ export const GrowthScreen: React.FC = () => {
                 {/* Stats Row */}
                 <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/10 text-center text-xs">
                   <div className="p-2 rounded-xl bg-white/5">
-                    <div className="text-text-tertiary text-[10px] uppercase font-bold">Settlements</div>
+                    <div className="text-text-tertiary text-[10px] uppercase font-bold">Payments</div>
                     <div className="font-mono font-extrabold text-text-primary text-sm mt-0.5">
                       {settlementsCount}
                     </div>
@@ -333,7 +331,7 @@ export const GrowthScreen: React.FC = () => {
                     </div>
                   </div>
                   <div className="p-2 rounded-xl bg-white/5">
-                    <div className="text-text-tertiary text-[10px] uppercase font-bold">Total Volume</div>
+                    <div className="text-text-tertiary text-[10px] uppercase font-bold">Total Money</div>
                     <div className="font-mono font-extrabold text-usdt-green text-sm mt-0.5">
                       ${(Number(volumeUSDT) || 0).toLocaleString()}
                     </div>
@@ -345,7 +343,7 @@ export const GrowthScreen: React.FC = () => {
               <div className="glass-panel p-4 rounded-3xl border border-white/10 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-extrabold text-text-tertiary uppercase tracking-wider">
-                    Unlocked Benefits ({profile?.levelName})
+                    Unlocked Perks ({profile?.levelName})
                   </h3>
                   <Sparkles size={16} className="text-amber-400" />
                 </div>
@@ -367,13 +365,13 @@ export const GrowthScreen: React.FC = () => {
               {profile?.nextLevel && (
                 <div className="glass-panel p-4 rounded-3xl border border-white/10 space-y-3">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-extrabold text-text-primary">Next Tier Progress:</span>
+                    <span className="font-extrabold text-text-primary">Next Level Progress:</span>
                     <span className="font-extrabold text-amber-400 font-mono">{profile.nextLevel.name}</span>
                   </div>
 
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between text-text-tertiary">
-                      <span>Trust Score Required:</span>
+                      <span>Safety Rating Needed:</span>
                       <span className="font-mono text-text-primary">{liveTrustScore} / {profile.nextLevel.minTrustScore}</span>
                     </div>
                     <div className="w-full bg-control-bg h-2 rounded-full overflow-hidden">
@@ -400,8 +398,8 @@ export const GrowthScreen: React.FC = () => {
               <div className="glass-panel p-5 rounded-3xl border border-white/10 space-y-4 bg-gradient-to-b from-usdt-green/10 to-transparent">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-extrabold text-text-primary">Telegram Referral Link</h3>
-                    <p className="text-xs text-text-tertiary">Earn 5 USDT per qualified referral!</p>
+                    <h3 className="text-sm font-extrabold text-text-primary">Invite Link</h3>
+                    <p className="text-xs text-text-tertiary">Earn 5 USDT for every friend!</p>
                   </div>
                   <Users size={20} className="text-usdt-green" />
                 </div>
@@ -424,7 +422,7 @@ export const GrowthScreen: React.FC = () => {
                     className="press-feedback py-3 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-usdt-green/20"
                   >
                     <Share2 size={15} />
-                    <span>Share to Telegram</span>
+                    <span>Share Link</span>
                   </button>
                   <button
                     onClick={handleCopyLink}
@@ -439,25 +437,25 @@ export const GrowthScreen: React.FC = () => {
               {/* Referral Stats Grid */}
               <div className="grid grid-cols-2 gap-2 text-center text-xs">
                 <div className="glass-panel p-3 rounded-2xl border border-white/10">
-                  <div className="text-text-tertiary text-[10px] font-bold uppercase">Invited</div>
+                  <div className="text-text-tertiary text-[10px] font-bold uppercase">Friends Invited</div>
                   <div className="font-mono font-black text-text-primary text-base mt-1">
                     {referrals?.totalInvited || 0}
                   </div>
                 </div>
                 <div className="glass-panel p-3 rounded-2xl border border-white/10">
-                  <div className="text-text-tertiary text-[10px] font-bold uppercase">Earned USDT</div>
+                  <div className="text-text-tertiary text-[10px] font-bold uppercase">Total Earned</div>
                   <div className="font-mono font-black text-amber-400 text-base mt-1">
                     ${referrals?.totalEarnedUSDT || 0}
                   </div>
                 </div>
                 <div className="glass-panel p-3 rounded-2xl border border-white/10">
-                  <div className="text-text-tertiary text-[10px] font-bold uppercase">Qualified</div>
+                  <div className="text-text-tertiary text-[10px] font-bold uppercase">Active Friends</div>
                   <div className="font-mono font-black text-usdt-green text-base mt-1">
                     {referrals?.qualifiedCount || 0}
                   </div>
                 </div>
                 <div className="glass-panel p-3 rounded-2xl border border-white/10">
-                  <div className="text-text-tertiary text-[10px] font-bold uppercase">Paying</div>
+                  <div className="text-text-tertiary text-[10px] font-bold uppercase">Paying Friends</div>
                   <div className="font-mono font-black text-sky-400 text-base mt-1">
                     {referrals?.payingCount ?? qualification?.payingReferrals ?? 0}
                   </div>
@@ -473,7 +471,7 @@ export const GrowthScreen: React.FC = () => {
                         ? <Unlock size={16} className="text-usdt-green" />
                         : <Lock size={16} className="text-amber-400" />
                       }
-                      <h4 className="text-xs font-extrabold text-text-primary">Withdrawal Unlock</h4>
+                      <h4 className="text-xs font-extrabold text-text-primary">Taking Out Money Unlock</h4>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       qualification?.withdrawal.canWithdraw
@@ -493,8 +491,8 @@ export const GrowthScreen: React.FC = () => {
                   </div>
                   <p className="text-[11px] text-text-tertiary">
                     {qualification?.withdrawal.canWithdraw
-                      ? 'Withdrawals are unlocked. You can withdraw your USDT.'
-                      : `Need ${qualification?.withdrawal.remainingNeeded || 5} more qualified referral${(qualification?.withdrawal.remainingNeeded || 5) !== 1 ? 's' : ''} to unlock withdrawals.`
+                      ? 'Unlocked! You can now take out your money.'
+                      : `Invite ${qualification?.withdrawal.remainingNeeded || 5} more friend${(qualification?.withdrawal.remainingNeeded || 5) !== 1 ? 's' : ''} to unlock taking out money.`
                     }
                   </p>
                 </div>
@@ -506,7 +504,7 @@ export const GrowthScreen: React.FC = () => {
                         ? <DollarSign size={16} className="text-usdt-green" />
                         : <Lock size={16} className="text-purple-400" />
                       }
-                      <h4 className="text-xs font-extrabold text-text-primary">Discount Unlock</h4>
+                      <h4 className="text-xs font-extrabold text-text-primary">Special Discounts Unlock</h4>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       qualification?.discount.canAccessDiscounts
@@ -526,8 +524,8 @@ export const GrowthScreen: React.FC = () => {
                   </div>
                   <p className="text-[11px] text-text-tertiary">
                     {qualification?.discount.canAccessDiscounts
-                      ? 'Discounted offer rates are unlocked!'
-                      : `Need ${qualification?.discount.payingRemaining || 5} more paying referral${(qualification?.discount.payingRemaining || 5) !== 1 ? 's' : ''} to unlock discounts.`
+                      ? 'Special discounts unlocked!'
+                      : `Need ${qualification?.discount.payingRemaining || 5} more active friend${(qualification?.discount.payingRemaining || 5) !== 1 ? 's' : ''} to unlock discounts.`
                     }
                   </p>
                 </div>
@@ -542,7 +540,7 @@ export const GrowthScreen: React.FC = () => {
                 {referrals?.referrals.length === 0 ? (
                   <div className="py-8 text-center text-xs text-text-tertiary space-y-2">
                     <Users size={28} className="mx-auto text-text-tertiary/50" />
-                    <p>No referrals yet. Share your link to start earning!</p>
+                    <p>No friends invited yet. Share your link to start earning!</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -772,7 +770,7 @@ export const GrowthScreen: React.FC = () => {
                                   }
                                 `}
                               >
-                                {isComplete ? 'Claimed' : 'Claim'}
+                                {isComplete ? 'Claimed' : 'Collect'}
                               </button>
                             </div>
                           </div>
@@ -794,53 +792,10 @@ export const GrowthScreen: React.FC = () => {
                 >
                   <span className="flex items-center gap-2">
                     <Activity size={14} className="text-amber-400" />
-                    <span>Payout & Reward History</span>
+                    <span>Payment & Reward History</span>
                   </span>
                   <ChevronRight size={15} className={`transition-transform duration-200 ${showPayoutHistory ? 'rotate-90' : ''}`} />
                 </button>
-
-                <AnimatePresence>
-                  {showPayoutHistory && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden mt-2 space-y-2"
-                    >
-                      {rewards.length === 0 ? (
-                        <div className="py-8 text-center text-xs text-text-tertiary bg-control-bg/10 rounded-2xl border border-white/5">
-                          No payout history recorded.
-                        </div>
-                      ) : (
-                        rewards.map((reward) => (
-                          <div
-                            key={reward.id}
-                            className="p-3 rounded-xl bg-control-bg/30 border border-white/5 flex items-center justify-between text-xs"
-                          >
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-lg bg-usdt-green/10 text-usdt-green flex items-center justify-center font-bold text-[10px]">
-                                ₮
-                              </div>
-                              <div>
-                                <div className="font-extrabold text-[11px] text-text-primary">{reward.rewardType} BONUS</div>
-                                <div className="text-[9px] font-mono text-text-tertiary">
-                                  {new Date(reward.createdAt).toLocaleDateString()}
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="text-right">
-                              <div className="font-mono font-extrabold text-usdt-green text-[11px]">
-                                +{reward.amount} {reward.assetCode}
-                              </div>
-                              <span className="text-[9px] text-text-tertiary block mt-0.5 uppercase font-bold">{reward.status}</span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             </div>
           )}

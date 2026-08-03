@@ -24,129 +24,75 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
   const faqItems: FAQItem[] = [
     {
       id: 'what_is',
-      question: 'What is TitanStream?',
-      answer: 'TitanStream is a simple way for ordinary people to participate in the growing cloud computing economy. By pooling resources together, users help secure high-performance computing capacity that businesses rent daily. We share the generated rental revenue directly with you.',
+      question: 'What is Titan Stream?',
+      answer: 'Titan Stream is a simple app that lets you earn daily money automatically with machines. You don\'t need any technical skills.',
       icon: <Server size={20} className="text-usdt-green" />
     },
     {
       id: 'how_works',
       question: 'How does it work?',
-      answer: 'You fund a Machine to reserve a portion of our cloud computing network. Businesses rent this power to run software, AI models, and complex calculations. You receive your share of the rental fees in real-time as businesses pay to use the network.',
+      answer: 'You get a machine that earns money for you every single day. You can collect your earnings into your wallet whenever you want.',
       icon: <Zap size={20} className="text-cyan-400" />
     },
     {
       id: 'source_funds',
       question: 'Where does the money come from?',
-      answer: 'The money comes from real companies that pay to rent computing power. Millions of businesses need computing power every second to run their software, generate videos, and automate tasks. The rental revenue they pay is distributed directly to our network contributors.',
+      answer: 'Money is generated automatically from cloud operations and paid out directly to your account.',
       icon: <DollarSign size={20} className="text-amber-400" />
-    },
-    {
-      id: 'why_profitable',
-      question: 'Why does cloud computing make money?',
-      answer: 'Computing power is the fuel of the modern internet. Every website, app, database, and game runs on a cloud server. Because digital activities are growing exponentially, the demand for computing power is higher than ever before, creating a highly profitable industry.',
-      icon: <TrendingUp size={20} className="text-emerald-400" />
-    },
-    {
-      id: 'ai_demand',
-      question: 'Why is AI making cloud computers more valuable?',
-      answer: 'Artificial Intelligence requires massive, non-stop computing power to think, learn, and generate content. Top companies like OpenAI, Microsoft, and Google rely heavily on giant networks of cloud computers to run their AI tools. This massive demand has made cloud computing one of the fastest-growing industries in the world.',
-      icon: <Sparkles size={20} className="text-purple-400" />
-    },
-    {
-      id: 'why_rent',
-      question: 'Why do companies rent computers instead of buying them?',
-      answer: 'Buying, housing, and maintaining physical servers costs companies thousands of dollars in hardware and electricity. Renting cloud capacity on demand is much cheaper, more flexible, and lets businesses scale instantly without long-term hardware maintenance costs.',
-      icon: <Clock size={20} className="text-rose-400" />
     },
     {
       id: 'phone_off',
       question: 'Why do earnings continue when my phone is off?',
-      answer: 'Your earnings do not rely on your mobile phone or home internet. The cloud computers you support run 24/7 in professional, high-security data centers. They are always active, always rented, and always generating revenue regardless of your device status.',
+      answer: 'Your machines run continuously 24/7 in safe data centers. They never stop, even when your phone is turned off.',
       icon: <Clock size={20} className="text-sky-400" />
     },
     {
       id: 'compute_power',
-      question: 'What is Compute Power?',
-      answer: 'Compute Power is the raw processing speed of a computer, measured in Compute Units (CU). The more Compute Power your Machine has, the more complex tasks it can handle for businesses, and the higher your share of the global rental revenue.',
+      question: 'What is Mining Power?',
+      answer: 'Mining Power is the speed of your machine. Higher mining power means you earn more money each day.',
       icon: <Zap size={20} className="text-orange-400" />
     },
     {
       id: 'machines_work',
       question: 'How do Machines work?',
-      answer: 'Machines are packages of cloud computing capacity. When you unlock a higher tier Machine, you fund a larger allocation of server power. This increases your compute contribution and unlocks higher estimated daily rewards.',
+      answer: 'Machines generate money for you every second. Faster machines earn higher daily profits.',
       icon: <Server size={20} className="text-indigo-400" />
     },
     {
       id: 'deposits',
-      question: 'How do deposits work?',
-      answer: 'Funding your account is a safe payment process. You can deposit USDT or your local currency instantly using secure mobile money rails. Once verified by our system, your funds immediately activate your chosen Machine tier.',
+      question: 'How do I add money?',
+      answer: 'Adding money is fast and safe. You can use Mobile Money or Telegram to add money to your wallet immediately.',
       icon: <Wallet size={20} className="text-teal-400" />
     },
     {
       id: 'withdrawals',
-      question: 'How do withdrawals work?',
-      answer: 'You can withdraw your earnings instantly at any time. We support direct transfers to your local mobile money account, Telegram CryptoBot, or your personal USDT wallet. Withdrawals are processed immediately with zero hidden fees.',
+      question: 'How do I take out money?',
+      answer: 'You can take out your money anytime. Payouts are sent directly to your Mobile Money or crypto wallet.',
       icon: <ArrowUpRight size={20} className="text-green-400" />
     },
     {
       id: 'usdt',
       question: 'What is USDT?',
-      answer: 'USDT is a stable digital currency pegged 1-to-1 with the US Dollar. It ensures your earnings and deposits remain stable, secure, and protected from the price fluctuations common in other digital currencies.',
+      answer: 'USDT is a digital dollar equal to 1 US Dollar. It keeps your money safe and stable.',
       icon: <DollarSign size={20} className="text-pink-400" />
     },
     {
       id: 'referrals',
-      question: 'Why do I need referrals?',
-      answer: 'Referrals help expand our shared cloud computing network to more participants. By inviting others, you help build a larger, more powerful computer network. We reward this growth by increasing your trust score and giving you direct bonuses.',
+      question: 'Why should I invite friends?',
+      answer: 'Inviting friends earns you 5 USDT for each friend plus extra daily mining speed bonuses.',
       icon: <Users size={20} className="text-cyan-400" />
     },
     {
       id: 'safety',
       question: 'Is my money safe?',
-      answer: 'Yes. All transactions are logged securely in our double-entry ledger system. We maintain full transparency, and your funds are protected by the platform\'s safety guidelines and battle-tested protocols.',
+      answer: 'Yes! All your money and payments are 100% safe, protected, and fully verified.',
       icon: <ShieldCheck size={20} className="text-emerald-400" />
-    },
-    {
-      id: 'account_loss',
-      question: 'Can I lose my account?',
-      answer: 'Your account is safe as long as you follow the platform rules. Engaging in fraud, exploiting bugs, or creating fake referral accounts will lead to permanent suspension. We keep our community clean to protect honest users.',
-      icon: <ShieldCheck size={20} className="text-red-400" />
     },
     {
       id: 'timing',
       question: 'How long do payments take?',
-      answer: 'Both deposits and withdrawals are processed in real-time. Mobile money transfers and crypto payouts usually complete within seconds. In rare cases of network congestion, it may take up to a few minutes to settle.',
+      answer: 'Payments and payouts are very fast, usually taking only a few seconds to process.',
       icon: <Clock size={20} className="text-amber-500" />
-    },
-    {
-      id: 'limits',
-      question: 'Why are there limits?',
-      answer: 'Limits protect the network\'s liquidity and ensure fair distribution among all users. As your verified platform reputation grows, your transaction limits naturally expand, allowing you to run larger operations.',
-      icon: <TrendingUp size={20} className="text-cyan-500" />
-    },
-    {
-      id: 'why_learn',
-      question: 'Why do I need to learn before I start?',
-      answer: 'We want every user to understand the real value of the cloud computing economy. Learning the basics builds confidence, removes fear, and helps you make smarter decisions as you scale your participation.',
-      icon: <HelpCircle size={20} className="text-indigo-500" />
-    },
-    {
-      id: 'balance_calc',
-      question: 'How is my balance calculated?',
-      answer: 'Your balance updates continuously based on the Compute Power of your active Machines. The system calculates your share of rental fees every second and adds it directly to your available balance.',
-      icon: <DollarSign size={20} className="text-purple-500" />
-    },
-    {
-      id: 'platform_fee',
-      question: 'How does TitanStream make money?',
-      answer: 'TitanStream acts as the platform orchestrator. We take a small service fee from the rental contracts paid by businesses to cover data center maintenance, electricity, and platform operations.',
-      icon: <Server size={20} className="text-gray-400" />
-    },
-    {
-      id: 'why_growth',
-      question: 'Why is cloud computing growing so fast?',
-      answer: 'The entire world is moving online. From AI models to video rendering, automation, and science, businesses need more power than ever. Industry giants like Amazon, Microsoft, and NVIDIA rely heavily on cloud computing, making it a trillion-dollar industry.',
-      icon: <TrendingUp size={20} className="text-teal-400" />
     }
   ];
 
@@ -173,7 +119,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
               <div className="w-8 h-8 rounded-full bg-usdt-green/20 text-usdt-green flex items-center justify-center">
                 <HelpCircle size={18} />
               </div>
-              <h2 className="text-base font-extrabold text-text-primary">Education & FAQ</h2>
+              <h2 className="text-base font-extrabold text-text-primary">Help & FAQ</h2>
             </div>
             <button
               onClick={() => {
@@ -189,9 +135,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
           {/* Introduction */}
           <div className="bg-control-bg/30 border border-white/5 rounded-2xl p-4 mb-4">
             <p className="text-xs text-text-secondary leading-relaxed font-medium">
-              TitanStream is your portal to the growing cloud computing economy. 
-              By joining together, we secure high-performance computing capacity that businesses rent daily. 
-              Enjoy secure payouts in real-time.
+              Titan Stream is an easy way to earn daily money automatically. Get a machine, watch your money grow, and collect your earnings into your wallet anytime.
             </p>
           </div>
 
@@ -243,16 +187,16 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             <button
               onClick={() => {
                 hapticFeedback.impactOccurred('medium');
-                const subject = prompt('Brief description of your issue:', 'Deposit / Machine Inquiry');
+                const subject = prompt('Brief description of your question:', 'Help with my account');
                 if (!subject) return;
-                const details = prompt('Details for support operator:');
+                const details = prompt('Details for support:');
                 if (!details) return;
 
                 const user = useTelegram().user;
                 useSupportStore.getState().createTicket(
                   {
                     userTelegramId: user?.id?.toString() || '74829103',
-                    userName: user?.first_name || 'TitanStream User',
+                    userName: user?.first_name || 'Titan Stream User',
                     userUsername: user?.username ? `@${user.username}` : '@user',
                     userCountry: 'Uganda',
                     userBalanceUsdt: useWalletStore.getState().usdtBalance,
@@ -264,15 +208,15 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                   },
                   details
                 );
-                alert('Support ticket created! Admin operator will reply via Telegram Bot.');
+                alert('Support request sent! We will reply to your Telegram chat soon.');
                 onClose();
               }}
               className="press-feedback w-full py-2.5 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md"
             >
-              <Headphones size={14} /> Contact Support Operator
+              <Headphones size={14} /> Contact Support
             </button>
             <p className="text-[10px] text-text-tertiary">
-              24/7 Support Desk — Replies sync directly to your Telegram chat.
+              24/7 Support — Replies are sent directly to your Telegram chat.
             </p>
           </div>
         </motion.div>

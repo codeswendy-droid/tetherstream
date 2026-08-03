@@ -33,40 +33,40 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
   const slides: Slide[] = [
     {
       id: 0,
-      title: "Welcome to TitanStream 👋",
-      copy: "TitanStream gives everyday people access to powerful cloud computers.\n\nYou don't need to own expensive equipment — we make it simple to get started together.",
+      title: "Welcome to Titan Stream 👋",
+      copy: "Titan Stream makes it easy to earn money every day.\n\nYou don't need any technical or crypto knowledge to get started.",
       icon: <Server size={28} />,
       gradient: "from-emerald-400 to-cyan-400",
       bgGlow: "bg-emerald-500/15",
     },
     {
       id: 1,
-      title: "How does it make money?",
-      copy: "Businesses around the world rent cloud computers every day.\n\nThey use them for AI, apps, websites, data processing, video rendering, and many other tasks.\n\nTitanStream grows cloud capacity and shares part of the revenue with its community.",
+      title: "How do your machines make money?",
+      copy: "Your machines run automatically 24/7 to earn daily money.\n\nYou can collect your earnings into your wallet anytime you want.",
       icon: <TrendingUp size={28} />,
       gradient: "from-purple-400 to-indigo-400",
       bgGlow: "bg-purple-500/15",
     },
     {
       id: 2,
-      title: "Why is this growing so fast?",
-      copy: "AI is changing everything.\n\nEvery AI tool needs powerful cloud computers to work.\n\nAs more companies build AI products, the demand for cloud computing continues to grow.",
+      title: "What do you need to do?",
+      copy: "Nothing! Your machines work for you automatically.\n\nAll you have to do is open the app and tap Collect Earnings.",
       icon: <Cpu size={28} />,
       gradient: "from-rose-400 to-pink-400",
       bgGlow: "bg-rose-500/15",
     },
     {
       id: 3,
-      title: "Why should I trust it?",
-      copy: "You can always see:\n\n• Your funding history\n• Your activity\n• Your rewards\n• Your transactions\n\nEverything is tracked inside your account, and your funds follow a controlled financial process.",
+      title: "100% Safe & Protected",
+      copy: "You are always in full control of your money.\n\n• Clear payment history\n• Easy payouts to your Mobile Money or wallet\n• 24/7 safe and protected platform",
       icon: <ShieldCheck size={28} />,
       gradient: "from-amber-400 to-orange-400",
       bgGlow: "bg-amber-500/15",
     },
     {
       id: 4,
-      title: "You're ready to begin.",
-      copy: "Let's complete your setup so you can explore the platform.",
+      title: "You're Ready!",
+      copy: "Start earning daily money right now.",
       icon: <CheckCircle2 size={28} />,
       gradient: "from-usdt-green to-emerald-400",
       bgGlow: "bg-usdt-green/15",
@@ -110,7 +110,7 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
       <div className="relative z-10 flex items-center justify-between px-6 pt-6">
         <div className="flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-usdt-green/20 text-usdt-green flex items-center justify-center font-black text-xs">₮</span>
-          <span className="text-sm font-extrabold text-text-primary tracking-tight font-sans">TitanStream</span>
+          <span className="text-sm font-extrabold text-text-primary tracking-tight font-sans">Titan Stream</span>
         </div>
         
         {!isLast && (
@@ -194,7 +194,7 @@ export const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete
           {isLast ? (
             <>
               <Sparkles size={16} />
-              <span>Continue</span>
+              <span>Start</span>
             </>
           ) : (
             <>

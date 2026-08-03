@@ -21,10 +21,10 @@ export const BottomNav: React.FC = () => {
 
   const navItems: NavItem[] = [
     { id: 'wallet', label: 'Wallet', icon: <Wallet size={18} /> },
-    { id: 'growth', label: 'Trust', icon: <ShieldCheck size={18} /> },
-    { id: 'mine', label: 'Fleet', icon: <Cpu size={19} /> },
-    { id: 'treasury', label: 'Treasury', icon: <Vault size={18} />, badge: claimableMissionsCount },
-    { id: 'boost', label: 'Deploy', icon: <Zap size={18} /> },
+    { id: 'growth', label: 'Safety', icon: <ShieldCheck size={18} /> },
+    { id: 'mine', label: 'Mining', icon: <Cpu size={19} /> },
+    { id: 'treasury', label: 'Rewards', icon: <Vault size={18} />, badge: claimableMissionsCount },
+    { id: 'boost', label: 'Shop', icon: <Zap size={18} /> },
   ];
 
   return (

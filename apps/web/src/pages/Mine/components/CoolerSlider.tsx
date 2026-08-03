@@ -21,7 +21,7 @@ export const CoolerSlider: React.FC = () => {
             : 'text-usdt-green bg-usdt-green/10 border-usdt-green/30'
         }`}>
           {(isOverheated || safeTemp > 70) && <Flame size={12} className="text-error-red animate-bounce" />}
-          {isOverheated ? `Core Cooling Active (${Math.ceil(cooldownRemaining)}s)` : `×${safeCooler.toFixed(1)} Core Multiplier`}
+          {isOverheated ? `Cooling Down... (${Math.ceil(cooldownRemaining)}s)` : `×${safeCooler.toFixed(1)} Speed Boost`}
         </span>
         <span className={`flex items-center gap-0.5 ${isOverheated ? 'text-rose-400 font-bold' : 'text-text-tertiary'}`}>
           <Thermometer size={12} className={isOverheated ? 'text-rose-400' : 'text-text-secondary'} />
@@ -47,10 +47,10 @@ export const CoolerSlider: React.FC = () => {
       <div className="text-center text-[10px] font-bold uppercase tracking-wider">
         {isOverheated ? (
           <span className="text-rose-400 flex items-center justify-center gap-1">
-            <ShieldAlert size={12} /> Cooling system active. Core is cooling down ({Math.ceil(cooldownRemaining)}s).
+            <ShieldAlert size={12} /> Machine is cooling down. Please wait ({Math.ceil(cooldownRemaining)}s).
           </span>
         ) : (
-          <span className="text-text-tertiary">Tap the Titan Core to boost active processing throughput.</span>
+          <span className="text-text-tertiary">Tap the center machine to boost your mining speed.</span>
         )}
       </div>
     </div>

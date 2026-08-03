@@ -55,8 +55,8 @@ export const UserNotificationModal: React.FC<UserNotificationModalProps> = ({ is
                 )}
               </div>
               <div>
-                <h2 className="text-base font-extrabold text-text-primary">Notifications Center</h2>
-                <p className="text-[11px] text-text-tertiary">Real-time alerts for payments, rewards & updates</p>
+                <h2 className="text-base font-extrabold text-text-primary">Notifications</h2>
+                <p className="text-[11px] text-text-tertiary">Updates on payments, rewards & earnings</p>
               </div>
             </div>
 
@@ -88,7 +88,7 @@ export const UserNotificationModal: React.FC<UserNotificationModalProps> = ({ is
 
           {/* Category Filter Chips */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-            {['ALL', 'Deposit', 'Reward', 'Referral', 'Support'].map((cat) => (
+            {['ALL', 'Add Money', 'Reward', 'Referral', 'Support'].map((cat) => (
               <button
                 key={cat}
                 onClick={() => {

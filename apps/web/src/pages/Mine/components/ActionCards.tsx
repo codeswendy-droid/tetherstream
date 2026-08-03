@@ -7,7 +7,7 @@ import { showToast } from '../../../components/Toast';
 
 export const ActionCards: React.FC = () => {
   const { setActiveTab } = useNavigationStore();
-  const { unclaimedBalance, claimMinedYield, activeCurrency, machineMode, hasPurchasedMachine, ownedTierCodes, userMachines } = useMiningStore();
+  const { unclaimedBalance, claimMinedYield, activeCurrency, machineMode, hasPurchasedMachine } = useMiningStore();
 
   const safeUnclaimed = Number(unclaimedBalance) || 0;
 
@@ -16,32 +16,20 @@ export const ActionCards: React.FC = () => {
     if (safeUnclaimed < 0.000001) return;
     const result = await claimMinedYield();
     if (result.success) {
-      showToast(`Successfully received +${safeUnclaimed.toFixed(4)} ${activeCurrency} in your wallet.`, 'success');
+      showToast(`Added +${safeUnclaimed.toFixed(4)} ${activeCurrency} to your wallet!`, 'success');
     } else {
       const err = result.error;
       const response = err?.response;
-      const status = response?.status;
       const body = response?.data;
       const backendError = body?.error?.message || body?.message || err?.message || 'Unknown error';
-      const stack = err?.stack || 'No stack trace';
 
       console.error('[CLAIM FAILURE DIAGNOSTICS]', {
-        httpStatus: status,
+        httpStatus: response?.status,
         responseBody: body,
-        backendError: backendError,
-        stackTrace: stack,
-        requestPayload: {
-          telegramUserId: window.Telegram?.WebApp?.initDataUnsafe?.user?.id,
-          activeCurrency,
-          amount: safeUnclaimed,
-        },
+        backendError,
       });
 
-      const userFriendlyMessage = typeof backendError === 'string'
-        ? backendError.replace('RULE_', '').replace(/_/g, ' ')
-        : 'Action could not be completed.';
-
-      showToast(`Action could not be completed: ${userFriendlyMessage}`, 'error');
+      showToast('Could not collect earnings right now. Please try again.', 'error');
     }
   };
 
@@ -52,24 +40,24 @@ export const ActionCards: React.FC = () => {
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4.5 space-y-2 text-xs relative overflow-hidden">
           <div className="flex items-center gap-2 text-amber-400 font-bold uppercase tracking-wider text-[10px]">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-            Titan Core — Standard Mode
+            Titan Core — Basic Machine
           </div>
           <div className="text-text-primary font-black text-sm">
-            Your Titan Core continues producing Stream Output at its standard rate.
+            Your machine is earning money at its regular speed.
           </div>
           <div className="text-text-secondary leading-relaxed font-medium">
-            Upgrade to a premium machine to unlock dramatically higher output.
+            Get a faster machine to multiply your daily earnings!
           </div>
           <button
             onClick={() => setActiveTab('boost')}
             className="mt-3 w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-2 px-4 rounded-xl transition-colors text-center uppercase tracking-wider text-[10px] block"
           >
-            Upgrade to Premium Machine
+            Buy Faster Machine
           </button>
         </div>
       )}
 
-      {/* Receive Stream Output Card */}
+      {/* Collect Earnings Card */}
       {safeUnclaimed > 0 && (
         <motion.div
           whileTap={{ scale: 0.97 }}
@@ -82,10 +70,10 @@ export const ActionCards: React.FC = () => {
             </div>
             <div>
               <div className="text-sm font-black text-usdt-green font-sans flex items-center gap-1">
-                Receive Stream Output
+                Collect Earnings
               </div>
               <div className="text-xs text-text-secondary mt-0.5 font-sans font-medium">
-                Transfer your claimable stream output to your wallet.
+                Add your current earnings to your wallet.
               </div>
             </div>
           </div>
@@ -95,7 +83,7 @@ export const ActionCards: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Deploy Stream Titan Card */}
+      {/* Buy Machine Card */}
       <motion.div
         whileTap={{ scale: 0.97 }}
         onClick={() => setActiveTab('boost')}
@@ -107,9 +95,9 @@ export const ActionCards: React.FC = () => {
           </div>
           <div>
             <div className="text-sm font-black text-text-primary group-hover:text-usdt-green transition-colors font-sans">
-              Deploy Stream Titan
+              Buy a New Machine
             </div>
-            <div className="text-xs text-text-secondary mt-0.5 font-sans font-medium">Add a cloud machine to expand compute capacity and daily output</div>
+            <div className="text-xs text-text-secondary mt-0.5 font-sans font-medium">Get a new machine to increase your daily earnings</div>
           </div>
         </div>
         <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-text-secondary group-hover:text-text-primary group-hover:bg-white/10 transition-all">
@@ -117,7 +105,7 @@ export const ActionCards: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Invite a friend Action Card */}
+      {/* Invite Friends Card */}
       <motion.div
         whileTap={{ scale: 0.97 }}
         onClick={() => setActiveTab('friends')}
@@ -129,9 +117,9 @@ export const ActionCards: React.FC = () => {
           </div>
           <div>
             <div className="text-sm font-black text-text-primary group-hover:text-ton-blue transition-colors font-sans">
-              Expand the Network
+              Invite Friends
             </div>
-            <div className="text-xs text-text-secondary mt-0.5 font-sans font-medium">Share with friends to grow the shared cloud network</div>
+            <div className="text-xs text-text-secondary mt-0.5 font-sans font-medium">Invite your friends and earn extra rewards together</div>
           </div>
         </div>
         <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-text-secondary group-hover:text-text-primary group-hover:bg-white/10 transition-all">

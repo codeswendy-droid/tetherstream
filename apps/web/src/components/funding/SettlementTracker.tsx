@@ -228,7 +228,7 @@ export const SettlementTracker: React.FC<SettlementTrackerProps> = ({
         <div className="glass-panel p-4 rounded-2xl border border-white/10 space-y-3 bg-usdt-green/5">
           <div className="flex items-center gap-2 text-usdt-green font-bold text-xs">
             <ShieldCheck size={16} />
-            <span>TitanStream Verified Payment Route</span>
+            <span>100% Safe Payment</span>
           </div>
 
           <div className="space-y-2 text-xs">
@@ -251,7 +251,7 @@ export const SettlementTracker: React.FC<SettlementTrackerProps> = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-control-bg/80 border border-white/10">
                   <div>
-                    <div className="text-[10px] font-bold text-text-tertiary uppercase">Admin Payment Phone Number</div>
+                    <div className="text-[10px] font-bold text-text-tertiary uppercase">Payment Phone Number</div>
                     <div className="font-mono font-extrabold text-usdt-green text-sm tracking-wider">{session.mobileMoneyNumber}</div>
                   </div>
                   <button
@@ -270,7 +270,7 @@ export const SettlementTracker: React.FC<SettlementTrackerProps> = ({
                   className="press-feedback w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs shadow-md"
                 >
                   <PhoneCall size={14} />
-                  <span>Invoke Phone USSD Push (*165*1*1*)</span>
+                  <span>Open Phone Dial Code (*165*1*1*)</span>
                 </button>
               </div>
             )}
@@ -296,10 +296,10 @@ export const SettlementTracker: React.FC<SettlementTrackerProps> = ({
         <div className="glass-panel p-4 rounded-2xl border border-rose-500/30 bg-rose-500/5 space-y-3">
           <div className="flex items-center gap-2 text-rose-400 font-bold text-xs">
             <AlertCircle size={16} />
-            <span>Settlement Unsuccessful</span>
+            <span>Payment Unsuccessful</span>
           </div>
           <p className="text-xs text-text-secondary">
-            This settlement session ended with status <span className="font-mono font-bold text-rose-300">{session.status}</span>. Your balance remains unchanged.
+            This payment could not be completed. Please try again.
           </p>
 
           <div className="flex items-center gap-2 pt-2">
@@ -308,7 +308,7 @@ export const SettlementTracker: React.FC<SettlementTrackerProps> = ({
                 onClick={onRetry}
                 className="press-feedback flex-1 py-2.5 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5"
               >
-                <span>New Request</span>
+                <span>Try Again</span>
                 <ArrowRight size={14} />
               </button>
             )}
@@ -330,9 +330,9 @@ export const SettlementTracker: React.FC<SettlementTrackerProps> = ({
           <div className="w-10 h-10 rounded-full bg-usdt-green/20 text-usdt-green flex items-center justify-center mx-auto">
             <CheckCircle2 size={24} />
           </div>
-          <h4 className="text-sm font-extrabold text-text-primary">USDT Successfully Credited!</h4>
+          <h4 className="text-sm font-extrabold text-text-primary">Money Added to Wallet!</h4>
           <p className="text-xs text-text-secondary">
-            The Financial Orchestrator and Ledger have processed your deposit. Your balance is updated.
+            Your payment was confirmed and your wallet has been updated!
           </p>
           {onClose && (
             <button
@@ -354,7 +354,7 @@ export const SettlementTracker: React.FC<SettlementTrackerProps> = ({
           onClick={handleCancel}
           className="press-feedback w-full py-2.5 rounded-xl bg-white/5 hover:bg-rose-500/10 border border-white/10 hover:border-rose-500/30 text-text-tertiary hover:text-rose-400 font-bold text-xs transition-colors"
         >
-          Cancel Settlement Session
+          Cancel Payment
         </button>
       )}
     </div>

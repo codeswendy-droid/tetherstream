@@ -58,9 +58,9 @@ const getNotificationMetadata = (templateCode: string): { title: string; categor
     case 'WITHDRAWAL_COMPLETED':
     case 'WITHDRAWAL_APPROVED':
     case 'FINANCIAL_WITHDRAWAL_COMPLETED':
-      return { title: 'Withdrawal Completed', category: 'Withdrawal', actionTab: 'wallet' };
+      return { title: 'Money Taken Out', category: 'Withdrawal', actionTab: 'wallet' };
     case 'WITHDRAWAL_REJECTED':
-      return { title: 'Withdrawal Rejected', category: 'Withdrawal', actionTab: 'wallet' };
+      return { title: 'Payment Rejected', category: 'Withdrawal', actionTab: 'wallet' };
 
     // Machines / Fleet
     case 'MACHINE_PURCHASED':
@@ -68,20 +68,20 @@ const getNotificationMetadata = (templateCode: string): { title: string; categor
     case 'MACHINE_ACTIVATED':
       return { title: 'Machine Activated', category: 'Machine', actionTab: 'mine' };
     case 'DAILY_EARNINGS':
-      return { title: 'Daily Yield Credited', category: 'Reward', actionTab: 'mine' };
+      return { title: 'Daily Earnings Added', category: 'Reward', actionTab: 'mine' };
 
     // Referrals
     case 'REFERRAL_JOINED':
-      return { title: 'New Partner Joined', category: 'Referral', actionTab: 'friends' };
+      return { title: 'New Friend Joined', category: 'Referral', actionTab: 'friends' };
     case 'REFERRAL_MILESTONE_REACHED':
     case 'GROWTH_REFERRAL_REWARD':
     case 'REFERRAL_COMPLETED':
-      return { title: 'Referral Reward Unlocked', category: 'Referral', actionTab: 'friends' };
+      return { title: 'Friend Bonus Earned', category: 'Referral', actionTab: 'friends' };
 
     // Trust / Growth
     case 'LEVEL_UPGRADED':
     case 'GROWTH_TRUST_LEVEL_UPGRADED':
-      return { title: 'Trust Level Upgraded', category: 'Reward', actionTab: 'growth' };
+      return { title: 'Safety Level Upgraded', category: 'Reward', actionTab: 'growth' };
 
     // Support
     case 'SUPPORT_UPDATE':

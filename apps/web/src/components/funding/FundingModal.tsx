@@ -94,7 +94,7 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
                 ₮
               </div>
               <h2 className="text-base font-extrabold text-text-primary">
-                {selectedProvider ? selectedProvider.displayName || selectedProvider.name : 'Add USDT Funds'}
+                {selectedProvider ? selectedProvider.displayName || selectedProvider.name : 'Add Money'}
               </h2>
             </div>
 
@@ -139,14 +139,14 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
           ) : (
             <div className="space-y-4">
               <p className="text-xs text-text-tertiary">
-                Choose a settlement provider to deposit USDT into your TitanStream balance.
+                Select how you would like to add money to your wallet.
               </p>
 
               {/* Loading State */}
               {isLoading ? (
                 <div className="py-10 flex flex-col items-center justify-center space-y-3">
                   <RefreshCw size={24} className="animate-spin text-usdt-green" />
-                  <span className="text-xs text-text-tertiary">Fetching active settlement providers...</span>
+                  <span className="text-xs text-text-tertiary">Loading payment methods...</span>
                 </div>
               ) : error ? (
                 <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-3">
@@ -181,8 +181,8 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
                           </div>
                           <p className="text-xs text-text-tertiary mt-0.5">
                             {item.provider === 'CRYPTOBOT'
-                              ? 'Pay using Telegram @CryptoBot invoice'
-                              : 'Pay via local Mobile Money / M-Pesa'}
+                              ? 'Pay using Telegram wallet'
+                              : 'Pay using local Mobile Money'}
                           </p>
                         </div>
                       </div>
@@ -194,7 +194,7 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
                   {/* Future Providers Teaser */}
                   <div className="p-3 rounded-2xl bg-white/5 border border-dashed border-white/10 flex items-center gap-2.5 text-xs text-text-tertiary">
                     <Sparkles size={16} className="text-amber-400 shrink-0" />
-                    <span>More global settlement rails (Cards, TON Native, Bank Transfer) launching soon.</span>
+                    <span>More payment options coming soon.</span>
                   </div>
                 </div>
               )}

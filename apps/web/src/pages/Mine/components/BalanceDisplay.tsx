@@ -31,14 +31,14 @@ export const BalanceDisplay: React.FC = () => {
 
   const bal = formatBalance();
 
-  // Convert GH/s to CU (Compute Units) — 1 GH/s = 10 CU
+  // Convert GH/s to CU — 1 GH/s = 10 units
   const computeUnits = ((Number(baseSpeedGhs) || 0) * (Number(displayMultiplier) || 1) * 10).toFixed(0);
 
   return (
     <div className="flex flex-col items-center justify-center gap-1.5 my-2">
-      {/* Label: Claimable Stream Output */}
+      {/* Label: Ready to Collect */}
       <span className="text-[11px] font-extrabold uppercase tracking-widest text-text-secondary/80">
-        Claimable Stream Output
+        Ready to Collect
       </span>
 
       {/* Live Odometer Ticker Balance with Text Gradient */}
@@ -59,7 +59,7 @@ export const BalanceDisplay: React.FC = () => {
           <span className="absolute w-3 h-3 rounded-full bg-usdt-green opacity-75 animate-ping" />
           <span className="relative w-2 h-2 rounded-full bg-usdt-green" />
         </div>
-        <span>{computeUnits} CU</span>
+        <span>{computeUnits} Mining Power</span>
       </div>
     </div>
   );

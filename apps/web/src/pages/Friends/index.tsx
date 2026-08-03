@@ -7,11 +7,11 @@ import { Copy, Share2, Users, Flame, Star, Award, Gift, CheckCircle, Clock, Aler
 import { EducationCard } from '../../components/EducationCard';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  REGISTERED:  { label: 'Registered',  color: 'text-text-secondary',  icon: <Clock size={10} /> },
-  ONBOARDED:   { label: 'Onboarded',   color: 'text-ton-blue',        icon: <CheckCircle size={10} /> },
-  QUALIFIED:   { label: 'Qualified',   color: 'text-usdt-green',      icon: <CheckCircle size={10} /> },
-  PAYING:      { label: 'Paying',      color: 'text-usdt-green',      icon: <CheckCircle size={10} /> },
-  REWARDED:    { label: 'Rewarded',    color: 'text-gold',            icon: <CheckCircle size={10} /> },
+  REGISTERED:  { label: 'Joined',      color: 'text-text-secondary',  icon: <Clock size={10} /> },
+  ONBOARDED:   { label: 'Joined',      color: 'text-ton-blue',        icon: <CheckCircle size={10} /> },
+  QUALIFIED:   { label: 'Active',      color: 'text-usdt-green',      icon: <CheckCircle size={10} /> },
+  PAYING:      { label: 'Active',      color: 'text-usdt-green',      icon: <CheckCircle size={10} /> },
+  REWARDED:    { label: 'Reward Sent', color: 'text-gold',            icon: <CheckCircle size={10} /> },
   CREATED:     { label: 'Invited',     color: 'text-text-tertiary',   icon: <AlertCircle size={10} /> },
 };
 
@@ -37,13 +37,13 @@ export const FriendsScreen: React.FC = () => {
   const handleCopy = () => {
     if (!referralLink) return;
     navigator.clipboard.writeText(referralLink);
-    showToast('Referral link copied!', 'success');
+    showToast('Invite link copied!', 'success');
   };
 
   const handleShare = () => {
     if (!referralLink) return;
     const tg = window.Telegram?.WebApp;
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join TitanStream — earn USDT 24/7 with instant mobile money settlements! 🚀')}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join Titan Stream — earn money daily with easy mobile money payouts! 🚀')}`;
     if (tg?.openTelegramLink) {
       tg.openTelegramLink(shareUrl);
     } else {
@@ -56,8 +56,8 @@ export const FriendsScreen: React.FC = () => {
       {/* Progressive Education: Referral */}
       <EducationCard
         educationKey="referral"
-        title="Contextual Referrals"
-        body="Invite friends to TitanStream and earn 5 USDT for every friend who completes their first deposit. No limits, no thresholds."
+        title="Invite Friends"
+        body="Invite your friends and earn 5 USDT for every friend who adds money for the first time!"
         icon={<Gift size={18} />}
       />
 
@@ -68,11 +68,11 @@ export const FriendsScreen: React.FC = () => {
         className="flex flex-col gap-1"
       >
         <div className="text-[10px] font-extrabold tracking-widest text-usdt-green uppercase bg-usdt-green/10 px-2.5 py-1 rounded-full w-max border border-usdt-green/20">
-          Referrals program
+          Friend Rewards
         </div>
-        <h1 className="text-3xl font-extrabold text-text-primary mt-1.5 tracking-tight">Friends</h1>
+        <h1 className="text-3xl font-extrabold text-text-primary mt-1.5 tracking-tight">Invite Friends</h1>
         <p className="text-xs text-text-secondary leading-relaxed">
-          Invite friends to TitanStream. Earn 5 USDT for every qualified referral who completes their first settlement.
+          Invite friends to Titan Stream. Earn 5 USDT for every friend who adds money for the first time.
         </p>
       </motion.div>
 
@@ -85,7 +85,7 @@ export const FriendsScreen: React.FC = () => {
       >
         {/* Invited */}
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] font-extrabold text-text-tertiary uppercase tracking-wider">Invited</span>
+          <span className="text-[10px] font-extrabold text-text-tertiary uppercase tracking-wider">Friends Invited</span>
           <div className="flex items-baseline gap-1 mt-1">
             {isLoading ? (
               <span className="text-2xl font-black text-text-primary font-mono animate-pulse">—</span>
@@ -108,7 +108,7 @@ export const FriendsScreen: React.FC = () => {
 
         {/* Earned USDT */}
         <div className="flex flex-col gap-0.5 border-t border-white/5 pt-4">
-          <span className="text-[10px] font-extrabold text-text-tertiary uppercase tracking-wider">Earned USDT</span>
+          <span className="text-[10px] font-extrabold text-text-tertiary uppercase tracking-wider">Total Earned</span>
           <div className="flex items-center gap-1.5 mt-1 font-mono">
             <span className="text-sm font-extrabold text-usdt-green">₮</span>
             {isLoading ? (
@@ -121,7 +121,7 @@ export const FriendsScreen: React.FC = () => {
 
         {/* Boost */}
         <div className="flex flex-col gap-0.5 border-t border-white/5 pt-4 border-l pl-4">
-          <span className="text-[10px] font-extrabold text-text-tertiary uppercase tracking-wider">Boost</span>
+          <span className="text-[10px] font-extrabold text-text-tertiary uppercase tracking-wider font-sans">Speed Boost</span>
           <div className="flex items-baseline gap-1 mt-1">
             <span className="text-2xl font-black text-gradient-neon font-mono">×{computeBoost.toFixed(2)}</span>
           </div>
@@ -135,7 +135,7 @@ export const FriendsScreen: React.FC = () => {
         transition={{ delay: 0.1 }}
         className="flex flex-col gap-2.5"
       >
-        <span className="text-xs font-bold text-text-secondary pl-0.5">Your Referral Link</span>
+        <span className="text-xs font-bold text-text-secondary pl-0.5">Your Invite Link</span>
         <div className="flex items-center gap-2 bg-control-bg rounded-xl p-1 border border-white/5 shadow-inner">
           <span className="flex-1 text-xs text-text-tertiary font-mono truncate px-3 py-2">
             {isLoading ? 'Loading...' : (referralLink || 'Generating your link...')}
@@ -183,7 +183,7 @@ export const FriendsScreen: React.FC = () => {
             {getInitial(referredBy.username || referredBy.name)}
           </div>
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-[10px] font-extrabold text-text-tertiary uppercase tracking-wider">Referred by</span>
+            <span className="text-[10px] font-extrabold text-text-tertiary uppercase tracking-wider">Invited by</span>
             <span className="text-xs font-extrabold text-text-primary truncate">
               {referredBy.username ? `@${referredBy.username}` : referredBy.name}
             </span>
@@ -208,8 +208,8 @@ export const FriendsScreen: React.FC = () => {
               <Flame size={20} />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-extrabold text-text-primary">5 USDT per qualified referral</span>
-              <span className="text-[11px] text-text-secondary mt-0.5">Credited instantly when your friend completes their first deposit</span>
+              <span className="text-xs font-extrabold text-text-primary">5 USDT for every invited friend</span>
+              <span className="text-[11px] text-text-secondary mt-0.5">Added to your wallet when your friend adds money for the first time</span>
             </div>
           </div>
 
@@ -218,8 +218,8 @@ export const FriendsScreen: React.FC = () => {
               <Star size={20} />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-extrabold text-text-primary">Compute capacity boost</span>
-              <span className="text-[11px] text-text-secondary mt-0.5">Your stream capacity grows with each friend you bring in</span>
+              <span className="text-xs font-extrabold text-text-primary">Mining speed boost</span>
+              <span className="text-[11px] text-text-secondary mt-0.5">Your mining speed grows with each friend you bring in</span>
             </div>
           </div>
 
@@ -228,8 +228,8 @@ export const FriendsScreen: React.FC = () => {
               <Award size={20} />
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-extrabold text-text-primary">Unlock higher trust levels</span>
-              <span className="text-[11px] text-text-secondary mt-0.5">More referrals = higher tier = better limits & features</span>
+              <span className="text-xs font-extrabold text-text-primary">Unlock higher level perks</span>
+              <span className="text-[11px] text-text-secondary mt-0.5">More friends = higher level perks & bonuses</span>
             </div>
           </div>
         </div>
@@ -243,7 +243,7 @@ export const FriendsScreen: React.FC = () => {
         className="flex flex-col gap-3"
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-extrabold text-text-primary">Your Referrals</h2>
+          <h2 className="text-sm font-extrabold text-text-primary">Your Friends</h2>
           <span className="text-xs font-mono text-text-tertiary bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-full">
             {invitedCount} {invitedCount === 1 ? 'friend' : 'friends'}
           </span>
@@ -260,9 +260,9 @@ export const FriendsScreen: React.FC = () => {
             <div className="w-10 h-10 rounded-full bg-control-bg flex items-center justify-center text-text-tertiary mb-2.5">
               <Users size={18} />
             </div>
-            <div className="text-xs font-extrabold text-text-primary mb-1">No referrals yet</div>
+            <div className="text-xs font-extrabold text-text-primary mb-1">No friends invited yet</div>
             <div className="text-[11px] text-text-tertiary max-w-[240px] leading-relaxed">
-              Share your link to start earning 5 USDT per qualified friend!
+              Share your link to start earning 5 USDT per friend!
             </div>
           </div>
         ) : (

@@ -467,11 +467,11 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
           s.discoveryTimer = 0;
           if (isActive && Math.random() > 0.35 && onDiscoveryEvent) {
             const DISCOVERIES = [
-              'Compressor Intake Calibrated',
-              'Counter-Turbine Synchronized',
-              'Impeller Fluid Stream Aligned',
-              'Gyroscopic Gimbals Balanced',
-              'Hyperscale Rotor Core Synced',
+              'Machine Intake Running Smooth',
+              'Speed Turbines Synchronized',
+              'Machine Cooling Running Smooth',
+              'Stabilizers Perfectly Balanced',
+              'Mining Speed Boost Active',
             ];
             const item = DISCOVERIES[Math.floor(Math.random() * DISCOVERIES.length)];
             audioSynth.playDiscoveryChime();

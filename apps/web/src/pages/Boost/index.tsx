@@ -11,7 +11,6 @@ import { machineService } from '../../services/machineService';
 import { MACHINE_CATALOG, getMachineYieldDetails, type FrontendMachineModel } from '../../data/machines';
 import { MachineEducationModal } from '../../components/MachineEducationModal';
 import { ComputeNodeSvg } from '../../components/ComputeNodeSvg';
-import { CountUpNumber } from '../../components/CountUpNumber';
 import { 
   Gauge, 
   Sparkles, 
@@ -26,14 +25,13 @@ import {
   QrCode,
   HelpCircle,
   Zap,
-  ShieldCheck,
   Cpu,
   BarChart3,
   Layers
 } from 'lucide-react';
 
 export const BoostScreen: React.FC = () => {
-  const { baseSpeedGhs, upgradeBaseSpeed, fetchMiningState, fetchUserMachines, isMachineOwned, ownedTierCodes, userMachines } = useMiningStore();
+  const { baseSpeedGhs, upgradeBaseSpeed, fetchMiningState, fetchUserMachines, isMachineOwned } = useMiningStore();
   const { preferLocalCurrency } = useSettingsStore();
   const { hapticFeedback } = useTelegram();
   const { transactions } = useWalletStore();
@@ -60,7 +58,7 @@ export const BoostScreen: React.FC = () => {
     if (!hasSeen) {
       setShowEducationModal(true);
     }
-  }, []);
+  }, [fetchMiningState, fetchUserMachines]);
 
   useEffect(() => {
     let interval: number;
@@ -105,9 +103,9 @@ export const BoostScreen: React.FC = () => {
           useWalletStore.getState().fetchBalanceFromEngine(),
         ]);
         setInvoiceStatus('PAID');
-        showToast(`Machine ${selectedMachine.name} activated!`, 'success');
+        showToast(`${selectedMachine.name} activated!`, 'success');
       } else if (res.requiresFunding) {
-        showToast(`Payment order ${res.paymentOrder?.reference} initiated!`, 'warning');
+        showToast(`Payment order initiated!`, 'warning');
         setInvoiceStatus('PENDING');
       }
     } catch (err: any) {
@@ -122,7 +120,7 @@ export const BoostScreen: React.FC = () => {
     try {
       const res = await machineService.purchaseMachine(selectedMachine.tierCode, isSandbox);
       if (!res.success || !res.machine) {
-        showToast(res.message || 'Purchase could not be verified by backend', 'error');
+        showToast(res.message || 'Payment could not be confirmed', 'error');
         return;
       }
 
@@ -146,7 +144,7 @@ export const BoostScreen: React.FC = () => {
         status: 'COMPLETED',
         reference: invoiceId,
         createdAt: new Date().toISOString(),
-        description: `Activated ${selectedMachine.name} (${selectedMachine.capacityGhs} GH/s)`
+        description: `Activated ${selectedMachine.name}`
       };
 
       useWalletStore.getState().updateBalance({
@@ -154,7 +152,7 @@ export const BoostScreen: React.FC = () => {
       });
 
       setInvoiceStatus('PAID');
-      showToast(`${selectedMachine.name} activated successfully!`, 'success');
+      showToast(`${selectedMachine.name} activated!`, 'success');
 
       setTimeout(() => {
         setShowCheckout(false);
@@ -162,7 +160,7 @@ export const BoostScreen: React.FC = () => {
       }, 2000);
     } catch (err: any) {
       console.warn('Backend sync error on purchase confirm:', err);
-      showToast(err?.message || 'Failed to complete machine activation with server', 'error');
+      showToast(err?.message || 'Failed to complete machine activation', 'error');
     }
   };
 
@@ -176,7 +174,7 @@ export const BoostScreen: React.FC = () => {
       >
         <div className="flex items-center justify-between">
           <div className="text-[10px] font-black tracking-widest text-usdt-green bg-usdt-green/15 px-3 py-1 rounded-full border border-usdt-green/30 flex items-center gap-1.5 uppercase">
-            <Zap size={11} className="text-usdt-green" /> Cloud Computing Marketplace
+            <Zap size={11} className="text-usdt-green" /> Machine Shop
           </div>
           <button
             onClick={() => setShowEducationModal(true)}
@@ -187,10 +185,10 @@ export const BoostScreen: React.FC = () => {
           </button>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black text-text-primary tracking-tight mt-1">
-          Cloud Capacity Tiers
+          Machine Marketplace
         </h1>
         <p className="text-xs text-text-secondary leading-relaxed font-medium">
-          Invest in cloud computing capacity that generates projected daily earnings. Higher tiers allocate greater computing capacity.
+          Buy a machine to earn daily money automatically. Bigger machines generate higher daily profits.
         </p>
       </motion.div>
 
@@ -206,27 +204,27 @@ export const BoostScreen: React.FC = () => {
             <Gauge size={22} />
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] font-black text-text-tertiary uppercase tracking-wider">Active Cloud Allocation</span>
-            <span className="text-xl font-black text-text-primary font-mono mt-0.5">{(Number(baseSpeedGhs) || 0).toFixed(1)} GH/s</span>
+            <span className="text-[10px] font-black text-text-tertiary uppercase tracking-wider">Total Mining Power</span>
+            <span className="text-xl font-black text-text-primary font-mono mt-0.5">{((Number(baseSpeedGhs) || 0) * 10).toFixed(0)} Mining Power</span>
           </div>
         </div>
 
         <span className="text-[9px] font-black text-usdt-green bg-usdt-green/20 px-3 py-1 rounded-full border border-usdt-green/40 tracking-wider animate-pulse uppercase">
-          Operational
+          Running
         </span>
       </motion.div>
 
       {/* Section Header */}
       <div className="flex items-center justify-between mt-1">
         <h2 className="text-xs font-black text-text-tertiary tracking-widest uppercase flex items-center gap-2">
-          <TrendingUp size={13} className="text-usdt-green" /> Five Earning Tiers
+          <TrendingUp size={13} className="text-usdt-green" /> Machines Catalog
         </h2>
         <span className="text-xs font-mono text-usdt-green bg-usdt-green/10 border border-usdt-green/30 px-2.5 py-0.5 rounded-full font-extrabold">
-          5 Tiers Available
+          5 Machines Available
         </span>
       </div>
 
-      {/* Machines Marketplace Cards — STRICT 7-LEVEL HIERARCHY */}
+      {/* Machines Marketplace Cards */}
       <div className="flex flex-col gap-5">
         {MACHINE_CATALOG.filter((m) => m.id !== 'free-trial').map((machine, idx) => {
           const yieldDetails = getMachineYieldDetails(machine);
@@ -253,18 +251,18 @@ export const BoostScreen: React.FC = () => {
               {/* Most Popular or Owned Badge */}
               {isOwned ? (
                 <div className="absolute top-0 right-0 bg-usdt-green text-app-bg font-black text-[9px] px-3.5 py-1 rounded-bl-2xl uppercase tracking-wider flex items-center gap-1 shadow-md">
-                  <CheckCircle2 size={11} /> Owned & Active Node
+                  <CheckCircle2 size={11} /> Your Machine
                 </div>
               ) : machine.isPopular ? (
                 <div className="absolute top-0 right-0 bg-usdt-green text-app-bg font-black text-[9px] px-3.5 py-1 rounded-bl-2xl uppercase tracking-wider flex items-center gap-1 shadow-md">
-                  <Sparkles size={10} /> Most Popular Tier
+                  <Sparkles size={10} /> Most Popular
                 </div>
               ) : null}
 
-              {/* LEVEL 1: ESTIMATED DAILY EARNINGS (HERO ELEMENT) */}
+              {/* LEVEL 1: ESTIMATED DAILY EARNINGS */}
               <div className="bg-app-bg/90 border border-white/10 rounded-2xl p-4 flex flex-col gap-1.5 shadow-inner">
                 <span className="text-[10px] font-black text-text-tertiary uppercase tracking-widest flex items-center gap-1.5">
-                  <BarChart3 size={12} className="text-usdt-green" /> Today's Estimated Daily Output
+                  <BarChart3 size={12} className="text-usdt-green" /> Daily Earnings
                 </span>
 
                 <div className="flex items-baseline gap-2 mt-0.5">
@@ -279,10 +277,10 @@ export const BoostScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* LEVEL 2: MACHINE PRICE (LOCAL CURRENCY FIRST) */}
+              {/* LEVEL 2: MACHINE PRICE */}
               <div className="flex items-center justify-between px-1">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-text-tertiary uppercase tracking-wider">Asset Price</span>
+                  <span className="text-[10px] font-black text-text-tertiary uppercase tracking-wider">Machine Price</span>
                   <span className="text-xl font-black text-text-primary font-mono tracking-tight">
                     {yieldDetails.price.local}
                   </span>
@@ -300,7 +298,7 @@ export const BoostScreen: React.FC = () => {
                 </div>
               </div>
 
-              {/* LEVEL 3 & 4: MACHINE NAME & POSITIONING */}
+              {/* LEVEL 3 & 4: MACHINE NAME */}
               <div className="flex items-center gap-3.5 pt-1">
                 <ComputeNodeSvg tierCode={machine.tierCode} isPopular={machine.isPopular} />
                 <div>
@@ -320,7 +318,7 @@ export const BoostScreen: React.FC = () => {
               {isOwned ? (
                 <div className="w-full py-3.5 rounded-2xl font-black text-xs tracking-wider uppercase flex items-center justify-center gap-2 bg-usdt-green/15 text-usdt-green border border-usdt-green/40 shadow-inner cursor-default">
                   <CheckCircle2 size={16} className="text-usdt-green" />
-                  <span>Owned & Active Node</span>
+                  <span>Your Machine</span>
                 </div>
               ) : (
                 <button
@@ -331,18 +329,18 @@ export const BoostScreen: React.FC = () => {
                       : 'bg-gradient-to-r from-white/15 to-white/5 text-text-primary border-white/20 hover:bg-white/20'
                   }`}
                 >
-                  <span>Acquire {machine.name}</span>
+                  <span>Buy {machine.name}</span>
                   <ArrowUpRight size={16} />
                 </button>
               )}
 
-              {/* LEVEL 7: TECHNICAL INFORMATION & UNDERSTANDABLE INDICATORS */}
+              {/* LEVEL 7: TECHNICAL INFORMATION */}
               <div className="flex flex-col gap-2 bg-white/[0.02] border border-white/5 rounded-2xl p-3 text-xs">
                 {/* Visual Capacity Allocation Progress Bar */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-[10px] font-black uppercase tracking-wider">
                     <span className="text-text-tertiary flex items-center gap-1">
-                      <Layers size={11} className="text-usdt-green" /> Cloud Workload Capacity
+                      <Layers size={11} className="text-usdt-green" /> Mining Power
                     </span>
                     <span className="text-text-primary font-mono">{machine.computeCapacityText}</span>
                   </div>
@@ -354,7 +352,7 @@ export const BoostScreen: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Understandable Rating Badges */}
+                {/* Rating Badges */}
                 <div className="grid grid-cols-2 gap-2 text-[10px] font-semibold text-text-tertiary pt-1">
                   <div>Priority: <strong className="text-text-primary">{machine.processingPriority}</strong></div>
                   <div>Rating: <strong className="text-text-primary">{machine.dailyOutputRating}</strong></div>
@@ -407,7 +405,7 @@ export const BoostScreen: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Zap size={18} className="text-usdt-green" />
                   <h3 className="text-base font-black text-text-primary">
-                    {invoiceStatus === 'PAID' ? 'Machine Activated' : 'Machine Asset Details'}
+                    {invoiceStatus === 'PAID' ? 'Machine Activated' : 'Machine Details'}
                   </h3>
                 </div>
                 {invoiceStatus !== 'PAID' && (
@@ -427,7 +425,7 @@ export const BoostScreen: React.FC = () => {
               {/* Machine Details & Checkout Flow */}
               {invoiceStatus === 'NONE' && (
                 <div className="space-y-4">
-                  {/* Detailed Asset Summary */}
+                  {/* Detailed Summary */}
                   <div className="p-4.5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3">
                     <div className="flex justify-between items-start">
                       <div>
@@ -446,11 +444,11 @@ export const BoostScreen: React.FC = () => {
 
                     <div className="grid grid-cols-2 gap-2 bg-app-bg p-3 rounded-xl border border-white/5 text-xs font-mono">
                       <div>
-                        <span className="text-[10px] text-text-tertiary block font-sans uppercase">Daily Yield</span>
+                        <span className="text-[10px] text-text-tertiary block font-sans uppercase">Daily Earnings</span>
                         <strong className="text-usdt-green text-sm">{getMachineYieldDetails(selectedMachine).daily.local}</strong>
                       </div>
                       <div>
-                        <span className="text-[10px] text-text-tertiary block font-sans uppercase">Monthly Yield</span>
+                        <span className="text-[10px] text-text-tertiary block font-sans uppercase">Monthly Earnings</span>
                         <strong className="text-text-primary text-sm">{getMachineYieldDetails(selectedMachine).monthly.local}</strong>
                       </div>
                     </div>
@@ -468,7 +466,7 @@ export const BoostScreen: React.FC = () => {
                   {/* Payment Rail Selector */}
                   <div className="space-y-2">
                     <label className="text-xs font-black text-text-secondary uppercase tracking-wider">
-                      Select Payment Rail
+                      Select Payment Method
                     </label>
 
                     <div className="flex flex-col gap-2">
@@ -487,8 +485,8 @@ export const BoostScreen: React.FC = () => {
                         <div className="flex items-center gap-3">
                           <Smartphone size={20} className={paymentProvider === 'MOBILE_MONEY' ? 'text-usdt-green' : 'text-text-secondary'} />
                           <div>
-                            <span className="text-xs font-extrabold block">Mobile Money Rail (Primary)</span>
-                            <span className="text-[10px] text-text-tertiary">Pay using MTN MoMo, Airtel, or M-Pesa local rates</span>
+                            <span className="text-xs font-extrabold block">Mobile Money</span>
+                            <span className="text-[10px] text-text-tertiary">Pay using MTN MoMo, Airtel, or M-Pesa</span>
                           </div>
                         </div>
                         <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-usdt-green/20 text-usdt-green rounded-full border border-usdt-green/30">UGX / RWF</span>
@@ -510,7 +508,7 @@ export const BoostScreen: React.FC = () => {
                           <Bot size={20} className={paymentProvider === 'CRYPTOBOT' ? 'text-sky-400' : 'text-text-secondary'} />
                           <div>
                             <span className="text-xs font-extrabold block">Telegram @CryptoBot</span>
-                            <span className="text-[10px] text-text-tertiary">Pay instantly using Telegram wallet (USDT)</span>
+                            <span className="text-[10px] text-text-tertiary">Pay using Telegram wallet</span>
                           </div>
                         </div>
                         <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-sky-500/20 text-sky-400 rounded-full border border-sky-500/30">USDT</span>
@@ -523,7 +521,7 @@ export const BoostScreen: React.FC = () => {
                     onClick={handleGenerateInvoice}
                     className="w-full py-3.5 rounded-2xl bg-usdt-green text-app-bg font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-usdt-green/20 hover:brightness-110 press-feedback"
                   >
-                    <span>Acquire {selectedMachine.name}</span>
+                    <span>Buy {selectedMachine.name}</span>
                     <ArrowUpRight size={16} />
                   </button>
                 </div>
@@ -533,7 +531,7 @@ export const BoostScreen: React.FC = () => {
                 <div className="space-y-4">
                   {/* Pending Invoice Summary */}
                   <div className="p-4.5 rounded-2xl bg-[#090b11]/80 border border-white/10 flex flex-col items-center justify-center text-center relative overflow-hidden">
-                    <span className="text-[10px] font-mono font-bold text-text-tertiary uppercase">Invoice Ref</span>
+                    <span className="text-[10px] font-mono font-bold text-text-tertiary uppercase">Payment Code</span>
                     <span className="text-sm font-mono font-black text-text-primary mt-0.5">{invoiceId}</span>
 
                     <div className="w-18 h-18 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 my-4">
@@ -574,24 +572,24 @@ export const BoostScreen: React.FC = () => {
                       <div className="p-3 bg-white/5 border border-white/10 rounded-2xl text-[11px] text-text-tertiary flex items-start gap-2">
                         <AlertCircle size={15} className="text-usdt-green shrink-0 mt-0.5" />
                         <span>
-                          Pay via local mobile money. You will receive an STK pin prompt on your device.
+                          Pay via local mobile money. You will receive a prompt on your phone to approve.
                         </span>
                       </div>
 
                       <button
                         type="button"
-                        onClick={() => showToast('Payment push prompt sent!', 'info')}
+                        onClick={() => showToast('Payment prompt sent to your phone!', 'info')}
                         className="w-full py-3.5 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md hover:brightness-110 press-feedback"
                       >
                         <Smartphone size={15} />
-                        <span>Send Payment Push Prompt</span>
+                        <span>Send Payment Prompt</span>
                       </button>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       <div className="p-3 bg-white/5 border border-white/10 rounded-2xl text-[11px] text-text-tertiary flex items-start gap-2">
                         <AlertCircle size={15} className="text-sky-400 shrink-0 mt-0.5" />
-                        <span>Please send payment of <strong>{(Number(selectedMachine?.priceUsdt) || 0).toFixed(2)} USDT</strong> via @CryptoBot. Your Machine activates immediately after provider confirmation.</span>
+                        <span>Please send payment of <strong>{(Number(selectedMachine?.priceUsdt) || 0).toFixed(2)} USDT</strong> via @CryptoBot. Your machine activates automatically as soon as payment arrives.</span>
                       </div>
 
                       <button
@@ -613,7 +611,7 @@ export const BoostScreen: React.FC = () => {
                       className="w-full py-3 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md hover:brightness-110 press-feedback animate-pulse"
                     >
                       <Sparkles size={14} />
-                      <span>Simulate Payment Success (Sandbox) ⚡</span>
+                      <span>Simulate Payment Success ⚡</span>
                     </button>
                   </div>
                 </div>
@@ -631,7 +629,7 @@ export const BoostScreen: React.FC = () => {
 
                   <h3 className="text-lg font-black text-text-primary">Machine Activated!</h3>
                   <p className="text-xs text-text-secondary max-w-xs leading-relaxed font-medium">
-                    Your machine <strong>{selectedMachine.name}</strong> is now live. Your daily compute capacity has been permanently upgraded.
+                    Your machine <strong>{selectedMachine.name}</strong> is now active and earning daily money for you!
                   </p>
 
                   <button
@@ -641,7 +639,7 @@ export const BoostScreen: React.FC = () => {
                     }}
                     className="px-6 py-2.5 rounded-xl bg-usdt-green text-app-bg font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110"
                   >
-                    Return to Hub
+                    Done
                   </button>
                 </div>
               )}

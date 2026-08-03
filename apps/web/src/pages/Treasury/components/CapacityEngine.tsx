@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Battery,
   Zap,
   TrendingUp,
   Clock,
   CheckCircle2,
-  ArrowUpRight,
   Loader2,
   Sparkles,
-  Flame,
-  Rocket,
   Package,
-  Users,
   Crown
 } from 'lucide-react';
 import { useCapacityStore, type CapacityOpportunity, type CapacityLevel } from '../../../store/useCapacityStore';
@@ -39,7 +35,6 @@ export const CapacityEngine: React.FC = () => {
     purchaseCapacityBoost,
     purchaseCapacityPack,
     purchaseReferralAccelerator,
-    upgradeMembership
   } = useCapacityStore();
 
   const effectiveCapacity = Math.max(currentCapacity, Math.round((Number(baseSpeedGhs) || 1.0) * 10));
@@ -51,7 +46,7 @@ export const CapacityEngine: React.FC = () => {
     setTimeout(() => {
       activateDailyCycle();
       setIsProcessing(false);
-      showToast('Daily operations activated! +10 Capacity earned.', 'success');
+      showToast('Daily mining started! +10 Power earned.', 'success');
     }, 800);
   };
 
@@ -60,7 +55,7 @@ export const CapacityEngine: React.FC = () => {
     setTimeout(() => {
       claimSettlement();
       setIsProcessing(false);
-      showToast('Daily settlement claimed! Your earning capacity is updated.', 'success');
+      showToast('Daily rewards collected! Your earnings are updated.', 'success');
     }, 800);
   };
 
@@ -70,17 +65,17 @@ export const CapacityEngine: React.FC = () => {
       switch (opportunity.source) {
         case 'CAPACITY_BOOST':
           purchaseCapacityBoost(opportunity.reward, opportunity.price);
-          showToast(`Capacity Boost purchased! +${opportunity.reward} Capacity for 24h.`, 'success');
+          showToast(`Power Boost purchased! +${opportunity.reward} Power for 24h.`, 'success');
           setActiveTab('boost');
           break;
         case 'CAPACITY_PACK':
           purchaseCapacityPack(opportunity.reward, opportunity.price);
-          showToast(`Capacity Pack purchased! +${opportunity.reward} permanent Capacity.`, 'success');
+          showToast(`Power Pack purchased! +${opportunity.reward} permanent Power.`, 'success');
           setActiveTab('boost');
           break;
         case 'REFERRAL_ACCELERATOR':
           purchaseReferralAccelerator(7, opportunity.price);
-          showToast(`Referral Accelerator activated! 7-day capacity multiplier.`, 'success');
+          showToast(`Friend Accelerator activated! 7-day power multiplier.`, 'success');
           setActiveTab('friends');
           break;
         default:
@@ -91,23 +86,23 @@ export const CapacityEngine: React.FC = () => {
       // Handle free opportunities — navigate to required action screen
       switch (opportunity.source) {
         case 'DEPOSIT':
-          showToast('Opening Wallet for deposit...', 'info');
+          showToast('Opening Wallet to add money...', 'info');
           setActiveTab('wallet');
           break;
         case 'REFERRAL_SIGNUP':
-          showToast('Opening Friends hub to invite users...', 'info');
+          showToast('Opening Friends tab to invite friends...', 'info');
           setActiveTab('friends');
           break;
         case 'CONSECUTIVE_DAYS':
         case 'DAILY_LOGIN':
         case 'MINING_ACTIVE':
           addCapacity(opportunity.source, opportunity.reward, opportunity.description);
-          showToast(`+${opportunity.reward} Capacity earned!`, 'success');
+          showToast(`+${opportunity.reward} Power earned!`, 'success');
           setActiveTab('mine');
           break;
         default:
           addCapacity(opportunity.source, opportunity.reward, opportunity.description);
-          showToast(`+${opportunity.reward} Capacity earned!`, 'success');
+          showToast(`+${opportunity.reward} Power earned!`, 'success');
           setActiveTab('mine');
       }
     }
@@ -152,29 +147,29 @@ export const CapacityEngine: React.FC = () => {
         <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
           <div className="flex items-center gap-1.5">
             <Battery size={16} className="text-usdt-green" />
-            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">Daily Capacity Engine</h2>
+            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">Daily Mining Engine</h2>
           </div>
           <div className={`text-[10px] font-bold uppercase bg-control-bg px-2.5 py-0.5 rounded-full border border-white/5 font-mono ${
             dailyCycleStatus === 'SETTLEMENT_CLAIMED' ? 'text-usdt-green' : 'text-text-secondary'
           }`}>
-            {dailyCycleStatus.replace('_', ' ')}
+            {dailyCycleStatus === 'SETTLEMENT_CLAIMED' ? 'Done for Today' : dailyCycleStatus === 'ACTIVATED' ? 'Active' : 'Ready'}
           </div>
         </div>
 
         {/* Capacity Stats Grid */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5">
-            <div className="text-[10px] text-text-secondary font-bold">Current Capacity</div>
+            <div className="text-[10px] text-text-secondary font-bold">Mining Power</div>
             <div className="text-lg font-black text-text-primary font-mono mt-1">
               {effectiveCapacity.toLocaleString()}
             </div>
             <div className="text-[8px] text-usdt-green mt-0.5 font-mono">
-              +{todayCapacityEarned} Today
+              +{todayCapacityEarned} Power Today
             </div>
           </div>
 
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5">
-            <div className="text-[10px] text-text-secondary font-bold">Capacity Level</div>
+            <div className="text-[10px] text-text-secondary font-bold">Mining Level</div>
             <div className="text-lg font-black text-text-primary mt-1 flex items-center gap-1">
               <span>{getLevelIcon(capacityLevel)}</span>
               <span className={getLevelColor(capacityLevel)}>{capacityLevel}</span>
@@ -188,15 +183,15 @@ export const CapacityEngine: React.FC = () => {
         {/* Multipliers Display */}
         <div className="flex gap-2 mb-4">
           <div className="flex-1 bg-usdt-green/10 border border-usdt-green/20 rounded-xl p-2 text-center">
-            <div className="text-[9px] text-usdt-green font-bold uppercase">Earning</div>
+            <div className="text-[9px] text-usdt-green font-bold uppercase">Earnings</div>
             <div className="text-sm font-black text-usdt-green font-mono">{earningMultiplier}×</div>
           </div>
           <div className="flex-1 bg-purple-500/10 border border-purple-500/20 rounded-xl p-2 text-center">
-            <div className="text-[9px] text-purple-400 font-bold uppercase">Referral</div>
+            <div className="text-[9px] text-purple-400 font-bold uppercase">Friend Bonus</div>
             <div className="text-sm font-black text-purple-400 font-mono">{referralMultiplier}×</div>
           </div>
           <div className="flex-1 bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 text-center">
-            <div className="text-[9px] text-cyan-400 font-bold uppercase">Withdraw</div>
+            <div className="text-[9px] text-cyan-400 font-bold uppercase">Take Out Limit</div>
             <div className="text-sm font-black text-cyan-400 font-mono">${withdrawalLimit}</div>
           </div>
         </div>
@@ -208,9 +203,9 @@ export const CapacityEngine: React.FC = () => {
               <div className="w-12 h-12 rounded-full bg-usdt-green/10 text-usdt-green flex items-center justify-center mx-auto mb-3">
                 <Zap size={24} />
               </div>
-              <h3 className="text-sm font-extrabold text-text-primary">Activate Today's Operations</h3>
+              <h3 className="text-sm font-extrabold text-text-primary">Start Daily Mining</h3>
               <p className="text-xs text-text-secondary mt-1 max-w-[90%] mx-auto">
-                Start your daily earning cycle and unlock capacity opportunities.
+                Start mining for today and earn daily rewards!
               </p>
               <button
                 disabled={isProcessing}
@@ -219,11 +214,11 @@ export const CapacityEngine: React.FC = () => {
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 size={14} className="animate-spin" /> Activating...
+                    <Loader2 size={14} className="animate-spin" /> Starting...
                   </>
                 ) : (
                   <>
-                    <Sparkles size={14} /> Activate Operations
+                    <Sparkles size={14} /> Start Mining
                   </>
                 )}
               </button>
@@ -232,9 +227,9 @@ export const CapacityEngine: React.FC = () => {
 
           {dailyCycleStatus === 'ACTIVATED' && (
             <div className="text-center py-2">
-              <h3 className="text-sm font-extrabold text-text-primary">Increase Your Capacity</h3>
+              <h3 className="text-sm font-extrabold text-text-primary">Increase Your Mining Power</h3>
               <p className="text-xs text-text-secondary mt-1">
-                Complete opportunities below to earn capacity and unlock higher multipliers.
+                Complete simple tasks below to boost your earnings.
               </p>
             </div>
           )}
@@ -244,9 +239,9 @@ export const CapacityEngine: React.FC = () => {
               <div className="w-10 h-10 rounded-full bg-usdt-green/10 text-usdt-green flex items-center justify-center mx-auto mb-2">
                 <TrendingUp size={20} />
               </div>
-              <h3 className="text-sm font-extrabold text-text-primary">Ready for Settlement</h3>
+              <h3 className="text-sm font-extrabold text-text-primary">Ready to Collect</h3>
               <p className="text-xs text-text-secondary mt-1">
-                You've earned +{todayCapacityEarned} capacity today. Claim your settlement to update your earning potential.
+                You've earned +{todayCapacityEarned} power today! Collect your rewards to boost your earnings.
               </p>
               <button
                 disabled={isProcessing}
@@ -255,11 +250,11 @@ export const CapacityEngine: React.FC = () => {
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 size={14} className="animate-spin" /> Processing...
+                    <Loader2 size={14} className="animate-spin" /> Collecting...
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 size={14} /> Claim Settlement
+                    <CheckCircle2 size={14} /> Collect Rewards
                   </>
                 )}
               </button>
@@ -271,9 +266,9 @@ export const CapacityEngine: React.FC = () => {
               <div className="w-10 h-10 rounded-full bg-text-secondary/10 text-text-secondary flex items-center justify-center mx-auto mb-2">
                 <Clock size={20} />
               </div>
-              <h3 className="text-sm font-extrabold text-text-primary">Today's Cycle Complete</h3>
+              <h3 className="text-sm font-extrabold text-text-primary">Today's Mining Complete</h3>
               <p className="text-xs text-text-secondary mt-1">
-                Return tomorrow to activate a new earning cycle.
+                Come back tomorrow to start mining again!
               </p>
             </div>
           )}
@@ -289,7 +284,7 @@ export const CapacityEngine: React.FC = () => {
           className="flex flex-col gap-3"
         >
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-xs font-black uppercase text-text-secondary tracking-widest">Capacity Opportunities</h2>
+            <h2 className="text-xs font-black uppercase text-text-secondary tracking-widest">Daily Rewards & Tasks</h2>
             <span className="text-[10px] text-text-tertiary font-mono">
               {opportunities.filter(o => o.isAvailable).length} Available
             </span>
@@ -319,7 +314,7 @@ export const CapacityEngine: React.FC = () => {
                       </h3>
                       {opportunity.isPaid && (
                         <span className="text-[8px] font-bold bg-gold/10 border border-gold/30 text-gold px-1.5 py-0.5 rounded-full flex-shrink-0">
-                          <Crown size={8} className="inline mr-0.5" /> PAID
+                          <Crown size={8} className="inline mr-0.5" /> BOOST
                         </span>
                       )}
                     </div>
@@ -346,7 +341,7 @@ export const CapacityEngine: React.FC = () => {
                     {opportunity.isPaid && opportunity.price ? (
                       <div className="flex flex-col items-end">
                         <span className="text-xs font-black text-gold font-mono">${(Number(opportunity.price) || 0).toFixed(2)}</span>
-                        <span className="text-[9px] text-text-tertiary">+{opportunity.reward} Cap</span>
+                        <span className="text-[9px] text-text-tertiary">+{opportunity.reward} Power</span>
                       </div>
                     ) : (
                       <span className="text-xs font-mono font-black text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-2 py-0.5 rounded-full">
@@ -387,7 +382,7 @@ export const CapacityEngine: React.FC = () => {
         <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
           <div className="flex items-center gap-1.5">
             <Crown size={16} className="text-gold" />
-            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">Level Benefits</h2>
+            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">Level Perks</h2>
           </div>
           <span className={`text-[10px] font-bold uppercase bg-control-bg px-2.5 py-0.5 rounded-full border border-white/5 font-mono ${getLevelColor(capacityLevel)}`}>
             {capacityLevel}
@@ -400,16 +395,16 @@ export const CapacityEngine: React.FC = () => {
             <span className={`font-black font-mono ${getLevelColor(capacityLevel)}`}>{earningMultiplier}×</span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-text-secondary">Referral Multiplier</span>
+            <span className="text-text-secondary">Friend Bonus</span>
             <span className={`font-black font-mono ${getLevelColor(capacityLevel)}`}>{referralMultiplier}×</span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-text-secondary">Withdrawal Limit</span>
+            <span className="text-text-secondary">Take Out Limit</span>
             <span className={`font-black font-mono ${getLevelColor(capacityLevel)}`}>${withdrawalLimit}</span>
           </div>
           <div className="mt-3 pt-3 border-t border-white/5">
             <div className="text-[10px] text-text-tertiary leading-relaxed">
-              Increase your capacity to unlock higher levels with better multipliers and privileges.
+              Increase your mining power to unlock higher levels with better multipliers.
             </div>
           </div>
         </div>

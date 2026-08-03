@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Wallet,
   PlusCircle,
   History,
   Clock,
   RefreshCw,
   ShieldCheck,
   ChevronRight,
-  Sparkles,
   ArrowDownLeft,
   ArrowDownToLine,
   TrendingUp,
@@ -71,8 +69,8 @@ export const WalletScreen: React.FC = () => {
       {/* Progressive Education: Deposit */}
       <EducationCard
         educationKey="deposit"
-        title="Understanding Deposits"
-        body="Fund your TitanStream balance using local Mobile Money or Telegram @CryptoBot. Every deposit is logged in our production financial ledger and credited to your available balance immediately upon operator confirmation."
+        title="How to Add Money"
+        body="Add money to your wallet using Mobile Money or Telegram @CryptoBot. Your money appears in your wallet immediately once approved."
       />
 
       {/* Balance Hero Card */}
@@ -86,14 +84,14 @@ export const WalletScreen: React.FC = () => {
               ₮
             </div>
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-text-tertiary">
-              Balance Engine Derived
+              Money in Wallet
             </span>
           </div>
 
           <button
             onClick={handleRefresh}
             className="press-feedback p-1.5 rounded-full bg-white/5 border border-white/10 text-text-secondary hover:text-text-primary"
-            title="Sync Balance Engine"
+            title="Refresh Balance"
           >
             <RefreshCw size={14} className={isLoadingBalance ? 'animate-spin' : ''} />
           </button>
@@ -105,13 +103,13 @@ export const WalletScreen: React.FC = () => {
             <CurrencyDisplay amount={usdtBalance} size="lg" className="text-4xl font-extrabold text-text-primary font-mono tracking-tight" />
           </div>
           <p className="text-[11px] text-text-tertiary mt-1">
-            Settled double-entry ledger funds available for ecosystem operations.
+            Money ready to use for buying machines or taking out.
           </p>
         </div>
 
         {/* Primary Action Buttons Grid */}
         <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/10">
-          {/* Add Funds CTA */}
+          {/* Add Money CTA */}
           <button
             onClick={() => {
               hapticFeedback.impactOccurred('medium');
@@ -120,10 +118,10 @@ export const WalletScreen: React.FC = () => {
             className="press-feedback py-3 px-2 rounded-2xl bg-usdt-green text-app-bg font-extrabold text-[11px] flex items-center justify-center gap-1.5 shadow-lg shadow-usdt-green/20"
           >
             <PlusCircle size={16} />
-            <span>Add Funds</span>
+            <span>Add Money</span>
           </button>
 
-          {/* Withdraw CTA */}
+          {/* Take Out Money CTA */}
           <button
             onClick={() => {
               hapticFeedback.impactOccurred('light');
@@ -132,8 +130,7 @@ export const WalletScreen: React.FC = () => {
             className="press-feedback py-3 px-2 rounded-2xl bg-gradient-to-r from-usdt-green to-[#00c853] text-app-bg font-extrabold text-[11px] flex items-center justify-center gap-1.5 shadow-lg shadow-usdt-green/20 hover:brightness-110 transition-all"
           >
             <ArrowDownToLine size={16} />
-            <span>Withdraw</span>
-            <span className="text-[8px] bg-white/20 px-1.5 py-0.5 rounded-full">Instant</span>
+            <span>Take Out Money</span>
           </button>
 
           {/* Transaction History CTA */}
@@ -155,7 +152,7 @@ export const WalletScreen: React.FC = () => {
         <div className="glass-panel p-3.5 rounded-2xl border border-white/10 bg-control-bg/25 flex flex-col gap-1">
           <div className="flex items-center gap-1 text-[10px] font-bold text-text-tertiary uppercase">
             <TrendingUp size={12} className="text-usdt-green" />
-            <span>Lifetime Deposits</span>
+            <span>Total Money Added</span>
           </div>
           <CurrencyDisplay amount={lifetimeDeposits} size="sm" className="text-base font-extrabold text-text-primary" />
         </div>
@@ -163,7 +160,7 @@ export const WalletScreen: React.FC = () => {
         <div className="glass-panel p-3.5 rounded-2xl border border-white/10 bg-control-bg/25 flex flex-col gap-1">
           <div className="flex items-center gap-1 text-[10px] font-bold text-text-tertiary uppercase">
             <ArrowDownToLine size={12} className="text-error-red" />
-            <span>Lifetime Withdrawals</span>
+            <span>Total Money Taken Out</span>
           </div>
           <CurrencyDisplay amount={lifetimeWithdrawals} size="sm" className="text-base font-extrabold text-text-primary" />
         </div>
@@ -171,7 +168,7 @@ export const WalletScreen: React.FC = () => {
         <div className="glass-panel p-3.5 rounded-2xl border border-white/10 bg-control-bg/25 flex flex-col gap-1">
           <div className="flex items-center gap-1 text-[10px] font-bold text-text-tertiary uppercase">
             <Coins size={12} className="text-gold" />
-            <span>Accumulated Yield</span>
+            <span>Total Earnings</span>
           </div>
           <CurrencyDisplay amount={totalRewards} size="sm" className="text-base font-extrabold text-text-primary" />
         </div>
@@ -179,23 +176,23 @@ export const WalletScreen: React.FC = () => {
         <div className="glass-panel p-3.5 rounded-2xl border border-white/10 bg-control-bg/25 flex flex-col gap-1">
           <div className="flex items-center gap-1 text-[10px] font-bold text-text-tertiary uppercase">
             <Cpu size={12} className="text-sky-400" />
-            <span>Active Machines</span>
+            <span>Your Machines</span>
           </div>
-          <span className="text-base font-extrabold text-text-primary font-mono">{activeMachines} units</span>
+          <span className="text-base font-extrabold text-text-primary font-mono">{activeMachines} machines</span>
         </div>
       </div>
 
-      {/* Pending Settlements Section if any exist */}
+      {/* Waiting Payments Section if any exist */}
       {pendingSettlements.length > 0 && (
         <div className="glass-panel p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Clock size={16} className="text-amber-400 animate-spin" />
               <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-300">
-                Pending Settlements ({pendingSettlements.length})
+                Waiting Payments ({pendingSettlements.length})
               </h4>
             </div>
-            <span className="text-[10px] font-semibold text-text-tertiary">Live Polling</span>
+            <span className="text-[10px] font-semibold text-text-tertiary">Updating Live</span>
           </div>
 
           <div className="space-y-2">
@@ -247,9 +244,9 @@ export const WalletScreen: React.FC = () => {
           <ShieldCheck size={20} />
         </div>
         <div className="text-xs">
-          <div className="font-extrabold text-text-primary">Universal Settlement Framework</div>
+          <div className="font-extrabold text-text-primary">100% Safe & Protected</div>
           <div className="text-text-tertiary mt-0.5 text-[11px]">
-            Every funding action flows securely through double-entry ledger & orchestrator verification.
+            Every transaction is verified and safely added to your account.
           </div>
         </div>
       </div>
@@ -258,7 +255,7 @@ export const WalletScreen: React.FC = () => {
       <div className="glass-panel p-4 rounded-2xl border border-white/10 space-y-3">
         <div className="flex items-center justify-between">
           <h4 className="text-xs font-extrabold uppercase tracking-wider text-text-tertiary">
-            Recent Activity
+            Recent Payments
           </h4>
           <button
             onClick={() => setIsHistoryModalOpen(true)}
@@ -271,7 +268,7 @@ export const WalletScreen: React.FC = () => {
 
         {transactions.length === 0 ? (
           <div className="py-6 text-center text-xs text-text-tertiary">
-            No recent ledger transactions recorded.
+            No payments yet.
           </div>
         ) : (
           <div className="space-y-2">
@@ -285,7 +282,7 @@ export const WalletScreen: React.FC = () => {
                     <ArrowDownLeft size={16} />
                   </div>
                   <div>
-                    <div className="font-bold text-text-primary">{tx.type || 'Deposit'}</div>
+                    <div className="font-bold text-text-primary">{tx.type || 'Payment'}</div>
                     <div className="text-[10px] text-text-tertiary font-mono">#{tx.reference || tx.id.slice(-6)}</div>
                   </div>
                 </div>
@@ -317,7 +314,7 @@ export const WalletScreen: React.FC = () => {
               className="w-full max-w-md bg-app-bg border border-white/10 rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl max-h-[calc(90vh-80px)] sm:max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
-                <h3 className="text-base font-extrabold text-text-primary">Ledger & Settlement Log</h3>
+                <h3 className="text-base font-extrabold text-text-primary">Payment History</h3>
                 <button
                   onClick={() => setIsHistoryModalOpen(false)}
                   className="press-feedback px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-text-secondary"

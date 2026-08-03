@@ -4,18 +4,13 @@ import {
   Vault,
   ShieldCheck,
   TrendingUp,
-  Clock,
-  CheckCircle2,
-  ArrowUpRight,
-  Info,
-  Unlock,
   Calendar,
   Activity,
   Globe,
-  Loader2
+  Info
 } from 'lucide-react';
 import { useTreasuryStore } from '../../store/useTreasuryStore';
-import type { MissionItem, CycleStatus } from '../../store/useTreasuryStore';
+import type { MissionItem } from '../../store/useTreasuryStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useMiningStore } from '../../store/useMiningStore';
 import { useWalletStore } from '../../store/useWalletStore';
@@ -24,7 +19,6 @@ import { CapacityEngine } from './components/CapacityEngine';
 
 export const TreasuryScreen: React.FC = () => {
   const {
-    cycleStatus,
     dailyBoostActive,
     powerEarnedToday,
     reputationPower,
@@ -40,13 +34,8 @@ export const TreasuryScreen: React.FC = () => {
     daysRemaining,
     seasonTargetPower,
     seasonProgressPower,
-    missions,
     events,
     fetchTreasuryState,
-    takeSnapshot,
-    claimMissionReward,
-    calculateGrowthShare,
-    startNewDay,
     resetSeason,
   } = useTreasuryStore();
 
@@ -57,39 +46,15 @@ export const TreasuryScreen: React.FC = () => {
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState('100');
 
-  // Snapshot scanning simulation state
-  const [isScanning, setIsScanning] = useState(false);
-  const [isCalculating, setIsCalculating] = useState(false);
-
   // Fetch real treasury state from backend on mount
   useEffect(() => {
     fetchTreasuryState();
   }, [fetchTreasuryState]);
 
-  const handleCaptureSnapshot = () => {
-    setIsScanning(true);
-    showToast('Initiating global treasury ledger scan...', 'info');
-    takeSnapshot();
-    setTimeout(() => {
-      setIsScanning(false);
-      showToast('Treasury snapshot captured! 5 Daily opportunities unlocked.', 'success');
-    }, 1200);
-  };
-
-  const handleCalculateGrowth = () => {
-    setIsCalculating(true);
-    showToast('Calculating user reputation yield...', 'info');
-    calculateGrowthShare();
-    setTimeout(() => {
-      setIsCalculating(false);
-      showToast('Daily treasury yield calculated! Tomorrow is unlocked.', 'success');
-    }, 1500);
-  };
-
   const handleDepositSubmit = () => {
     const depVal = parseFloat(depositAmount);
     if (!depositAmount || depVal <= 0) {
-      showToast('Please enter a valid deposit amount', 'error');
+      showToast('Please enter a valid amount', 'error');
       return;
     }
     useTreasuryStore.getState().incrementMissionProgress('DEPOSIT', 1);
@@ -105,23 +70,7 @@ export const TreasuryScreen: React.FC = () => {
     useTreasuryStore.getState().adjustTrustScore(3);
 
     setShowDepositModal(false);
-    showToast(`Successfully deposited ${(Number(depVal) || 0).toFixed(2)} USDT! 1.5× Stream Speed Boost activated.`, 'success');
-  };
-
-  const handleMissionAction = (mission: MissionItem) => {
-    switch (mission.type) {
-      case 'DEPOSIT':
-        setShowDepositModal(true);
-        break;
-      case 'REFER':
-        setActiveTab('friends');
-        break;
-      case 'STAY_ACTIVE':
-        showToast('Stay active streak is evaluated automatically daily.', 'info');
-        break;
-      default:
-        break;
-    }
+    showToast(`Added ${(Number(depVal) || 0).toFixed(2)} USDT! 1.5× Mining Speed Boost active.`, 'success');
   };
 
   return (
@@ -141,7 +90,7 @@ export const TreasuryScreen: React.FC = () => {
               <Vault size={20} className="animate-pulse" />
             </div>
             <div>
-              <div className="text-[10px] text-text-tertiary uppercase font-extrabold tracking-widest leading-none">REPUTATION RANK</div>
+              <div className="text-[10px] text-text-tertiary uppercase font-extrabold tracking-widest leading-none">YOUR LEVEL</div>
               <div className="text-base font-black text-text-primary mt-0.5 flex items-center gap-1.5">
                 {reputationRank}
                 <span className="text-xs font-mono font-bold text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-2 py-0.5 rounded-full">
@@ -157,7 +106,7 @@ export const TreasuryScreen: React.FC = () => {
           </div>
           
           <div className="text-right">
-            <div className="text-[10px] text-text-tertiary uppercase font-extrabold tracking-widest leading-none">TRUST SCORE</div>
+            <div className="text-[10px] text-text-tertiary uppercase font-extrabold tracking-widest leading-none">SAFETY RATING</div>
             <div className="text-base font-black text-usdt-green font-mono mt-0.5 flex items-center gap-1 justify-end">
               <ShieldCheck size={16} />
               {trustScore}%
@@ -167,18 +116,18 @@ export const TreasuryScreen: React.FC = () => {
 
         <div className="grid grid-cols-3 gap-2 mt-3 pt-1 text-center">
           <div className="bg-control-bg/40 p-2 rounded-xl border border-white/5">
-            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Compute Speed</div>
+            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Mining Speed</div>
             <div className="text-sm font-black text-text-primary font-mono mt-0.5">
-              {((Number(baseSpeedGhs || 0) * (dailyBoostActive ? 1.5 : 1.0)) * 10).toFixed(0)} CU
+              {((Number(baseSpeedGhs || 0) * (dailyBoostActive ? 1.5 : 1.0)) * 10).toFixed(0)} Speed
             </div>
           </div>
           <div className="bg-control-bg/40 p-2 rounded-xl border border-white/5">
-            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Active Power</div>
+            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Level Power</div>
             <div className="text-sm font-black text-text-primary font-mono mt-0.5">{reputationPower}</div>
             <div className="text-[8px] text-usdt-green font-mono font-bold">+{powerEarnedToday} Today</div>
           </div>
           <div className="bg-control-bg/40 p-2 rounded-xl border border-white/5">
-            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Trust Score</div>
+            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Safety Rating</div>
             <div className="text-xs font-black mt-1 uppercase text-usdt-green flex items-center justify-center gap-0.5">
               <ShieldCheck size={10} /> {trustScore}%
             </div>
@@ -186,7 +135,7 @@ export const TreasuryScreen: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* 2. DYNAMIC TICKING ECONOMY STATUS */}
+      {/* 2. DYNAMIC ECONOMY STATUS */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -196,7 +145,7 @@ export const TreasuryScreen: React.FC = () => {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5">
             <Activity size={15} className="text-usdt-green" />
-            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">Live Platform Economy</h2>
+            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">Platform Statistics</h2>
           </div>
           <span className="flex h-2 w-2 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-usdt-green opacity-75"></span>
@@ -206,34 +155,34 @@ export const TreasuryScreen: React.FC = () => {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5 relative overflow-hidden">
-            <div className="text-[10px] text-text-secondary font-bold">Treasury Size</div>
+            <div className="text-[10px] text-text-secondary font-bold">Community Fund</div>
             <div className="text-base font-extrabold font-mono text-text-primary mt-1">
               ₮{(Number(treasuryToday) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-[9px] text-usdt-green mt-1 flex items-center gap-0.5 font-bold font-mono">
-              <TrendingUp size={10} /> Active Pool
+              <TrendingUp size={10} /> Active Fund
             </div>
           </div>
 
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5 relative overflow-hidden">
-            <div className="text-[10px] text-text-secondary font-bold">Merchant Vol (24H)</div>
+            <div className="text-[10px] text-text-secondary font-bold">24H Payment Volume</div>
             <div className="text-base font-extrabold font-mono text-text-primary mt-1">
               ₮{(Number(operatorVolume) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-[9px] text-text-tertiary mt-1 flex items-center gap-0.5 font-bold">
-              <Globe size={10} /> Global OTC Desks
+              <Globe size={10} /> Global Payment Systems
             </div>
           </div>
 
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5 relative overflow-hidden">
-            <div className="text-[10px] text-text-secondary font-bold">Deposits Today</div>
+            <div className="text-[10px] text-text-secondary font-bold">Money Added Today</div>
             <div className="text-base font-extrabold font-mono text-usdt-green mt-1">
               ₮{(Number(depositsToday) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
 
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5 relative overflow-hidden">
-            <div className="text-[10px] text-text-secondary font-bold">Withdrawals Today</div>
+            <div className="text-[10px] text-text-secondary font-bold">Money Taken Out Today</div>
             <div className="text-base font-extrabold font-mono text-error-red mt-1">
               ₮{(Number(withdrawalsToday) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
@@ -241,13 +190,13 @@ export const TreasuryScreen: React.FC = () => {
 
           <div className="col-span-2 bg-control-bg/30 p-3 rounded-xl border border-white/5 relative overflow-hidden flex items-center justify-between">
             <div>
-              <div className="text-[10px] text-text-secondary font-bold">Top growth yield</div>
+              <div className="text-[10px] text-text-secondary font-bold">Top Growth Bonus</div>
               <div className="text-base font-extrabold font-mono text-gold-bright mt-1">
                 +{topGrowth}%
               </div>
             </div>
             <span className="text-[10px] font-bold text-text-tertiary uppercase bg-control-bg px-2.5 py-1 rounded-lg border border-white/5">
-              Escrow Enabled
+              100% Protected
             </span>
           </div>
         </div>
@@ -256,7 +205,7 @@ export const TreasuryScreen: React.FC = () => {
       {/* 3. DAILY CAPACITY ENGINE */}
       <CapacityEngine />
 
-      {/* 5. SEASONS PROGRESS */}
+      {/* 4. SEASONS PROGRESS */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -266,7 +215,7 @@ export const TreasuryScreen: React.FC = () => {
         <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
           <div className="flex items-center gap-1.5">
             <Calendar size={16} className="text-gold" />
-            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">Active Season {seasonNumber}</h2>
+            <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">Current Season {seasonNumber}</h2>
           </div>
           <span className="text-[10px] font-bold text-gold bg-gold/10 border border-gold/20 px-2.5 py-0.5 rounded-full font-mono">
             {seasonTitle}
@@ -276,9 +225,9 @@ export const TreasuryScreen: React.FC = () => {
         <div className="flex flex-col gap-3.5">
           <div className="flex justify-between items-center text-xs">
             <div>
-              <div className="text-text-secondary">Season Power Progress</div>
+              <div className="text-text-secondary">Season Progress</div>
               <div className="text-sm font-black text-text-primary font-mono mt-1">
-                {seasonProgressPower} / {seasonTargetPower} Pwr
+                {seasonProgressPower} / {seasonTargetPower} Power
               </div>
             </div>
             <div className="text-right">
@@ -300,7 +249,7 @@ export const TreasuryScreen: React.FC = () => {
           <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 rounded-xl p-3 text-xs text-text-secondary">
             <Info size={15} className="text-gold flex-shrink-0" />
             <span>
-              All reputation, trust scores, and permanent rank stats carry over to next season. Seasonal power goals reset.
+              All your levels and safety scores carry over to the next season automatically.
             </span>
           </div>
 
@@ -309,20 +258,20 @@ export const TreasuryScreen: React.FC = () => {
               onClick={resetSeason}
               className="press-feedback bg-gradient-to-r from-gold to-gold-bright text-app-bg font-extrabold text-xs py-3 rounded-xl shadow-lg w-full flex items-center justify-center gap-1 shadow-gold/25"
             >
-              Advance to Season {seasonNumber + 1} (Reset)
+              Start Season {seasonNumber + 1}
             </button>
           ) : (
             <button
               disabled
               className="bg-control-bg/40 text-text-tertiary font-extrabold text-xs py-3 rounded-xl border border-white/5 w-full cursor-not-allowed text-center uppercase tracking-wider"
             >
-              Unlock Season Reward at {seasonTargetPower} Power
+              Reach {seasonTargetPower} Power for Season Reward
             </button>
           )}
         </div>
       </motion.div>
 
-      {/* 6. COMMUNITY EVENTS LIST */}
+      {/* 5. COMMUNITY EVENTS LIST */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -362,17 +311,14 @@ export const TreasuryScreen: React.FC = () => {
                   ? 'text-usdt-green bg-usdt-green/10 border-usdt-green/20 animate-pulse'
                   : 'text-text-tertiary bg-control-bg/40 border-white/5'
               }`}>
-                {event.status}
+                {event.status === 'ACTIVE' ? 'Active' : event.status}
               </span>
             </div>
           ))}
         </div>
       </motion.div>
 
-
-      {/* --- MOCK SIMULATOR MODALS --- */}
-      
-      {/* 1. Deposit Simulator Modal */}
+      {/* Deposit Simulator Modal */}
       <AnimatePresence>
         {showDepositModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -393,10 +339,10 @@ export const TreasuryScreen: React.FC = () => {
               className="relative w-full max-w-[360px] glass-panel border border-white/15 p-5 rounded-3xl shadow-2xl bg-[#0d0e15] z-10"
             >
               <h3 className="text-base font-extrabold text-text-primary flex items-center gap-1.5">
-                📥 USDT Deposit Portal
+                📥 Add Money
               </h3>
               <p className="text-xs text-text-secondary mt-1">
-                Deposit USDT to earn +200 daily power and active compute speed multiplier boost (1.5× yield boost).
+                Add money to get +200 daily power and a 1.5× speed boost!
               </p>
 
               <div className="flex flex-col gap-1.5 mt-4">
@@ -423,7 +369,7 @@ export const TreasuryScreen: React.FC = () => {
                   onClick={handleDepositSubmit}
                   className="flex-1 py-3 rounded-xl bg-usdt-green text-app-bg text-xs font-extrabold hover:brightness-110 press-feedback shadow-lg shadow-usdt-green/20"
                 >
-                  Confirm Deposit
+                  Confirm Payment
                 </button>
               </div>
             </motion.div>

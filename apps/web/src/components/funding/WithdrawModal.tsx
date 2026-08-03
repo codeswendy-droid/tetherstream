@@ -141,7 +141,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                 ₮
               </div>
               <h2 className="text-base font-extrabold text-text-primary">
-                {selectedMethod ? withdrawMethods.find(m => m.id === selectedMethod)?.displayName : 'Withdraw USDT'}
+                {selectedMethod ? withdrawMethods.find(m => m.id === selectedMethod)?.displayName : 'Take Out Money'}
               </h2>
             </div>
 
@@ -158,12 +158,12 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
 
           {/* Balance Display */}
           <div className="bg-control-bg/30 border border-white/5 rounded-2xl p-4 mb-4">
-            <div className="text-[10px] text-text-secondary font-bold uppercase mb-1">Available Balance</div>
+            <div className="text-[10px] text-text-secondary font-bold uppercase mb-1">Money Ready</div>
             <div className="text-2xl font-black text-text-primary font-mono">
               <CurrencyDisplay amount={usdtBalance} size="lg" />
             </div>
             <div className="text-[10px] text-usdt-green mt-1 flex items-center gap-1">
-              <CheckCircle2 size={12} /> Ready to withdraw
+              <CheckCircle2 size={12} /> Ready to take out
             </div>
           </div>
 
@@ -179,7 +179,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
           {!selectedMethod ? (
             <div className="space-y-4">
               <p className="text-xs text-text-secondary">
-                Choose a withdrawal method to transfer your USDT to your preferred destination.
+                Select how you would like to receive your money.
               </p>
 
               {/* Withdrawal Methods */}
@@ -235,7 +235,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
               <div className="space-y-4">
                 {/* Amount Input */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-text-tertiary uppercase">Withdrawal Amount (USDT)</label>
+                  <label className="text-[10px] font-bold text-text-tertiary uppercase">Amount (USDT)</label>
                   <div className="relative flex items-center">
                     <span className="absolute left-3 text-sm font-mono text-text-tertiary">₮</span>
                     <input
@@ -261,12 +261,12 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                 {/* Method-specific fields */}
                 {selectedMethod === 'USDT_ADDRESS' && (
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-text-tertiary uppercase">USDT Wallet Address</label>
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase">Wallet Address</label>
                     <input
                       type="text"
                       value={walletAddress}
                       onChange={(e) => setWalletAddress(e.target.value)}
-                      placeholder="Enter your USDT address (TRC20/ERC20)"
+                      placeholder="Enter your wallet address"
                       className="w-full bg-control-bg text-text-primary text-sm font-mono rounded-xl px-3 py-3 border border-white/10 focus:border-usdt-green focus:outline-none"
                     />
                     <div className="text-[10px] text-text-tertiary flex items-center gap-1">
@@ -292,14 +292,14 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                   <div className="bg-control-bg/30 border border-white/5 rounded-xl p-3">
                     <div className="text-[10px] text-text-secondary flex items-center gap-2">
                       <Bot size={14} className="text-sky-400" />
-                      <span>You'll receive a payment invoice from @CryptoBot</span>
+                      <span>You'll receive a payment link from @CryptoBot</span>
                     </div>
                   </div>
                 )}
 
                 {/* Fee Information */}
                 <div className="bg-control-bg/30 border border-white/5 rounded-xl p-3 flex items-center justify-between">
-                  <span className="text-[10px] text-text-secondary">Withdrawal Fee</span>
+                  <span className="text-[10px] text-text-secondary">Fee</span>
                   <span className="text-[10px] font-mono font-bold text-usdt-green">₮0.00</span>
                 </div>
 
@@ -316,7 +316,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                     </>
                   ) : (
                     <>
-                      <ArrowDownToLine size={14} /> Confirm Withdrawal
+                      <ArrowDownToLine size={14} /> Take Out Money
                     </>
                   )}
                 </button>

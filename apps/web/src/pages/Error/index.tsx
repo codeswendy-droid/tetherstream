@@ -8,7 +8,7 @@ interface ErrorScreenProps {
 }
 
 export const ErrorScreen: React.FC<ErrorScreenProps> = ({
-  message = 'An unexpected error occurred while connecting to Telegram.',
+  message = 'Something went wrong. Please try again.',
   onRetry,
 }) => {
   return (
@@ -17,7 +17,7 @@ export const ErrorScreen: React.FC<ErrorScreenProps> = ({
         <AlertTriangle size={32} />
       </div>
 
-      <h1 className="text-title text-text-primary mb-2">Connection Error</h1>
+      <h1 className="text-title text-text-primary mb-2">Something Went Wrong</h1>
       <p className="text-body max-w-xs mb-6">{message}</p>
 
       <Button
@@ -25,7 +25,7 @@ export const ErrorScreen: React.FC<ErrorScreenProps> = ({
         icon={<RefreshCw size={18} />}
         onClick={() => onRetry?.() || window.location.reload()}
       >
-        Reload App
+        Try Again
       </Button>
     </div>
   );

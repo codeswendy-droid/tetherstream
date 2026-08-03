@@ -942,10 +942,10 @@ export const MiningSpinner: React.FC = () => {
               </div>
               <span className="text-[10px] font-black text-white tracking-widest uppercase font-sans">Locked Machine</span>
               <span className="text-[8px] font-extrabold text-gold mt-1 font-mono">
-                Requires: {((Number(activeSpinner?.minBoostGhs) || 0) * 10).toFixed(0)} CU
+                Requires: {((Number(activeSpinner?.minBoostGhs) || 0) * 10).toFixed(0)} Mining Power
               </span>
               <span className="text-[8px] text-text-tertiary mt-1 max-w-[125px] leading-tight font-sans font-medium">
-                Unlock a larger Machine in the Cloud Machines tab to access.
+                Buy a faster machine in the Machine Shop to unlock.
               </span>
             </div>
           )}

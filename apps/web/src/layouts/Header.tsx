@@ -71,7 +71,7 @@ export const Header: React.FC = () => {
         <button
           onClick={() => setActiveTab('wallet')}
           className="press-feedback flex items-center gap-1.5 bg-control-bg/70 border border-white/10 hover:border-usdt-green/40 rounded-full px-3 py-1.5 shadow-sm transition-colors"
-          title="Open Wallet"
+          title="View Your Wallet"
         >
           <div className="w-5 h-5 rounded-full bg-usdt-green flex items-center justify-center font-extrabold text-[11px] text-app-bg shadow-sm">
             {preferLocalCurrency && selectedCountry ? selectedCountry.currencySymbol.charAt(0) : '₮'}

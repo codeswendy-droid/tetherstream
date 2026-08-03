@@ -6,7 +6,7 @@ import { useMiningStore } from '../../store/useMiningStore';
 import { useReferralStore } from '../../store/useReferralStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { showToast } from '../../components/Toast';
-import { ArrowUpRight, ShieldCheck, Wallet, Lock, UserPlus, Zap } from 'lucide-react';
+import { ArrowUpRight, ShieldCheck, Lock, UserPlus, Zap } from 'lucide-react';
 import { CurrencyDisplay } from '../../components/DualCurrencyDisplay';
 
 export const WithdrawScreen: React.FC = () => {
@@ -24,19 +24,19 @@ export const WithdrawScreen: React.FC = () => {
 
   const handleWithdraw = () => {
     if (!hasPurchasedMachine) {
-      showToast('Withdrawal Locked: Machine purchase required to unlock withdrawals', 'error');
+      showToast('Locked: Buy a machine first to unlock taking out money.', 'error');
       return;
     }
     if (!hasMinReferrals) {
-      showToast(`Withdrawal Locked: Need 3 referrals to unlock promotional withdrawal (Current: ${invitedCount}/3)`, 'error');
+      showToast(`Locked: Need 3 invited friends to unlock (Current: ${invitedCount}/3).`, 'error');
       return;
     }
     if (!amount || parseFloat(amount) <= 0) {
-      showToast('Please enter a valid withdrawal amount', 'error');
+      showToast('Please enter a valid amount', 'error');
       return;
     }
     if (parseFloat(amount) > usdtBalance) {
-      showToast('Insufficient USDT balance', 'error');
+      showToast('Not enough money in wallet', 'error');
       return;
     }
     if (!address) {
@@ -44,7 +44,7 @@ export const WithdrawScreen: React.FC = () => {
       return;
     }
 
-    showToast(`Withdrawal of ${amount} USDT to ${address} (${selectedNetwork}) requested!`, 'success');
+    showToast(`Payment request of ${amount} USDT to ${address} (${selectedNetwork}) sent!`, 'success');
     useTreasuryStore.getState().incrementMissionProgress('WITHDRAW', 1);
   };
 
@@ -63,9 +63,9 @@ export const WithdrawScreen: React.FC = () => {
             ₮
           </div>
         </div>
-        <h1 className="text-title text-text-primary font-extrabold tracking-tight">Withdraw Funds</h1>
+        <h1 className="text-title text-text-primary font-extrabold tracking-tight">Take Out Money</h1>
         <p className="text-body mt-1">
-          Transfer your stream yield directly to your mobile wallet or crypto account
+          Send your money directly to your wallet or bank
         </p>
       </motion.div>
 
@@ -77,9 +77,9 @@ export const WithdrawScreen: React.FC = () => {
         className="glass-panel bg-gradient-to-br from-usdt-green/20 via-card-glass to-card-glass border border-usdt-green/40 p-4.5 rounded-2xl shadow-xl relative overflow-hidden"
       >
         <div className="flex items-center justify-between text-xs font-bold text-text-secondary uppercase">
-          <span>Available Balance</span>
+          <span>Money Ready to Take Out</span>
           <span className="text-usdt-green bg-usdt-green/15 px-2.5 py-0.5 rounded-full border border-usdt-green/30 flex items-center gap-1 font-mono">
-            <ShieldCheck size={12} /> Instant
+            <ShieldCheck size={12} /> Safe & Fast
           </span>
         </div>
         <div className="mt-2">
@@ -94,17 +94,17 @@ export const WithdrawScreen: React.FC = () => {
             <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 flex flex-col gap-2 shadow-md">
               <div className="flex items-center gap-2 font-bold text-rose-300">
                 <Lock size={14} className="shrink-0 text-rose-400" />
-                <span>Cloud Machine Purchase Required</span>
+                <span>Machine Required</span>
               </div>
               <p className="text-[11px] text-text-secondary leading-relaxed">
-                Promotional phase earnings ($5.00 max) are unlocked for withdrawal after acquiring a premium Cloud Machine.
+                Buy a machine first to unlock taking out your money.
               </p>
               <button
                 onClick={() => setActiveTab('boost')}
                 className="self-start px-3.5 py-1.5 rounded-xl bg-usdt-green text-app-bg font-extrabold text-[11px] uppercase tracking-wider flex items-center gap-1 shadow-md hover:brightness-110 press-feedback"
               >
                 <Zap size={12} />
-                <span>Acquire Cloud Machine</span>
+                <span>Buy Machine</span>
               </button>
             </div>
           )}
@@ -113,10 +113,10 @@ export const WithdrawScreen: React.FC = () => {
             <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex flex-col gap-2 shadow-md">
               <div className="flex items-center gap-2 font-bold text-amber-300">
                 <Lock size={14} className="shrink-0 text-amber-400" />
-                <span>3 Referrals Required ({invitedCount}/3 Completed)</span>
+                <span>Invite 3 Friends ({invitedCount}/3 Invited)</span>
               </div>
               <p className="text-[11px] text-text-secondary leading-relaxed">
-                Invite at least 3 friends to join your cloud network to unlock promotional withdrawal privileges.
+                Invite at least 3 friends to unlock taking out your money.
               </p>
               <button
                 onClick={() => setActiveTab('friends')}
@@ -137,7 +137,7 @@ export const WithdrawScreen: React.FC = () => {
         transition={{ duration: 0.3, delay: 0.1 }}
         className="flex flex-col gap-2.5"
       >
-        <label className="text-xs font-bold text-text-secondary">Select Network</label>
+        <label className="text-xs font-bold text-text-secondary">Select Payment System</label>
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setSelectedNetwork('TON')}
@@ -149,7 +149,7 @@ export const WithdrawScreen: React.FC = () => {
               }
             `}
           >
-            <span className="font-extrabold text-sm">TON Network</span>
+            <span className="font-extrabold text-sm">TON Wallet</span>
             <span className="text-[10px] text-text-tertiary font-mono">Low Fee (~0.1 USDT)</span>
           </button>
 
@@ -163,7 +163,7 @@ export const WithdrawScreen: React.FC = () => {
               }
             `}
           >
-            <span className="font-extrabold text-sm">BNB Chain (BEP20)</span>
+            <span className="font-extrabold text-sm">Crypto Wallet (BEP20)</span>
             <span className="text-[10px] text-text-tertiary font-mono">Standard (~0.5 USDT)</span>
           </button>
         </div>
@@ -176,10 +176,10 @@ export const WithdrawScreen: React.FC = () => {
         transition={{ duration: 0.3, delay: 0.15 }}
         className="flex flex-col gap-2"
       >
-        <label className="text-xs font-bold text-text-secondary">Destination Wallet Address</label>
+        <label className="text-xs font-bold text-text-secondary">Wallet Address</label>
         <input
           type="text"
-          placeholder="Paste your USDT wallet address"
+          placeholder="Paste your wallet address"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           className="w-full bg-control-bg/80 text-text-primary placeholder:text-text-tertiary text-xs rounded-xl px-4 py-3.5 border border-white/10 focus:border-usdt-green focus:outline-none transition-colors shadow-inner"
@@ -193,7 +193,7 @@ export const WithdrawScreen: React.FC = () => {
         transition={{ duration: 0.3, delay: 0.2 }}
         className="flex flex-col gap-2"
       >
-        <label className="text-xs font-bold text-text-secondary">Withdrawal Amount</label>
+        <label className="text-xs font-bold text-text-secondary">Amount</label>
         <div className="relative flex items-center">
           <input
             type="number"
@@ -226,12 +226,12 @@ export const WithdrawScreen: React.FC = () => {
       >
         {canWithdraw ? (
           <>
-            Withdraw USDT
+            Take Out Money
             <ArrowUpRight size={20} />
           </>
         ) : (
           <>
-            Withdrawal Locked
+            Locked
             <Lock size={20} />
           </>
         )}
