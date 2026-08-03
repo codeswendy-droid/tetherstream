@@ -442,11 +442,19 @@ export const MiningSpinner: React.FC = () => {
             </>
           )}
         </div>
-      ) : (
+      ) : isMachineOwned(activeSpinner.tierCode) ? (
         <div className="mb-3.5 z-20 bg-usdt-green/15 border border-usdt-green/40 text-usdt-green text-[10px] font-black px-4 py-1.5 rounded-full flex items-center gap-1.5 uppercase tracking-wider shadow-lg backdrop-blur-md">
           <CheckCircle size={13} className="text-usdt-green shrink-0" />
           <span>{activeSpinner.name.toUpperCase()} • PREMIUM ACTIVE</span>
         </div>
+      ) : (
+        <button
+          onClick={() => setActiveTab('boost')}
+          className="mb-3.5 z-20 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-400 text-[10px] font-black px-4 py-1.5 rounded-full flex items-center gap-1.5 uppercase tracking-wider shadow-lg backdrop-blur-md transition-all press-feedback"
+        >
+          <Lock size={13} className="text-amber-400 shrink-0" />
+          <span>{activeSpinner.name.toUpperCase()} • LOCKED (TAP TO UNLOCK)</span>
+        </button>
       )}
 
       {temperature > 70 ? (

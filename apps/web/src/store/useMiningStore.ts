@@ -172,12 +172,18 @@ export const useMiningStore = create<MiningState>((set, get) => {
     },
 
     isMachineOwned: (tierCode: string) => {
-      if (tierCode === 'TS_TRIAL') return true;
+      if (!tierCode || tierCode.toUpperCase() === 'TS_TRIAL') return true;
       const s = get();
-      return (
-        s.ownedTierCodes.includes(tierCode) ||
-        s.userMachines.some((m) => m.tierCode === tierCode && (m.status === 'ACTIVE' || m.status === 'CREATED'))
-      );
+      const normTier = tierCode.trim().toUpperCase();
+
+      const inOwnedCodes = s.ownedTierCodes.some((code) => (code || '').trim().toUpperCase() === normTier);
+      if (inOwnedCodes) return true;
+
+      return s.userMachines.some((m) => {
+        const mTier = (m.tierCode || '').trim().toUpperCase();
+        const mStatus = (m.status || '').trim().toUpperCase();
+        return mTier === normTier && (mStatus === 'ACTIVE' || mStatus === 'CREATED' || mStatus === 'INITIALIZED' || mStatus === '');
+      });
     },
 
     fetchMiningState: async () => {
