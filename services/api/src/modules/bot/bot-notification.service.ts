@@ -19,26 +19,87 @@ export interface SendBotNotificationDto {
 @Injectable()
 export class BotNotificationService {
   private readonly logger = new Logger(BotNotificationService.name);
+  private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app';
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly telegramClient: TelegramClientService,
   ) {}
 
+  async sendMachineHealthReport(
+    telegramUserId: bigint,
+    userName?: string,
+  ): Promise<boolean> {
+    const timeGreeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening';
+    const name = userName ? `, ${userName}` : '';
+
+    const text = `👋 <b>${timeGreeting}${name}.</b>\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>🖥 Machine Health & Revenue Report</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `<b>Machine Status:</b> 🟢 ONLINE & RENTED\n` +
+      `<b>Runtime Uptime:</b> 99.98%\n` +
+      `<b>Today's Revenue:</b> <b>4.85 USDT</b> (UGX 18,450)\n` +
+      `<b>Revenue Trend:</b> 📈 +11% higher than yesterday\n` +
+      `<b>Network Capacity:</b> 🟢 Excellent\n\n` +
+      `Your Machine cloud allocation is processing active workloads 24/7 in high-security data centers.`;
+
+    return this.dispatchNotification({
+      telegramUserId,
+      templateCode: 'MACHINE_HEALTH_REPORT',
+      message: text,
+      actionButton: {
+        text: 'Open TitanStream →',
+        web_app: { url: `${this.webAppUrl}/mine` },
+      },
+    });
+  }
+
+  async sendMilestoneAchievement(
+    telegramUserId: bigint,
+    badgeTitle: string,
+    description: string,
+  ): Promise<boolean> {
+    const text = `🎉 <b>Milestone Unlocked!</b>\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>${badgeTitle}</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `${description}\n\n` +
+      `Keep running your Machine to unlock the next network achievement level!`;
+
+    return this.dispatchNotification({
+      telegramUserId,
+      templateCode: 'MILESTONE_ACHIEVEMENT_UNLOCKED',
+      message: text,
+      actionButton: {
+        text: 'View Achievements in App →',
+        web_app: { url: `${this.webAppUrl}/boost` },
+      },
+    });
+  }
+
   async sendFinancialDepositConfirmed(
     telegramUserId: bigint,
     amount: string,
     txRef: string,
   ): Promise<boolean> {
-    const text = `<b>✅ Deposit Confirmed</b>\n\n<b>Amount:</b>\n${amount} USDT\n\n<b>Transaction Ref:</b>\n<code>${txRef}</code>\n\nYour balance has been updated.`;
+    const text = `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>Machine Activated</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `<b>Plan:</b> Titan Core Capacity\n` +
+      `<b>Amount Funded:</b> ${amount} USDT\n` +
+      `<b>Revenue Starts:</b> 🟢 Immediately\n` +
+      `<b>Reference:</b> <code>${txRef}</code>\n\n` +
+      `Your allocation is online and active in our secure data centers.`;
+
     return this.dispatchNotification({
       telegramUserId,
       templateCode: 'FINANCIAL_DEPOSIT_CONFIRMED',
       message: text,
       metadata: { amount, txRef },
       actionButton: {
-        text: '🚀 Open Balance',
-        web_app: { url: `${process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app'}/balance` },
+        text: 'Open Dashboard →',
+        web_app: { url: `${this.webAppUrl}/balance` },
       },
     });
   }
@@ -48,12 +109,23 @@ export class BotNotificationService {
     amount: string,
     txRef: string,
   ): Promise<boolean> {
-    const text = `<b>💸 Withdrawal Completed</b>\n\n<b>Amount:</b>\n${amount} USDT\n\n<b>Transaction:</b>\n<code>${txRef}</code>`;
+    const text = `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>💸 Payout Dispatched</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `<b>Amount:</b> <b>${amount} USDT</b>\n` +
+      `<b>Status:</b> 🟢 SETTLED & COMPLETED\n` +
+      `<b>Transaction ID:</b> <code>${txRef}</code>\n\n` +
+      `Your funds have been transferred instantly with zero platform fees.`;
+
     return this.dispatchNotification({
       telegramUserId,
       templateCode: 'FINANCIAL_WITHDRAWAL_COMPLETED',
       message: text,
       metadata: { amount, txRef },
+      actionButton: {
+        text: 'View Ledger Wallet →',
+        web_app: { url: `${this.webAppUrl}/wallet` },
+      },
     });
   }
 
@@ -61,15 +133,20 @@ export class BotNotificationService {
     telegramUserId: bigint,
     newLevel: string,
   ): Promise<boolean> {
-    const text = `<b>🎉 New Trust Level</b>\n\nYou reached <b>Level ${newLevel}</b>.\n\nNew benefits and higher transaction limits unlocked!`;
+    const text = `🎉 <b>Trust Tier Level Upgraded!</b>\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>New Tier: Level ${newLevel}</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Higher daily withdrawal limits ($2,500+/day) and bonus compute multipliers unlocked!`;
+
     return this.dispatchNotification({
       telegramUserId,
       templateCode: 'GROWTH_TRUST_LEVEL_UPGRADED',
       message: text,
       metadata: { newLevel },
       actionButton: {
-        text: '⭐ View Tier Benefits',
-        web_app: { url: `${process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app'}/boost` },
+        text: 'View Tier Benefits →',
+        web_app: { url: `${this.webAppUrl}/boost` },
       },
     });
   }
@@ -79,15 +156,21 @@ export class BotNotificationService {
     rewardAmount: string,
     refereeName?: string,
   ): Promise<boolean> {
-    const text = `<b>🎁 Referral Reward Credited</b>\n\nYour referral ${refereeName ? `<b>${refereeName}</b> ` : ''}completed their first transaction.\n\n<b>Reward Credited:</b> +${rewardAmount} USDT`;
+    const text = `🚀 <b>New Referral Joined Network!</b>\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `${refereeName ? `<b>${refereeName}</b> ` : 'A friend '}activated their Machine allocation.\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `<b>Direct Bonus Credited:</b> +${rewardAmount} USDT\n` +
+      `<b>Trust Score Bonus:</b> +10 Points`;
+
     return this.dispatchNotification({
       telegramUserId,
       templateCode: 'GROWTH_REFERRAL_REWARD',
       message: text,
       metadata: { rewardAmount, refereeName },
       actionButton: {
-        text: '👥 Referral Dashboard',
-        web_app: { url: `${process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app'}/boost` },
+        text: 'View Referral Network →',
+        web_app: { url: `${this.webAppUrl}/boost` },
       },
     });
   }
@@ -97,7 +180,11 @@ export class BotNotificationService {
     deviceInfo: string,
     ipAddress?: string,
   ): Promise<boolean> {
-    const text = `<b>⚠️ New login detected</b>\n\n<b>Device:</b>\n${deviceInfo}\n\n<b>Time:</b>\n${new Date().toLocaleTimeString()}\n${ipAddress ? `<b>IP:</b> ${ipAddress}` : ''}`;
+    const text = `<b>⚠️ New Device Authorized</b>\n\n` +
+      `<b>Device:</b> ${deviceInfo}\n` +
+      `<b>Time:</b> ${new Date().toLocaleTimeString()}\n` +
+      `${ipAddress ? `<b>IP Address:</b> ${ipAddress}` : ''}`;
+
     return this.dispatchNotification({
       telegramUserId,
       templateCode: 'SECURITY_NEW_LOGIN',
@@ -111,7 +198,11 @@ export class BotNotificationService {
     amount: string,
     reference: string,
   ): Promise<boolean> {
-    const text = `<b>⚠️ Withdrawal request created</b>\n\n<b>Amount:</b>\n${amount} USDT\n\n<b>Reference:</b>\n<code>${reference}</code>\n\nReview required if you did not initiate this transaction.`;
+    const text = `<b>⚠️ Withdrawal Request Processing</b>\n\n` +
+      `<b>Amount:</b> ${amount} USDT\n` +
+      `<b>Reference:</b> <code>${reference}</code>\n\n` +
+      `Review required if you did not initiate this cashout.`;
+
     return this.dispatchNotification({
       telegramUserId,
       templateCode: 'SECURITY_WITHDRAWAL_REQUESTED',

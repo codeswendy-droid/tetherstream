@@ -7,6 +7,7 @@ import { BotAdminService } from './bot-admin.service';
 import { BotPaymentService } from './bot-payment.service';
 import { BotWithdrawalService } from './bot-withdrawal.service';
 import { BotMonetizationService } from './bot-monetization.service';
+import { BotNotificationService } from './bot-notification.service';
 import { WebAuthSessionService } from '../auth/web-auth-session.service';
 
 export interface TelegramUpdate {
@@ -62,6 +63,7 @@ export class BotDispatcherService {
     private readonly botPayment: BotPaymentService,
     private readonly botWithdrawal: BotWithdrawalService,
     private readonly botMonetization: BotMonetizationService,
+    private readonly botNotification: BotNotificationService,
     private readonly webAuthSessionService: WebAuthSessionService,
   ) {}
 
@@ -173,6 +175,9 @@ export class BotDispatcherService {
 
     if (data === 'verify_membership' || data === 'cmd_start') {
       response = await this.botCommand.handleStart(userCtx);
+    } else if (data === 'cmd_health_report') {
+      await this.botNotification.sendMachineHealthReport(userCtx.id, userCtx.firstName);
+      return;
     } else if (data === 'cmd_admin' || data === 'admin_dashboard' || data === 'admin_menu') {
       response = await this.botAdmin.handleAdminDashboard(userCtx);
     } else if (data === 'cmd_treasury') {

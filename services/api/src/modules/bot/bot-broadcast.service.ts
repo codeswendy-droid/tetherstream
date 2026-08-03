@@ -5,7 +5,7 @@ import { TelegramClientService } from './telegram-client.service';
 export interface CreateBroadcastDto {
   title: string;
   message: string;
-  target?: 'ALL' | 'VERIFIED' | 'READY';
+  target?: 'ALL' | 'VERIFIED' | 'READY' | 'MACHINE_OWNERS' | 'ACTIVE_USERS';
   createdById?: string;
 }
 
@@ -46,6 +46,10 @@ export class BotBroadcastService {
       where = { channelVerified: true };
     } else if (broadcast.target === 'READY') {
       where = { isReady: true };
+    } else if (broadcast.target === 'MACHINE_OWNERS') {
+      where = { userMachines: { some: {} } };
+    } else if (broadcast.target === 'ACTIVE_USERS') {
+      where = { state: 'ACTIVE_USER' };
     }
 
     const users = await this.prisma.user.findMany({
@@ -56,15 +60,27 @@ export class BotBroadcastService {
     let sentCount = 0;
     let failedCount = 0;
 
+    const formattedMessage = `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>📢 OFFICIAL ANNOUNCEMENT</b>\n` +
+      `<b>${broadcast.title}</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `${broadcast.message}\n\n` +
+      `<i>TitanStream Control Tower Notification</i>`;
+
     for (const u of users) {
-      const res = await this.telegramClient.sendMessage(Number(u.telegramUserId), `<b>📢 ${broadcast.title}</b>\n\n${broadcast.message}`, {
+      const res = await this.telegramClient.sendMessage(Number(u.telegramUserId), formattedMessage, {
         parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🚀 Open TitanStream Mini App', web_app: { url: process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app' } }],
+          ],
+        },
       });
 
       if (res.ok) sentCount++;
       else failedCount++;
 
-      // Small delay to respect Telegram rate limits (30 msgs/sec max)
+      // Rate limit safety
       await new Promise((resolve) => setTimeout(resolve, 35));
     }
 

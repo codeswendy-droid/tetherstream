@@ -10,7 +10,7 @@ import { SupportCategory, SupportPriority } from '@prisma/client';
 export const getPersistentMainKeyboard = (webAppUrl: string) => ({
   keyboard: [
     [{ text: '🚀 Open TitanStream', web_app: { url: webAppUrl } }],
-    [{ text: '⚡ Treasury & AI Compute' }, { text: '🎰 Arcade Games' }, { text: '💰 Wallet & Cash' }],
+    [{ text: '⚡ Treasury & Cloud Compute' }, { text: '🎰 Arcade Games' }, { text: '💰 Wallet & Cash' }],
     [{ text: '🎁 Daily Quests' }, { text: '⭐ Trust & Limits' }, { text: '👥 Referral Hub' }],
     [{ text: '📚 Academy' }, { text: '🆘 Support Desk' }, { text: '⚙️ Settings & Security' }],
   ],
@@ -73,15 +73,17 @@ export class BotCommandService {
     if (!gateResult.verified) return { text: gateResult.message, keyboard: gateResult.keyboard };
 
     return {
-      text: `<b>TitanStream Mini App Hub 🚀</b>\n\n` +
-        `Welcome to TitanStream — the premier Telegram-native DeAI Cloud Infrastructure & Yield Engine.\n\n` +
-        `Tap below to launch your personal dashboard:`,
+      text: `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `<b>TitanStream Control Tower 🚀</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `Welcome to TitanStream — your portal to the cloud computing economy.\n\n` +
+        `Tap below to launch your personal workspace:`,
       keyboard: {
         inline_keyboard: [
-          [{ text: '🚀 Launch TitanStream App', web_app: { url: this.webAppUrl } }],
-          [{ text: '⚡ View DeAI Compute Node', callback_data: 'cmd_treasury' }],
-          [{ text: '📚 DeAI Infrastructure Academy', callback_data: 'edu_menu' }],
-          [{ text: '🎰 Play Arcade Games', callback_data: 'cmd_games' }],
+          [{ text: '🚀 Open TitanStream Mini App', web_app: { url: this.webAppUrl } }],
+          [{ text: '🖥 Machine Health Status', callback_data: 'cmd_health_report' }],
+          [{ text: '📚 Cloud Economy Academy', callback_data: 'edu_menu' }],
+          [{ text: '🎰 Arcade Games', callback_data: 'cmd_games' }],
         ],
       },
     };
@@ -91,21 +93,24 @@ export class BotCommandService {
     const gateResult = await this.botGate.processGateCheck(userCtx);
     if (!gateResult.verified) return { text: gateResult.message, keyboard: gateResult.keyboard };
 
-    const text = `<b>⚡ TitanStream Treasury & DeAI Compute Cluster</b>\n\n` +
-      `Your automated GPU compute cluster processes enterprise AI workloads and generates continuous USDT compute yield based on your active mode and Trust Tier.\n\n` +
-      `<b>DeAI Node Status:</b> 🟢 ONLINE & PROCESSING AI WORKLOADS\n` +
-      `<b>Active Mode:</b> ⚡ Turbo (2.5x Compute Multiplier)\n` +
-      `<b>Unclaimed Compute Yield:</b> <b>4.85 USDT</b>\n` +
-      `<b>Next Treasury Cycle Tick:</b> ⏱ 03h 42m remaining\n\n` +
-      `<i>Tip: Keep your node active daily to maintain your GPU Cluster Multiplier streak!</i>`;
+    const text = `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>⚡ Machine Status & Rental Revenue</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `<b>Machine Status:</b> 🟢 ONLINE & RENTED\n` +
+      `<b>Runtime Uptime:</b> 99.98%\n` +
+      `<b>Unclaimed Revenue:</b> <b>4.85 USDT</b> (UGX 18,450)\n` +
+      `<b>Revenue Trend:</b> 📈 +11% higher than yesterday\n` +
+      `<b>Network Capacity:</b> 🟢 Excellent\n` +
+      `<b>Compute Hours Contributed:</b> 324 Hours\n\n` +
+      `<i>Cloud computers are running 24/7 in professional data centers.</i>`;
 
     return {
       text,
       keyboard: {
         inline_keyboard: [
-          [{ text: '🎁 Claim Compute Yield (4.85 USDT)', callback_data: 'cmd_claim_mining' }],
-          [{ text: '⚡ Boost to Turbo Compute Mode', callback_data: 'cmd_toggle_turbo' }],
-          [{ text: '🚀 Launch Full Rig in Mini App', web_app: { url: `${this.webAppUrl}/mine` } }],
+          [{ text: '🎁 Claim Revenue (4.85 USDT)', callback_data: 'cmd_claim_mining' }],
+          [{ text: '⚡ Boost Compute Power', callback_data: 'cmd_toggle_turbo' }],
+          [{ text: 'Open Dashboard →', web_app: { url: `${this.webAppUrl}/mine` } }],
         ],
       },
     };
@@ -115,13 +120,14 @@ export class BotCommandService {
     const gateResult = await this.botGate.processGateCheck(userCtx);
     if (!gateResult.verified) return { text: gateResult.message, keyboard: gateResult.keyboard };
 
-    const text = `<b>🎰 TitanStream Arcade Games</b>\n\n` +
-      `Play high-yield USDT minigames with instant settlement to your double-entry ledger balance.\n\n` +
-      `<b>🔥 Featured Games:</b>\n` +
-      `• <b>USDT Roulette:</b> Pick color or number range (Up to 36x payout)\n` +
-      `• <b>Crash Rocket:</b> Cash out before the rocket crashes (Up to 100x multiplier)\n` +
-      `• <b>Daily Wheel:</b> Spin once per day for guaranteed USDT rewards\n\n` +
-      `<b>Current Arcade Pool:</b> <b>25,000 USDT</b>`;
+    const text = `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>🎰 TitanStream Arcade Games</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Play USDT minigames with instant settlement to your double-entry ledger balance.\n\n` +
+      `• <b>USDT Roulette:</b> Up to 36x payout\n` +
+      `• <b>Crash Rocket:</b> Up to 100x multiplier\n` +
+      `• <b>Daily Wheel:</b> Spin daily for guaranteed rewards\n\n` +
+      `<b>Arcade Pool:</b> <b>25,000 USDT</b>`;
 
     return {
       text,
@@ -139,12 +145,15 @@ export class BotCommandService {
     const gateResult = await this.botGate.processGateCheck(userCtx);
     if (!gateResult.verified) return { text: gateResult.message, keyboard: gateResult.keyboard };
 
-    const text = `<b>🎁 Daily Quests & Reputation Missions</b>\n\n` +
-      `Complete daily economic missions to earn bonus compute yield and unlock higher Trust Tiers!\n\n` +
-      `<b>Today's Active Missions:</b>\n` +
-      `✅ <b>Daily Check-in:</b> Complete (+0.50 USDT)\n` +
-      `⏳ <b>Keep DeAI Node Active 24h:</b> In progress (18/24h)\n` +
-      `⏳ <b>Complete 1 Academy Quiz:</b> Pending (+0.50 USDT bonus)\n\n` +
+    const text = `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>🎁 Milestones & Achievements</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `🥉 <b>First Machine:</b> Unlocked\n` +
+      `🥈 <b>First Week Uptime:</b> Unlocked (7 Days Active)\n` +
+      `🥇 <b>30 Days Active:</b> Progress [██████░░░░] 14/30 Days\n` +
+      `⚡ <b>First Referral:</b> Unlocked\n` +
+      `🏆 <b>Network Builder:</b> Progress [████░░░░░] 2/5 Friends\n` +
+      `💎 <b>Elite Operator:</b> Tier 5 Unlocked\n\n` +
       `<b>Daily Streak:</b> 🔥 <b>5 Days Active</b> (+15% Multiplier)`;
 
     return {
@@ -194,20 +203,22 @@ export class BotCommandService {
       // default
     }
 
-    const text = `<b>💰 TitanStream Universal Ledger Wallet</b>\n\n` +
+    const text = `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>💰 TitanStream Universal Ledger Wallet</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
       `<b>Available Funds:</b> <b>${availableUSDT} USDT</b>\n` +
       `<b>Reserved Funds:</b> <b>${reservedUSDT} USDT</b>\n\n` +
       `<b>Trust Level:</b> ${trustLevelName}\n` +
-      `<b>Daily Cashout Capacity:</b> <b>${dailyLimit} / day</b>\n\n` +
+      `<b>Daily Cashout Limit:</b> <b>${dailyLimit} / day</b>\n\n` +
       `<i>All balances are double-entry ledger verified for 100% financial integrity.</i>`;
 
     return {
       text,
       keyboard: {
         inline_keyboard: [
-          [{ text: '➕ Quick CryptoBot Deposit', callback_data: 'cmd_deposit' }],
-          [{ text: '💸 Instant P2P / Crypto Cashout', callback_data: 'cmd_withdraw' }],
-          [{ text: '🚀 Open Full Wallet Dashboard', web_app: { url: `${this.webAppUrl}/wallet` } }],
+          [{ text: '➕ Instant Deposit', callback_data: 'cmd_deposit' }],
+          [{ text: '💸 Instant Cashout', callback_data: 'cmd_withdraw' }],
+          [{ text: 'Open Wallet Dashboard →', web_app: { url: `${this.webAppUrl}/wallet` } }],
           [{ text: '🔄 Refresh Balance', callback_data: 'cmd_balance' }],
         ],
       },
@@ -219,16 +230,20 @@ export class BotCommandService {
     if (!gateResult.verified) return { text: gateResult.message, keyboard: gateResult.keyboard };
 
     const summary = await this.referralService.getUserReferralSummary(userCtx.id);
+    const count = summary.qualifiedCount;
+    const goal = 5;
+    const progressBlocks = Math.min(Math.floor((count / goal) * 10), 10);
+    const progressBar = '█'.repeat(progressBlocks) + '░'.repeat(10 - progressBlocks);
 
-    const text = `<b>👥 TitanStream Referral & Affiliate Hub</b>\n\n` +
-      `Invite friends to TitanStream and earn instant rewards on every deposit & DeAI compute tick!\n\n` +
+    const text = `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>👥 Referral Network Progress</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `<b>Progress:</b> [${progressBar}] ${count} / ${goal} Friends\n\n` +
+      `<i>${goal - count > 0 ? `${goal - count} more friends unlock higher cashout limits & 2x Bonus Multiplier!` : '🏆 Maximum Milestone Reached!'}</i>\n\n` +
       `<b>Your Unique Invite Link:</b>\n<code>${summary.referralLink}</code>\n\n` +
-      `<b>Affiliate Performance:</b>\n` +
-      `• Total Invited: <b>${summary.totalInvited}</b>\n` +
-      `• Qualified Friends: <b>${summary.qualifiedCount}</b>\n` +
-      `• Rewards Earned: <b>${summary.totalEarnedUSDT.toFixed(2)} USDT</b>`;
+      `<b>Total Earned:</b> <b>${summary.totalEarnedUSDT.toFixed(2)} USDT</b>`;
 
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(summary.referralLink)}&text=${encodeURIComponent('Join TitanStream for 24/7 DeAI Compute Yield & instant cashouts! 🚀')}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(summary.referralLink)}&text=${encodeURIComponent('Join TitanStream to participate in the cloud computing economy & earn daily rental revenue! 🚀')}`;
 
     return {
       text,
@@ -236,7 +251,7 @@ export class BotCommandService {
         inline_keyboard: [
           [{ text: '📢 Share Referral Link', url: shareUrl }],
           [{ text: '🚀 Activate 2x Referral Boost', callback_data: 'prod_view_BOOST_2X_REFERRAL' }],
-          [{ text: '📊 Open Growth Hub in App', web_app: { url: `${this.webAppUrl}/boost` } }],
+          [{ text: 'Open Network Dashboard →', web_app: { url: `${this.webAppUrl}/boost` } }],
         ],
       },
     };
@@ -244,15 +259,18 @@ export class BotCommandService {
 
   async handleHelp(userCtx: TelegramUserCtx): Promise<{ text: string; keyboard: any }> {
     return {
-      text: `<b>💬 TitanStream Support & Assistance Desk</b>\n\n` +
-        `Need help with a deposit, cashout, DeAI compute yield, or account limits? Select a topic below:`,
+      text: `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `<b>💬 TitanStream Guided Support Desk</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `How can we assist you today? Select a topic below for instant resolution:`,
       keyboard: {
         inline_keyboard: [
-          [{ text: '💳 Deposit Assistance', callback_data: 'ticket_PAYMENT_ISSUE' }],
-          [{ text: '💸 Withdrawal Delay', callback_data: 'ticket_SETTLEMENT_DELAY' }],
-          [{ text: '⚡ DeAI Compute Node Issue', callback_data: 'ticket_TECHNICAL_ISSUE' }],
-          [{ text: '👤 Account & Limit Upgrades', callback_data: 'ticket_ACCOUNT_ISSUE' }],
-          [{ text: '⭐ Ask Trust AI Assistant', callback_data: 'assistant_menu' }],
+          [{ text: '💳 Payments & Deposits', callback_data: 'ticket_PAYMENT_ISSUE' }],
+          [{ text: '💸 Withdrawals & Cashouts', callback_data: 'ticket_SETTLEMENT_DELAY' }],
+          [{ text: '🖥 My Machine & Compute Power', callback_data: 'ticket_TECHNICAL_ISSUE' }],
+          [{ text: '👥 Referral Progress & Bonuses', callback_data: 'ticket_ACCOUNT_ISSUE' }],
+          [{ text: '📚 Academy & FAQ Explorer', callback_data: 'assistant_menu' }],
+          [{ text: '🎧 Talk to Support Operator', callback_data: 'ticket_HUMAN_SUPPORT' }],
         ],
       },
     };
@@ -260,7 +278,10 @@ export class BotCommandService {
 
   async handleSettings(userCtx: TelegramUserCtx): Promise<{ text: string; keyboard: any }> {
     return {
-      text: `<b>⚙️ Account Preferences & Security</b>\n\nManage your notification alerts, language options, and active web sessions:`,
+      text: `━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `<b>⚙️ Account Preferences & Security</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `Manage notification alerts, language options, and security logs:`,
       keyboard: {
         inline_keyboard: [
           [{ text: '🔔 Telegram Notifications: Enabled', callback_data: 'toggle_notif' }],
@@ -293,10 +314,10 @@ export class BotCommandService {
         `<b>Ticket ID:</b> <code>${supportCase.id}</code>\n` +
         `<b>Category:</b> ${category}\n` +
         `<b>Status:</b> OPEN\n\n` +
-        `Our support desk has been notified and an agent will assist you shortly.`,
+        `Our support desk has been notified and an agent will reply directly to your chat.`,
       keyboard: {
         inline_keyboard: [
-          [{ text: '💬 Chat in Support Portal', web_app: { url: `${this.webAppUrl}/support` } }],
+          [{ text: '💬 Open Support Portal in App', web_app: { url: `${this.webAppUrl}/support` } }],
         ],
       },
     };
