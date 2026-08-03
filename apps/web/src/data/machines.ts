@@ -203,3 +203,27 @@ export const MACHINE_CATALOG: FrontendMachineModel[] = [
     passiveYieldRate: 0.0001,
   },
 ];
+
+import { useCountryStore } from '../store/useCountryStore';
+
+export function getMachineYieldDetails(machine: FrontendMachineModel) {
+  const getLocalAmount = useCountryStore.getState().getLocalAmount;
+  const dailyUsdt = Number(machine?.dailyYieldUsdt) || 0;
+  const monthlyUsdt = dailyUsdt * 30;
+  const priceUsdt = Number(machine?.priceUsdt) || 0;
+
+  return {
+    daily: {
+      usdt: `$${dailyUsdt.toFixed(2)} USDT`,
+      local: getLocalAmount(dailyUsdt),
+    },
+    monthly: {
+      usdt: `$${monthlyUsdt.toFixed(2)} USDT`,
+      local: getLocalAmount(monthlyUsdt),
+    },
+    price: {
+      usdt: `$${priceUsdt.toFixed(2)} USDT`,
+      local: getLocalAmount(priceUsdt),
+    },
+  };
+}
