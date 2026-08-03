@@ -11,10 +11,13 @@ import {
   ArrowDownToLine,
   TrendingUp,
   Cpu,
-  Coins
+  Coins,
+  CheckCircle,
+  Sparkles
 } from 'lucide-react';
 import { useWalletStore } from '../../store/useWalletStore';
 import { useMiningStore } from '../../store/useMiningStore';
+import { useNavigationStore } from '../../store/useNavigationStore';
 import { FundingModal } from '../../components/funding/FundingModal';
 import { WithdrawModal } from '../../components/funding/WithdrawModal';
 import { TransactionHistoryView } from '../../components/funding/TransactionHistoryView';
@@ -42,7 +45,8 @@ export const WalletScreen: React.FC = () => {
     totalRewards,
     activeMachines,
   } = useWalletStore();
-  const { fetchUserMachines } = useMiningStore();
+  const { fetchUserMachines, hasPurchasedMachine, baseSpeedGhs, unclaimedBalance } = useMiningStore();
+  const { setActiveTab: setActiveNavTab } = useNavigationStore();
 
   const { hapticFeedback } = useTelegram();
 
@@ -144,6 +148,79 @@ export const WalletScreen: React.FC = () => {
             <History size={16} className="text-usdt-green" />
             <span>History</span>
           </button>
+        </div>
+      </div>
+
+      {/* Daily Summary */}
+      <div className="glass-panel p-4.5 rounded-3xl border border-usdt-green/30 bg-gradient-to-br from-usdt-green/10 via-card-bg to-control-bg/60 space-y-3">
+        <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">☀️</span>
+            <span className="text-xs font-black text-text-primary">Today's Daily Summary</span>
+          </div>
+          <span className="text-[10px] font-mono font-bold text-usdt-green bg-usdt-green/20 px-2 py-0.5 rounded-full border border-usdt-green/30">
+            Active
+          </span>
+        </div>
+
+        {/* Daily Status */}
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="p-2.5 rounded-2xl bg-app-bg/50 border border-white/5 space-y-0.5">
+            <div className="text-[10px] text-text-tertiary font-bold">Machine Power</div>
+            <div className="font-mono font-extrabold text-usdt-green flex items-center gap-1">
+              <CheckCircle size={12} />
+              <span>{hasPurchasedMachine ? `${((Number(baseSpeedGhs) || 0) * 10).toFixed(0)} Power Active` : '10 Power (Starter Machine)'}</span>
+            </div>
+          </div>
+          <div className="p-2.5 rounded-2xl bg-app-bg/50 border border-white/5 space-y-0.5">
+            <div className="text-[10px] text-text-tertiary font-bold font-sans">Total Earnings</div>
+            <div className="font-mono font-extrabold text-text-primary flex items-center gap-1">
+              <CheckCircle size={12} className="text-usdt-green" />
+              <CurrencyDisplay amount={unclaimedBalance + (Number(usdtBalance) || 0)} size="sm" />
+            </div>
+          </div>
+        </div>
+
+        {/* Recommender System Opportunities */}
+        <div className="p-3 rounded-2xl bg-usdt-green/15 border border-usdt-green/30 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-extrabold text-usdt-green uppercase tracking-wider flex items-center gap-1">
+              <Sparkles size={13} /> Recommended Actions
+            </span>
+            <span className="text-[9px] font-mono text-text-tertiary">Next Step</span>
+          </div>
+          <div className="space-y-1.5 text-xs text-text-primary font-medium">
+            <button
+              onClick={() => {
+                hapticFeedback.selectionChanged();
+                setActiveNavTab('treasury');
+              }}
+              className="w-full press-feedback flex items-center justify-between bg-black/20 hover:bg-black/40 p-2 rounded-xl border border-white/5 text-left transition-all cursor-pointer"
+            >
+              <span>• Complete today's daily check-in</span>
+              <span className="text-[10px] font-bold text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-2 py-0.5 rounded-lg">+💎 Crystals</span>
+            </button>
+            <button
+              onClick={() => {
+                hapticFeedback.selectionChanged();
+                setActiveNavTab('growth');
+              }}
+              className="w-full press-feedback flex items-center justify-between bg-black/20 hover:bg-black/40 p-2 rounded-xl border border-white/5 text-left transition-all cursor-pointer"
+            >
+              <span>• Invite 1 friend</span>
+              <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-lg font-mono">+$5.00</span>
+            </button>
+            <button
+              onClick={() => {
+                hapticFeedback.selectionChanged();
+                setActiveNavTab('boost');
+              }}
+              className="w-full press-feedback flex items-center justify-between bg-black/20 hover:bg-black/40 p-2 rounded-xl border border-white/5 text-left transition-all cursor-pointer"
+            >
+              <span>• Buy a faster machine</span>
+              <span className="text-[10px] font-bold text-sky-300 bg-sky-300/10 border border-sky-300/20 px-2 py-0.5 rounded-lg">Boost Power</span>
+            </button>
+          </div>
         </div>
       </div>
 
