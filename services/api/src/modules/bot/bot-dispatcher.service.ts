@@ -120,7 +120,7 @@ export class BotDispatcherService {
     } else if (cleanText.includes('referral') || cleanText.includes('affiliate') || cleanText.includes('invite')) {
       response = await this.botCommand.handleReferrals(userCtx);
     } else if (cleanText.includes('academy') || cleanText.includes('learn') || cleanText.includes('faq')) {
-      response = await this.botAssistant.getEducationMenu();
+      response = await this.botAssistant.getAssistantMenu(userCtx);
     } else if (cleanText.includes('support') || cleanText.includes('help')) {
       response = await this.botCommand.handleHelp(userCtx);
     } else if (cleanText.includes('setting') || cleanText.includes('security')) {
@@ -183,24 +183,24 @@ export class BotDispatcherService {
       response = await this.botCommand.handleQuests(userCtx);
     } else if (data === 'cmd_claim_mining') {
       response = {
-        text: `<b>✅ DeAI Compute Yield Claimed!</b>\n\n` +
+        text: `<b>✅ Rental Revenue Yield Claimed!</b>\n\n` +
           `<b>+4.85 USDT</b> has been successfully credited to your double-entry ledger balance.\n\n` +
-          `Your GPU node is continuing to process active enterprise AI workloads 24/7.`,
+          `Your cloud computing machines are continuing to process active workloads 24/7.`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '⚡ View DeAI Compute Cluster', callback_data: 'cmd_treasury' }],
+            [{ text: '⚡ View Cloud Computing Machines', callback_data: 'cmd_treasury' }],
             [{ text: '💰 View Ledger Wallet', callback_data: 'cmd_balance' }],
           ],
         },
       };
     } else if (data === 'cmd_toggle_turbo') {
       response = {
-        text: `<b>⚡ Turbo Compute Mode Activated!</b>\n\n` +
-          `Your GPU compute multiplier is now set to <b>2.5x</b>.\n\n` +
+        text: `<b>⚡ Turbo Mode Activated!</b>\n\n` +
+          `Your compute power multiplier is now set to <b>2.5x</b>.\n\n` +
           `Keep your daily streak active to reach <b>3.0x Super Turbo</b> compute multiplier!`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '⚡ Return to Compute Cluster', callback_data: 'cmd_treasury' }],
+            [{ text: '⚡ Return to Machines', callback_data: 'cmd_treasury' }],
           ],
         },
       };
@@ -219,7 +219,7 @@ export class BotDispatcherService {
     } else if (data === 'cmd_claim_streak') {
       response = {
         text: `<b>🔥 5-Day Streak Bonus Active!</b>\n\n` +
-          `You earned a <b>+15% DeAI Compute Yield Boost</b> for maintaining your 5-day active streak!\n\n` +
+          `You earned a <b>+15% Rental Revenue Boost</b> for maintaining your 5-day active streak!\n\n` +
           `Bonus multiplier will remain active for the next 24 hours.`,
         keyboard: {
           inline_keyboard: [
@@ -270,7 +270,7 @@ export class BotDispatcherService {
     } else if (data === 'toggle_notif') {
       response = {
         text: `<b>🔔 Notification Settings Updated!</b>\n\n` +
-          `Telegram bot deposit, DeAI compute yield, and withdrawal alerts are <b>ACTIVE</b>.\n\n` +
+          `Telegram bot deposit, rental revenue, and withdrawal alerts are <b>ACTIVE</b>.\n\n` +
           `You will receive instant alerts for all balance updates.`,
         keyboard: {
           inline_keyboard: [[{ text: '⚙️ Back to Settings', callback_data: 'cmd_settings' }]],
@@ -307,7 +307,7 @@ export class BotDispatcherService {
           `• <b>Account Status:</b> 🟢 VERIFIED & SECURE\n` +
           `• <b>Double-Entry Ledger:</b> Active & Balanced\n` +
           `• <b>WebAuth Key Session:</b> Authoritative\n` +
-          `• <b>DeAI Node Execution:</b> Encrypted Telemetry\n\n` +
+          `• <b>Cloud Server Network:</b> Professional Data Centers\n\n` +
           `No suspicious activity or unauthorized devices detected.`,
         keyboard: {
           inline_keyboard: [[{ text: '⚙️ Back to Settings', callback_data: 'cmd_settings' }]],
@@ -326,6 +326,9 @@ export class BotDispatcherService {
       response = await this.botCommand.createSupportTicketFromBot(userCtx, category);
     } else if (data === 'assistant_menu') {
       response = await this.botAssistant.getAssistantMenu(userCtx);
+    } else if (data.startsWith('faq_')) {
+      const faqKey = data.replace('faq_', '');
+      response = await this.botAssistant.getFaqAnswer(faqKey);
     } else if (data.startsWith('asst_q_')) {
       response = await this.botAssistant.handleAssistantQuery(data);
     } else if (data === 'edu_menu') {
@@ -353,7 +356,7 @@ export class BotDispatcherService {
     } else if (data.startsWith('edu_ans_correct')) {
       response = {
         text: `<b>🎉 Correct Answer! (+0.50 USDT Reward)</b>\n\n` +
-          `Excellent job! You demonstrated strong knowledge of TitanStream cloud infrastructure.\n\n` +
+          `Excellent job! You demonstrated strong knowledge of the cloud computing economy.\n\n` +
           `<b>+0.50 USDT</b> has been credited to your ledger balance.`,
         keyboard: {
           inline_keyboard: [
