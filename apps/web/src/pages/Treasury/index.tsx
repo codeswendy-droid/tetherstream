@@ -142,25 +142,31 @@ export const TreasuryScreen: React.FC = () => {
         <div className="mt-3 pt-3 border-t border-white/5 bg-control-bg/25 rounded-xl p-2.5 space-y-1.5 text-[11px]">
           <div className="flex items-center justify-between text-text-tertiary text-[10px] font-extrabold uppercase tracking-wider mb-1">
             <span>Trust Level Requirements</span>
-            <span className="text-usdt-green font-mono">Rank #12,482</span>
+            <span className="text-usdt-green font-mono">{dashboardData?.communityRank || '#12,482'}</span>
           </div>
           <div className="grid grid-cols-2 gap-1.5 text-[10px] font-semibold">
-            <div className="flex items-center gap-1.5 text-usdt-green">
-              <span className="w-3.5 h-3.5 rounded-full bg-usdt-green/15 flex items-center justify-center text-[9px] font-bold">✓</span>
-              <span>Verified account</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-usdt-green">
-              <span className="w-3.5 h-3.5 rounded-full bg-usdt-green/15 flex items-center justify-center text-[9px] font-bold">✓</span>
-              <span>First payment completed</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-text-tertiary">
-              <span className="w-3.5 h-3.5 rounded-full bg-white/10 flex items-center justify-center text-[9px] font-bold">○</span>
-              <span>Invite trusted users</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-text-tertiary">
-              <span className="w-3.5 h-3.5 rounded-full bg-white/10 flex items-center justify-center text-[9px] font-bold">○</span>
-              <span>Complete transactions</span>
-            </div>
+            {(dashboardData?.trustChecklist || [
+              { id: 't1', label: 'Verified account', completed: true },
+              { id: 't2', label: 'First payment completed', completed: true },
+              { id: 't3', label: 'Invite trusted users', completed: false },
+              { id: 't4', label: 'Complete transactions', completed: false },
+            ]).map((item: any) => (
+              <div
+                key={item.id}
+                className={`flex items-center gap-1.5 ${
+                  item.completed ? 'text-usdt-green' : 'text-text-tertiary'
+                }`}
+              >
+                <span
+                  className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                    item.completed ? 'bg-usdt-green/15' : 'bg-white/10'
+                  }`}
+                >
+                  {item.completed ? '✓' : '○'}
+                </span>
+                <span>{item.label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </motion.div>
@@ -197,7 +203,7 @@ export const TreasuryScreen: React.FC = () => {
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5 relative overflow-hidden">
             <div className="text-[10px] text-text-secondary font-bold">Verified Transactions</div>
             <div className="text-base font-extrabold font-mono text-usdt-green mt-1">
-              24,582
+              {(dashboardData?.totalVerifiedTransactions || 24582).toLocaleString()}
             </div>
             <div className="text-[9px] text-usdt-green/80 mt-1 flex items-center gap-0.5 font-bold">
               <ShieldCheck size={10} /> 100% Settled
