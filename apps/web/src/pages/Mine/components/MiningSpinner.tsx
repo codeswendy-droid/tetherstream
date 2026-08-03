@@ -152,18 +152,18 @@ export const MiningSpinner: React.FC = () => {
   const isMonthlyLimitReached = tapsThisMonth >= monthlyTapLimit;
   const reactorRef = React.useRef<QuantumLoopReactorRef | null>(null);
 
-  // V2 AI Presence & Telemetry State
+  // V2 AI & Mechanical Telemetry State
   const AI_COMPUTE_STATUSES = [
-    'Allocating AI Compute',
-    'Optimizing Tensor Paths',
-    'Synchronizing Compute Grid',
-    'Rendering Intelligence',
-    'Compressing Neural Graph',
-    'Balancing Quantum Mesh',
-    'Routing Neural Packets',
-    'Stabilizing Reactor Core',
-    'Maintaining Compute Integrity',
-    'Synchronizing Distributed Nodes',
+    'Calibrating Compressor Intake Stage',
+    'Balancing Counter-Turbine Discs',
+    'Aligning Marine Hydrofoil Stream',
+    'Locking Gyroscopic Gimbal Matrix',
+    'Synchronizing Rotor Frequencies',
+    'Stabilizing Quantum Reactor Core',
+    'Optimizing Fluid Velocity Vectors',
+    'Routing Neural Energy Packets',
+    'Actuating Thermal Cooling Vanes',
+    'Synchronizing Distributed Compute',
   ];
   const BOOT_STEPS = [
     'Connecting to Titan Grid...',
