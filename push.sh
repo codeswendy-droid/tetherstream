@@ -24,7 +24,7 @@ fi
 # Run push
 echo "🚀 Pushing master branch to remote..."
 git push origin master
-git push netlify master:main
+git push netlify master:main --force
 
 if [ $? -eq 0 ]; then
     echo "🎉 Success! Mined changes pushed to remote repository."
