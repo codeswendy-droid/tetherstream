@@ -94,38 +94,33 @@ export class GrowthModule implements OnModuleInit {
       });
     });
 
-    // 2. When a referral is qualified
+    // 2. When a referral is qualified — enqueue an AVAILABLE reward for the user to claim
     this.growthEventService.on(GrowthEventType.REFERRAL_COMPLETED, async (event) => {
       const { refereeId, relationshipId, paying } = event.payload || {};
       if (!event.telegramUserId || !refereeId) return;
 
       const referrerId = event.telegramUserId;
 
+      const rule = await this.rewardService.getReferralRuleAmount();
       const reward = await this.rewardService.createReward({
         telegramUserId: referrerId,
         rewardType: 'REFERRAL',
-        amount: '5.000000',
+        amount: rule ? rule.amount.toString() : '5.000000',
         ruleCode: 'REFERRAL_DEFAULT_5USDT',
         reference: `ref_qual_${relationshipId}`,
         metadata: { refereeId, relationshipId, paying: !!paying },
       });
 
-      try {
-        await this.rewardService.approveAndDisburseReward(reward.id);
-        await this.referralService.markRewarded(relationshipId, reward.id);
+      // Reward is claimable — do NOT auto-disburse. The user claims it from the queue.
+      await this.qualificationService.recountQualifiedReferrals(referrerId);
 
-        await this.qualificationService.recountQualifiedReferrals(referrerId);
-
-        await this.notificationService.sendNotification({
-          telegramUserId: referrerId,
-          templateCode: 'REFERRAL_COMPLETED',
-          variables: {
-            refereeName: 'Your Friend',
-          },
-        });
-      } catch (err: any) {
-        // Pending reward remains for admin review if auto-disburse fails
-      }
+      await this.notificationService.sendNotification({
+        telegramUserId: referrerId,
+        templateCode: 'REFERRAL_COMPLETED',
+        variables: {
+          refereeName: 'Your Friend',
+        },
+      });
     });
 
     // 3. When a payment is confirmed (referee becomes PAYING)

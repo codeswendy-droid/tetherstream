@@ -48,7 +48,9 @@ describe('Stage 9 — Growth Engine Unit & Integration Tests', () => {
       findUnique: jest.fn(),
       create: jest.fn().mockImplementation((args) => Promise.resolve({ id: 'rw_1', ...args.data })),
       update: jest.fn().mockImplementation((args) => Promise.resolve({ id: 'rw_1', ...args.data })),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       findMany: jest.fn().mockResolvedValue([]),
+      aggregate: jest.fn(),
     },
     userTrustProfile: {
       findUnique: jest.fn().mockResolvedValue({
@@ -195,7 +197,7 @@ describe('Stage 9 — Growth Engine Unit & Integration Tests', () => {
   });
 
   describe('RewardService & Financial Orchestrator Integration', () => {
-    it('should create a PENDING reward', async () => {
+    it('should create an AVAILABLE reward', async () => {
       mockPrismaService.reward.findUnique.mockResolvedValueOnce(null);
 
       const reward = await rewardService.createReward({
@@ -205,22 +207,37 @@ describe('Stage 9 — Growth Engine Unit & Integration Tests', () => {
         reference: 'ref_test_1',
       });
 
-      expect(reward.status).toBe(RewardStatus.PENDING);
+      expect(reward.status).toBe(RewardStatus.AVAILABLE);
       expect(reward.amount).toBe('5.000000');
     });
 
-    it('should disburse APPROVED reward via Financial Orchestrator double-entry engine', async () => {
+    it('should claim an AVAILABLE reward via Financial Orchestrator double-entry engine', async () => {
       mockPrismaService.reward.findUnique.mockResolvedValueOnce({
         id: 'rw_999',
         telegramUserId: 100n,
         rewardType: 'REFERRAL',
         amount: '5.000000',
         assetCode: 'USDT',
-        status: RewardStatus.PENDING,
+        status: RewardStatus.AVAILABLE,
         reference: 'ref_test_999',
+        metadata: {},
+        ruleId: null,
       });
 
-      const processed = await rewardService.approveAndDisburseReward('rw_999');
+      mockPrismaService.reward.updateMany.mockResolvedValueOnce({ count: 1 });
+      mockPrismaService.reward.update.mockResolvedValueOnce({
+        id: 'rw_999',
+        telegramUserId: 100n,
+        rewardType: 'REFERRAL',
+        amount: '5.000000',
+        assetCode: 'USDT',
+        status: RewardStatus.CLAIMED,
+        reference: 'ref_test_999',
+        operationId: 'op_financial_123',
+        processedAt: new Date(),
+      });
+
+      const claimed = await rewardService.claimReward(100n, 'rw_999');
 
       expect(mockFinancialOrchestrator.requestOperation).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -230,7 +247,26 @@ describe('Stage 9 — Growth Engine Unit & Integration Tests', () => {
           idempotencyKey: 'reward_rw_999',
         }),
       );
-      expect(processed.status).toBe(RewardStatus.PROCESSED);
+      expect(claimed.status).toBe(RewardStatus.CLAIMED);
+      expect(claimed.operationId).toBe('op_financial_123');
+    });
+
+    it('should reject duplicate claims', async () => {
+      mockPrismaService.reward.findUnique.mockResolvedValueOnce({
+        id: 'rw_dup',
+        telegramUserId: 100n,
+        rewardType: 'REFERRAL',
+        amount: '5.000000',
+        assetCode: 'USDT',
+        status: RewardStatus.CLAIMED,
+        reference: 'ref_dup',
+        metadata: {},
+      });
+
+      await expect(rewardService.claimReward(100n, 'rw_dup')).rejects.toThrow(BadRequestException);
+      expect(mockFinancialOrchestrator.requestOperation).not.toHaveBeenCalledWith(
+        expect.objectContaining({ idempotencyKey: 'reward_rw_dup' }),
+      );
     });
   });
 

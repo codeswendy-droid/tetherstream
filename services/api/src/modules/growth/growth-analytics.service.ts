@@ -48,7 +48,7 @@ export class GrowthAnalyticsService {
     const processedRewards = await this.prisma.reward.aggregate({
       where: {
         rewardType: 'REFERRAL',
-        status: 'PROCESSED',
+        status: 'CLAIMED',
       },
       _sum: { amount: true },
     });
@@ -73,7 +73,7 @@ export class GrowthAnalyticsService {
           where: {
             telegramUserId: group.referrerId,
             rewardType: 'REFERRAL',
-            status: 'PROCESSED',
+            status: 'CLAIMED',
           },
           _sum: { amount: true },
         });

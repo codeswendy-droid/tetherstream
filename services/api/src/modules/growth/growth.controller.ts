@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Query, Param } from '@nestjs/common';
 import { JwtAuthGuard as AuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TelegramUserId } from '../../common/decorators/telegram-user-id.decorator';
 import { ReferralService } from './referral.service';
@@ -61,16 +61,20 @@ export class GrowthController {
       take: 4,
     });
 
-    const availableRewards = activeRules.map((rule) => {
-      const isClaimed = rewards.some((r) => r.ruleId === rule.id && r.status === 'PROCESSED');
+    const realQueue = await this.rewardService.getAvailableRewards(telegramUserId);
+
+    const availableRewards = (realQueue.length > 0 ? realQueue : activeRules).map((item: any) => {
+      const isClaimed = rewards.some(
+        (r) => (item.ruleId ? r.ruleId === item.ruleId : r.id === item.id) && r.status === 'CLAIMED',
+      );
       return {
-        id: rule.id,
-        title: rule.name,
-        description: (rule.parameters as any)?.description || `Earn ${rule.amount} ${rule.assetCode}`,
+        id: item.id,
+        title: item.ruleName || item.name,
+        description: item.description || (item.parameters as any)?.description || `Earn ${item.amount} ${item.assetCode}`,
         badge: isClaimed ? 'Claimed' : 'Unlocked',
-        rewardValue: `${rule.amount} ${rule.assetCode}`,
-        status: isClaimed ? 'CLAIMED' : 'UNLOCKED',
-        action: isClaimed ? 'VIEW' : 'CLAIM',
+        rewardValue: `${item.amount} ${item.assetCode || 'USDT'}`,
+        status: isClaimed ? 'CLAIMED' : item.status === 'CLAIM_PENDING' ? 'CLAIM_PENDING' : 'UNLOCKED',
+        action: isClaimed || item.status === 'CLAIM_PENDING' ? 'VIEW' : 'CLAIM',
       };
     });
 
@@ -90,44 +94,7 @@ export class GrowthController {
         { id: 't3', label: 'Invite trusted users', completed: qualifiedCount > 0 },
         { id: 't4', label: 'Complete transactions', completed: completedSettlementsCount >= 5 },
       ],
-      availableRewards: availableRewards.length > 0 ? availableRewards : [
-        {
-          id: 'r1',
-          title: '$2 USDT Bonus',
-          description: 'Ready to claim in wallet',
-          badge: 'Unlocked',
-          rewardValue: '$2 USDT',
-          status: 'UNLOCKED',
-          action: 'CLAIM',
-        },
-        {
-          id: 'r2',
-          title: 'Premium Status 7 Days',
-          description: 'Invite 2 friends to unlock',
-          badge: '2 invites away',
-          rewardValue: '7-Day Pass',
-          status: 'IN_PROGRESS',
-          action: 'INVITE',
-        },
-        {
-          id: 'r3',
-          title: '$10 USDT Reward',
-          description: 'Upgrade trust score to unlock',
-          badge: 'Reach Builder Lv2',
-          rewardValue: '$10 USDT',
-          status: 'LOCKED',
-          action: 'UPGRADE',
-        },
-        {
-          id: 'r4',
-          title: 'Special Season Badge',
-          description: 'Season 1 Treasury reward',
-          badge: 'Coming Soon',
-          rewardValue: 'Season Badge',
-          status: 'UPCOMING',
-          action: 'VIEW',
-        },
-      ],
+      availableRewards,
       todaysMissions: [
         {
           id: 'm1',
@@ -241,6 +208,51 @@ export class GrowthController {
       telegramUserId: r.telegramUserId.toString(),
       amount: r.amount.toString(),
     }));
+  }
+
+  /**
+   * GET /growth/rewards/available
+   * Real-time claim queue: active, eligible, unclaimed rewards.
+   */
+  @Get('rewards/available')
+  async getAvailableRewards(@TelegramUserId() telegramUserId: bigint) {
+    const queue = await this.rewardService.getAvailableRewards(telegramUserId);
+    return { queue };
+  }
+
+  /**
+   * GET /growth/rewards/history
+   * Claimed / expired rewards with transaction references.
+   */
+  @Get('rewards/history')
+  async getRewardHistory(@TelegramUserId() telegramUserId: bigint) {
+    const history = await this.rewardService.getRewardHistory(telegramUserId);
+    return { history };
+  }
+
+  /**
+   * GET /growth/rewards/:id
+   * Claim experience detail: requirements, reason, reward value.
+   */
+  @Get('rewards/:id')
+  async getRewardDetail(
+    @TelegramUserId() telegramUserId: bigint,
+    @Param('id') rewardId: string,
+  ) {
+    return this.rewardService.getRewardDetail(telegramUserId, rewardId);
+  }
+
+  /**
+   * POST /growth/rewards/:id/claim
+   * Backend-validated claim: eligibility -> ledger -> wallet -> status.
+   */
+  @Post('rewards/:id/claim')
+  async claimReward(
+    @TelegramUserId() telegramUserId: bigint,
+    @Param('id') rewardId: string,
+  ) {
+    const reward = await this.rewardService.claimReward(telegramUserId, rewardId);
+    return { reward };
   }
 
   /**

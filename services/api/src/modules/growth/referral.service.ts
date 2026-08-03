@@ -344,7 +344,7 @@ export class ReferralService {
     let totalEarnedUSDT = 0;
     relationships.forEach((r) => {
       r.rewards.forEach((rw) => {
-        if (rw.reward && rw.reward.status === 'PROCESSED') {
+        if (rw.reward && rw.reward.status === 'CLAIMED') {
           totalEarnedUSDT += Number(rw.reward.amount);
         }
       });

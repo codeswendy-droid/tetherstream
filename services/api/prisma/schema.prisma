@@ -1218,10 +1218,11 @@ enum RewardType {
 }
 
 enum RewardStatus {
-  PENDING
-  APPROVED
-  PROCESSED
-  CANCELLED
+  AVAILABLE
+  IN_PROGRESS
+  CLAIM_PENDING
+  CLAIMED
+  EXPIRED
 }
 
 enum UserLevelTier {
@@ -1372,7 +1373,7 @@ model Reward {
   rewardType     RewardType   @map("reward_type")
   amount         Decimal      @db.Decimal(36, 18)
   assetCode      String       @default("USDT") @map("asset_code")
-  status         RewardStatus @default(PENDING) @map("status")
+  status         RewardStatus @default(AVAILABLE) @map("status")
   reference      String       @unique @map("reference")
   operationId    String?      @map("operation_id")
   metadata       Json?        @map("metadata")
