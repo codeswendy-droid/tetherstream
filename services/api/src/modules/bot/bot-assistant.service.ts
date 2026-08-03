@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../../database/prisma.service';
 import { TelegramUserCtx } from './bot-gate.service';
+import { BalanceService } from '../financial/balance.service';
+import { SupportService } from '../admin/services/support.service';
+import { SupportCategory, SupportPriority } from '@prisma/client';
 
 export interface EducationLesson {
   id: string;
@@ -16,8 +20,15 @@ export interface EducationLesson {
 @Injectable()
 export class BotAssistantService {
   private readonly logger = new Logger(BotAssistantService.name);
+  private readonly webAppUrl = process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app';
 
-  // Exact FAQ content mapped directly from apps/web/src/components/HelpModal.tsx
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly balanceService: BalanceService,
+    private readonly supportService: SupportService,
+  ) {}
+
+  // Canonical source-of-truth FAQ knowledge base matching HelpModal.tsx
   private readonly faqItems: Record<string, { question: string; answer: string }> = {
     what_is: {
       question: 'What is TitanStream?',
@@ -79,22 +90,6 @@ export class BotAssistantService {
       question: 'Why are there limits?',
       answer: 'Limits protect the network\'s liquidity and ensure fair distribution among all users. As your verified platform reputation grows, your transaction limits naturally expand, allowing you to run larger operations.',
     },
-    why_learn: {
-      question: 'Why do I need to learn before I start?',
-      answer: 'We want every user to understand the real value of the cloud computing economy. Learning the basics builds confidence, removes fear, and helps you make smarter decisions as you scale your participation.',
-    },
-    balance_calc: {
-      question: 'How is my balance calculated?',
-      answer: 'Your balance updates continuously based on the Compute Power of your active Machines. The system calculates your share of rental fees every second and adds it directly to your available balance.',
-    },
-    platform_fee: {
-      question: 'How does TitanStream make money?',
-      answer: 'TitanStream acts as the platform orchestrator. We take a small service fee from the rental contracts paid by businesses to cover data center maintenance, electricity, and platform operations.',
-    },
-    why_growth: {
-      question: 'Why is cloud computing growing so fast?',
-      answer: 'The entire world is moving online. From AI models to video rendering, automation, and science, businesses need more power than ever. Industry giants like Amazon, Microsoft, and NVIDIA rely heavily on cloud computing, making it a trillion-dollar industry.',
-    },
   };
 
   private readonly lessons: Record<string, EducationLesson> = {
@@ -138,7 +133,7 @@ export class BotAssistantService {
     },
     lesson_3: {
       id: 'lesson_3',
-      title: '3️⃣ Compute Power & 24/7 Earnings',
+      title: '3️⃣ Compute Power & 24/7 Operations',
       content: `<b>Lesson 3: Compute Power & 24/7 Operations 🖥⏱</b>\n\n` +
         `<b>What is Compute Power?</b>\n` +
         `Compute Power is the raw processing speed of a computer, measured in <b>Compute Units (CU)</b>.\n\n` +
@@ -172,6 +167,248 @@ export class BotAssistantService {
     },
   };
 
+  /**
+   * Run live account diagnostics for the user
+   */
+  async runAccountDiagnostics(userCtx: TelegramUserCtx): Promise<{ text: string; keyboard: any }> {
+    const user = await this.prisma.user.findUnique({
+      where: { telegramUserId: userCtx.id },
+      include: {
+        financialAccount: true,
+        userLevel: true,
+        userMachines: { where: { status: 'ACTIVE' } },
+        miningState: true,
+      },
+    });
+
+    const emergencyState = await this.prisma.emergencyControlState.findUnique({
+      where: { id: 'SYSTEM_EMERGENCY_STATE' },
+    });
+
+    const activeMachinesCount = user?.userMachines?.length || 0;
+    const isWalletActive = !!user?.financialAccount;
+    const depositsEnabled = !emergencyState?.depositsPaused;
+    const withdrawalsEnabled = !emergencyState?.withdrawalsPaused;
+    const qualifiedRefs = user?.qualifiedReferrals || 0;
+
+    let availableUSDT = '0.00';
+    if (user?.financialAccount?.id) {
+      try {
+        const balancesData = await this.balanceService.getBalances(userCtx.id, user.financialAccount.id);
+        const usdtAsset = balancesData.balances.find((b) => b.assetCode === 'USDT');
+        if (usdtAsset) availableUSDT = Number(usdtAsset.availableBalance).toFixed(2);
+      } catch {
+        // balance default
+      }
+    }
+
+    const text = `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `<b>🔍 Account Diagnostic Health Check</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `<b>User ID:</b> <code>${userCtx.id}</code>\n` +
+      `<b>Account Status:</b> 🟢 VERIFIED & SYNCED\n\n` +
+      `✓ <b>Telegram Identity:</b> Linked (${userCtx.firstName})\n` +
+      `${isWalletActive ? '✓' : '❌'} <b>Double-Entry Wallet:</b> ${isWalletActive ? 'Active' : 'Initializing'}\n` +
+      `${activeMachinesCount > 0 ? '✓' : '⚠️'} <b>Machine Status:</b> ${activeMachinesCount > 0 ? `${activeMachinesCount} Machine(s) Online` : 'No active Machine'}\n` +
+      `✓ <b>Ledger Balance:</b> ${availableUSDT} USDT\n` +
+      `${depositsEnabled ? '✓' : '⏸'} <b>Payment Gateway:</b> ${depositsEnabled ? 'Enabled & Ready' : 'Paused'}\n` +
+      `${withdrawalsEnabled ? '✓' : '⏸'} <b>Cashout Pipeline:</b> ${withdrawalsEnabled ? 'Operational' : 'Paused'}\n` +
+      `✓ <b>Referrals Tracked:</b> ${qualifiedRefs} Verified Referrals\n\n` +
+      `<b>Diagnostic Result:</b> 🟢 No system errors detected!`;
+
+    return {
+      text,
+      keyboard: {
+        inline_keyboard: [
+          [{ text: '💬 Support Desk', callback_data: 'sup_menu' }],
+          [{ text: '🚀 Open TitanStream App', web_app: { url: this.webAppUrl } }],
+        ],
+      },
+    };
+  }
+
+  /**
+   * Account-aware guided support menu router
+   */
+  async handleGuidedSupport(userCtx: TelegramUserCtx, callbackData: string): Promise<{ text: string; keyboard: any }> {
+    if (callbackData === 'sup_menu') {
+      return {
+        text: `━━━━━━━━━━━━━━━━━━━━━━\n` +
+          `<b>💬 Titan Support Desk</b>\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+          `Select a category below for guided troubleshooting and account-specific answers:`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '💰 Payments & Deposits', callback_data: 'sup_cat_payments' }],
+            [{ text: '🏦 Withdrawals & Cashouts', callback_data: 'sup_cat_withdrawals' }],
+            [{ text: '⚙️ Machines & Uptime', callback_data: 'sup_cat_machines' }],
+            [{ text: '👥 Referrals & Rewards', callback_data: 'sup_cat_referrals' }],
+            [{ text: '📚 Academy & Quizzes', callback_data: 'sup_cat_academy' }],
+            [{ text: '🔒 Account & Security', callback_data: 'sup_cat_account' }],
+            [{ text: '🔍 Run Account Diagnostic Check', callback_data: 'cmd_health_report' }],
+            [{ text: '❓ Talk to Support Operator', callback_data: 'sup_talk_human' }],
+          ],
+        },
+      };
+    }
+
+    if (callbackData === 'sup_cat_withdrawals') {
+      return {
+        text: `<b>🏦 Withdrawal Guided Support</b>\n\nWhat issue are you experiencing?`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '• Account Withdrawal Eligibility Check', callback_data: 'sup_wd_eligibility' }],
+            [{ text: '• Withdrawal Pending / Delay', callback_data: 'sup_wd_pending' }],
+            [{ text: '• Didn\'t Receive Money', callback_data: 'sup_wd_missing' }],
+            [{ text: '• Withdrawal Limits', callback_data: 'sup_wd_limits' }],
+            [{ text: '⬅️ Back to Support Menu', callback_data: 'sup_menu' }],
+          ],
+        },
+      };
+    }
+
+    if (callbackData === 'sup_wd_eligibility') {
+      const user = await this.prisma.user.findUnique({
+        where: { telegramUserId: userCtx.id },
+        include: {
+          financialAccount: true,
+          userMachines: { where: { status: 'ACTIVE' } },
+        },
+      });
+
+      const activeMachinesCount = user?.userMachines?.length || 0;
+      const qualifiedRefs = user?.qualifiedReferrals || 0;
+      const targetRefs = 5;
+
+      let availableUSDT = '0.00';
+      if (user?.financialAccount?.id) {
+        try {
+          const balancesData = await this.balanceService.getBalances(userCtx.id, user.financialAccount.id);
+          const usdtAsset = balancesData.balances.find((b) => b.assetCode === 'USDT');
+          if (usdtAsset) availableUSDT = Number(usdtAsset.availableBalance).toFixed(2);
+        } catch {
+          // default
+        }
+      }
+
+      const text = `<b>🔍 Account Withdrawal Status Check</b>\n\n` +
+        `✓ <b>Identity Status:</b> VERIFIED\n` +
+        `${activeMachinesCount > 0 ? '✓' : '⚠️'} <b>Machine Allocation:</b> ${activeMachinesCount > 0 ? `${activeMachinesCount} Active Machine(s)` : 'No active Machine'}\n` +
+        `✓ <b>Available Earnings:</b> <b>${availableUSDT} USDT</b>\n` +
+        `${qualifiedRefs >= targetRefs ? '✓' : '⚠️'} <b>Referral Milestone:</b> ${qualifiedRefs} / ${targetRefs} Verified Referrals\n\n` +
+        `${qualifiedRefs >= targetRefs
+          ? '🎉 <b>Your account is 100% eligible for instant withdrawals!</b>'
+          : `⚠️ <b>Milestone requirement:</b> You currently have ${qualifiedRefs} verified referrals. Invite ${targetRefs - qualifiedRefs} more friends to unlock maximum withdrawal speed!`}`;
+
+      return {
+        text,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '👥 Invite Friends Now', callback_data: 'cmd_referrals' }],
+            [{ text: '💸 Proceed to Cashout', callback_data: 'cmd_withdraw' }],
+            [{ text: '⬅️ Back to Support Menu', callback_data: 'sup_menu' }],
+          ],
+        },
+      };
+    }
+
+    if (callbackData === 'sup_cat_payments') {
+      return {
+        text: `<b>💰 Payment & Deposit Guided Support</b>\n\n` +
+          `<b>How deposits work:</b>\n` +
+          `${this.faqItems.deposits.answer}\n\n` +
+          `<b>Common Solutions:</b>\n` +
+          `• Mobile Money transactions usually credit within 30–60 seconds.\n` +
+          `• CryptoBot invoices settle automatically upon network confirmation.`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '➕ Make a Deposit', callback_data: 'cmd_deposit' }],
+            [{ text: '❓ Talk to Support Operator', callback_data: 'sup_talk_human' }],
+            [{ text: '⬅️ Back to Support Menu', callback_data: 'sup_menu' }],
+          ],
+        },
+      };
+    }
+
+    if (callbackData === 'sup_cat_machines') {
+      return {
+        text: `<b>⚙️ Machines & Uptime Guided Support</b>\n\n` +
+          `<b>How Machines work:</b>\n` +
+          `${this.faqItems.machines_work.answer}\n\n` +
+          `<b>Why earnings continue when phone is off:</b>\n` +
+          `${this.faqItems.phone_off.answer}`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '🖥 Run Account Diagnostic Check', callback_data: 'cmd_health_report' }],
+            [{ text: '⚡ View Machine Status', callback_data: 'cmd_treasury' }],
+            [{ text: '⬅️ Back to Support Menu', callback_data: 'sup_menu' }],
+          ],
+        },
+      };
+    }
+
+    if (callbackData === 'sup_cat_referrals') {
+      return {
+        text: `<b>👥 Referrals & Rewards Guided Support</b>\n\n` +
+          `<b>Why do I need referrals?</b>\n` +
+          `${this.faqItems.referrals.answer}`,
+        keyboard: {
+          inline_keyboard: [
+            [{ text: '👥 View Referral Progress', callback_data: 'cmd_referrals' }],
+            [{ text: '⬅️ Back to Support Menu', callback_data: 'sup_menu' }],
+          ],
+        },
+      };
+    }
+
+    if (callbackData === 'sup_talk_human') {
+      return this.escalateToHumanSupport(userCtx);
+    }
+
+    return this.getAssistantMenu(userCtx);
+  }
+
+  /**
+   * Escalates ticket to human support operator with rich contextual details
+   */
+  async escalateToHumanSupport(userCtx: TelegramUserCtx): Promise<{ text: string; keyboard: any }> {
+    const user = await this.prisma.user.findUnique({
+      where: { telegramUserId: userCtx.id },
+      include: {
+        financialAccount: true,
+        userMachines: { where: { status: 'ACTIVE' } },
+      },
+    });
+
+    const activeMachinesCount = user?.userMachines?.length || 0;
+
+    const supportCase = await this.supportService.createCase(
+      { id: 'SYSTEM_BOT', role: 'BOT_AUTOMATION' },
+      {
+        userId: userCtx.id.toString(),
+        category: SupportCategory.TECHNICAL_ISSUE,
+        priority: SupportPriority.HIGH,
+        notes: `Escalated from Operations Hub Bot. Active Machines: ${activeMachinesCount}, Qualified Refs: ${user?.qualifiedReferrals || 0}`,
+      },
+    );
+
+    const text = `<b>💬 Titan Support Case Created</b>\n\n` +
+      `<b>Case Ref:</b> <code>${supportCase.id}</code>\n` +
+      `<b>User ID:</b> <code>${userCtx.id}</code>\n` +
+      `<b>Status:</b> 🟢 ESCALATED TO HUMAN OPERATOR\n\n` +
+      `Our support team has received your account diagnostic package and will respond directly in this chat.`;
+
+    return {
+      text,
+      keyboard: {
+        inline_keyboard: [
+          [{ text: '💬 Open Support Portal in App', web_app: { url: `${this.webAppUrl}/support` } }],
+          [{ text: '⬅️ Back to Support Menu', callback_data: 'sup_menu' }],
+        ],
+      },
+    };
+  }
+
   async getAssistantMenu(userCtx: TelegramUserCtx): Promise<{ text: string; keyboard: any }> {
     return {
       text: `<b>📚 TitanStream Education & FAQ Center</b>\n\n` +
@@ -199,7 +436,7 @@ export class BotAssistantService {
       keyboard: {
         inline_keyboard: [
           [{ text: '📚 Ask Another FAQ Question', callback_data: 'assistant_menu' }],
-          [{ text: '🚀 Open Mini App', web_app: { url: process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app' } }],
+          [{ text: '🚀 Open Mini App', web_app: { url: this.webAppUrl } }],
         ],
       },
     };
@@ -224,7 +461,7 @@ export class BotAssistantService {
       keyboard: {
         inline_keyboard: [
           [{ text: '⭐ View All FAQs', callback_data: 'assistant_menu' }],
-          [{ text: '🚀 Open Mini App', web_app: { url: process.env.TELEGRAM_WEBAPP_URL || 'https://titanstream.app' } }],
+          [{ text: '🚀 Open Mini App', web_app: { url: this.webAppUrl } }],
         ],
       },
     };

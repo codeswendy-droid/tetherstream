@@ -9,10 +9,8 @@ import { SupportCategory, SupportPriority } from '@prisma/client';
 
 export const getPersistentMainKeyboard = (webAppUrl: string) => ({
   keyboard: [
-    [{ text: '🚀 Open TitanStream', web_app: { url: webAppUrl } }],
-    [{ text: '⚡ Treasury & Cloud Compute' }, { text: '🎰 Arcade Games' }, { text: '💰 Wallet & Cash' }],
-    [{ text: '🎁 Daily Quests' }, { text: '⭐ Trust & Limits' }, { text: '👥 Referral Hub' }],
-    [{ text: '📚 Academy' }, { text: '🆘 Support Desk' }, { text: '⚙️ Settings & Security' }],
+    [{ text: '🚀 Launch Titan Stream', web_app: { url: webAppUrl } }],
+    [{ text: '📚 Academy' }, { text: '🎁 Invite Friends' }, { text: '💬 Support' }],
   ],
   resize_keyboard: true,
 });
@@ -73,17 +71,19 @@ export class BotCommandService {
     if (!gateResult.verified) return { text: gateResult.message, keyboard: gateResult.keyboard };
 
     return {
-      text: `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `<b>TitanStream Control Tower 🚀</b>\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `Welcome to TitanStream — your portal to the cloud computing economy.\n\n` +
-        `Tap below to launch your personal workspace:`,
+      text: `━━━━━━━━━━━━━━━━━━━━\n` +
+        `👋 <b>Welcome to Titan Stream</b>\n\n` +
+        `The world's computing demand is growing every day.\n\n` +
+        `Businesses rent cloud computing power to run AI, software, automation, and high-performance workloads.\n\n` +
+        `Titan Stream allows you to reserve a portion of our professionally managed cloud infrastructure through Machines.\n\n` +
+        `As businesses rent this computing capacity, a share of the rental revenue is distributed to Machine owners.\n\n` +
+        `Everything is managed for you. No technical knowledge required.\n` +
+        `━━━━━━━━━━━━━━━━━━━━`,
       keyboard: {
         inline_keyboard: [
-          [{ text: '🚀 Open TitanStream Mini App', web_app: { url: this.webAppUrl } }],
-          [{ text: '🖥 Machine Health Status', callback_data: 'cmd_health_report' }],
-          [{ text: '📚 Cloud Economy Academy', callback_data: 'edu_menu' }],
-          [{ text: '🎰 Arcade Games', callback_data: 'cmd_games' }],
+          [{ text: '🚀 Launch Titan Stream', web_app: { url: this.webAppUrl } }],
+          [{ text: '📚 Learn How It Works', callback_data: 'edu_menu' }, { text: '🎁 Invite Friends', callback_data: 'cmd_referrals' }],
+          [{ text: '💬 Support Desk', callback_data: 'sup_menu' }, { text: '🔍 Run Account Check', callback_data: 'cmd_health_report' }],
         ],
       },
     };
@@ -296,17 +296,18 @@ export class BotCommandService {
   async handleHelp(userCtx: TelegramUserCtx): Promise<{ text: string; keyboard: any }> {
     return {
       text: `━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `<b>💬 TitanStream Guided Support Desk</b>\n` +
+        `<b>💬 Titan Support Desk</b>\n` +
         `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `How can we assist you today? Select a topic below for instant resolution:`,
+        `How can we assist you today? Select a category below for guided troubleshooting and account checks:`,
       keyboard: {
         inline_keyboard: [
-          [{ text: '💳 Payments & Deposits', callback_data: 'ticket_PAYMENT_ISSUE' }],
-          [{ text: '💸 Withdrawals & Cashouts', callback_data: 'ticket_SETTLEMENT_DELAY' }],
-          [{ text: '🖥 My Machine & Compute Power', callback_data: 'ticket_TECHNICAL_ISSUE' }],
-          [{ text: '👥 Referral Progress & Bonuses', callback_data: 'ticket_ACCOUNT_ISSUE' }],
+          [{ text: '💰 Payments & Deposits', callback_data: 'sup_cat_payments' }],
+          [{ text: '🏦 Withdrawals & Cashouts', callback_data: 'sup_cat_withdrawals' }],
+          [{ text: '⚙️ Machines & Uptime', callback_data: 'sup_cat_machines' }],
+          [{ text: '👥 Referrals & Rewards', callback_data: 'sup_cat_referrals' }],
           [{ text: '📚 Academy & FAQ Explorer', callback_data: 'assistant_menu' }],
-          [{ text: '🎧 Talk to Support Operator', callback_data: 'ticket_HUMAN_SUPPORT' }],
+          [{ text: '🔍 Run Account Diagnostic Check', callback_data: 'cmd_health_report' }],
+          [{ text: '❓ Talk to Support Operator', callback_data: 'sup_talk_human' }],
         ],
       },
     };

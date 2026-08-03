@@ -109,41 +109,25 @@ export class BotDispatcherService {
       response = await this.botCommand.handleStart(userCtx, startParam);
     } else if (rawText.startsWith('/admin') && this.botAdmin.isAdmin(userCtx.id)) {
       response = await this.botAdmin.handleAdminDashboard(userCtx);
-    } else if (cleanText.includes('treasury') || cleanText.includes('compute') || cleanText.includes('mining') || cleanText.includes('mine')) {
-      response = await this.botCommand.handleTreasuryMining(userCtx);
-    } else if (cleanText.includes('arcade') || cleanText.includes('games') || cleanText.includes('game')) {
-      response = await this.botCommand.handleGames(userCtx);
+    } else if (cleanText.includes('academy') || cleanText.includes('learn') || cleanText.includes('faq')) {
+      response = await this.botAssistant.getEducationMenu();
+    } else if (cleanText.includes('referral') || cleanText.includes('invite') || cleanText.includes('friend')) {
+      response = await this.botCommand.handleReferrals(userCtx);
+    } else if (cleanText.includes('support') || cleanText.includes('help')) {
+      response = await this.botAssistant.handleGuidedSupport(userCtx, 'sup_menu');
     } else if (cleanText.includes('wallet') || cleanText.includes('cash') || cleanText.includes('balance')) {
       response = await this.botCommand.handleBalance(userCtx);
-    } else if (cleanText.includes('quest') || cleanText.includes('reward')) {
-      response = await this.botCommand.handleQuests(userCtx);
-    } else if (cleanText.includes('trust') || cleanText.includes('limit')) {
-      response = await this.botAssistant.handleAssistantQuery('asst_q_trust');
-    } else if (cleanText.includes('referral') || cleanText.includes('affiliate') || cleanText.includes('invite')) {
-      response = await this.botCommand.handleReferrals(userCtx);
-    } else if (cleanText.includes('academy') || cleanText.includes('learn') || cleanText.includes('faq')) {
-      response = await this.botAssistant.getAssistantMenu(userCtx);
-    } else if (cleanText.includes('support') || cleanText.includes('help')) {
-      response = await this.botCommand.handleHelp(userCtx);
-    } else if (cleanText.includes('setting') || cleanText.includes('security')) {
-      response = await this.botCommand.handleSettings(userCtx);
-    } else if (cleanText.includes('deposit')) {
-      response = await this.botPayment.getDepositMenu(userCtx.id);
-    } else if (cleanText.includes('withdraw') || cleanText.includes('cashout')) {
-      response = await this.botWithdrawal.getWithdrawalMenu(userCtx.id);
-    } else if (cleanText.includes('upgrade')) {
-      response = await this.botMonetization.getProductsMenu(userCtx.id);
-    } else if (cleanText.includes('admin') && this.botAdmin.isAdmin(userCtx.id)) {
-      response = await this.botAdmin.handleAdminDashboard(userCtx);
-    } else if (cleanText.includes('open') || cleanText.includes('titanstream') || cleanText.includes('app')) {
+    } else if (cleanText.includes('treasury') || cleanText.includes('compute') || cleanText.includes('machine')) {
+      response = await this.botCommand.handleTreasuryMining(userCtx);
+    } else if (cleanText.includes('launch') || cleanText.includes('open') || cleanText.includes('titan') || cleanText.includes('app')) {
       response = await this.botCommand.handleApp(userCtx);
     } else {
-      // Fallback for general text: route to App Launcher instead of repeating Welcome Gate!
+      // Operations Hub: Route all other text messages directly to Titan Welcome App launcher
       response = await this.botCommand.handleApp(userCtx);
     }
 
     if (response.text) {
-      // Ensure persistent reply keyboard is attached
+      // Ensure persistent 4-button reply keyboard is attached
       const finalKeyboard = response.keyboard?.keyboard
         ? response.keyboard
         : {
@@ -176,8 +160,9 @@ export class BotDispatcherService {
     if (data === 'verify_membership' || data === 'cmd_start') {
       response = await this.botCommand.handleStart(userCtx);
     } else if (data === 'cmd_health_report') {
-      await this.botNotification.sendMachineHealthReport(userCtx.id, userCtx.firstName);
-      return;
+      response = await this.botAssistant.runAccountDiagnostics(userCtx);
+    } else if (data.startsWith('sup_')) {
+      response = await this.botAssistant.handleGuidedSupport(userCtx, data);
     } else if (data === 'cmd_admin' || data === 'admin_dashboard' || data === 'admin_menu') {
       response = await this.botAdmin.handleAdminDashboard(userCtx);
     } else if (data === 'cmd_treasury') {
@@ -269,7 +254,7 @@ export class BotDispatcherService {
     } else if (data === 'cmd_referrals') {
       response = await this.botCommand.handleReferrals(userCtx);
     } else if (data === 'cmd_help') {
-      response = await this.botCommand.handleHelp(userCtx);
+      response = await this.botAssistant.handleGuidedSupport(userCtx, 'sup_menu');
     } else if (data === 'cmd_settings') {
       response = await this.botCommand.handleSettings(userCtx);
     } else if (data === 'toggle_notif') {

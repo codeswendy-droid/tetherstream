@@ -223,7 +223,7 @@ export class BotGateService {
       if (!membership.isMember) {
         const channelUser = targetChannel.startsWith('@') ? targetChannel.substring(1) : targetChannel;
         const gateText = `<b>⚠️ Channel Membership Required</b>\n\n` +
-          `Welcome, ${userCtx.firstName}! To access TitanStream DeAI Cloud Infrastructure and start earning daily rental revenue, please join our official Telegram channel:\n\n` +
+          `Welcome, ${userCtx.firstName}! To access Titan Stream Cloud Infrastructure and start earning daily rental revenue, please join our official Telegram channel:\n\n` +
           `👉 <b>${targetChannel}</b>\n\n` +
           `After joining, tap <b>✅ Verify Membership</b> to continue.`;
 
@@ -240,45 +240,30 @@ export class BotGateService {
       }
     }
 
-    // Fetch real stats for personalized welcome
-    const activeMachinesCount = user?.userMachines?.length || 0;
-    const unclaimedYield = user?.miningState ? Number(user.miningState.unclaimedBalance) : 0.00;
-    const qualifiedReferrals = user?.qualifiedReferrals || 0;
-    const trustLevel = user?.userLevel?.currentLevel || 'VERIFIED';
-
-    const goal = 5;
-    const progressBlocks = Math.min(Math.floor((qualifiedReferrals / goal) * 10), 10);
-    const progressBar = '█'.repeat(progressBlocks) + '░'.repeat(10 - progressBlocks);
-
-    const welcomeText = `👋 <b>Welcome back, ${userCtx.firstName}!</b>\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `<b>TitanStream Control Tower 🚀</b>\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `<b>Account Status:</b> 🟢 VERIFIED & ACTIVE\n` +
-      `<b>Trust Tier:</b> Tier ${trustLevel}\n` +
-      `<b>Active Machines:</b> <b>${activeMachinesCount} Machine${activeMachinesCount === 1 ? '' : 's'} Online</b>\n` +
-      `<b>Unclaimed Yield:</b> <b>${unclaimedYield.toFixed(2)} USDT</b>\n` +
-      `<b>Referral Progress:</b> [${progressBar}] <b>${qualifiedReferrals} / ${goal} Friends</b>\n\n` +
-      `${activeMachinesCount > 0
-        ? '<i>Your cloud computing servers are running 24/7 in high-security data centers.</i>'
-        : '<i>No active Machine yet — activate your first Machine in the Mini App to start earning daily rental revenue!</i>'}\n\n` +
-      `Tap <b>Open TitanStream App</b> below to manage your cloud allocation:`;
+    const welcomeText = `━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `👋 <b>Welcome to Titan Stream, ${userCtx.firstName}!</b>\n\n` +
+      `The world's computing demand is growing every day.\n\n` +
+      `Businesses rent cloud computing power to run AI, software, automation, and high-performance workloads.\n\n` +
+      `Titan Stream allows you to reserve a portion of our professionally managed cloud infrastructure through Machines.\n\n` +
+      `As businesses rent this computing capacity, a share of the rental revenue is distributed to Machine owners.\n\n` +
+      `Everything is managed for you. No technical knowledge required.\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━`;
 
     const verifiedKeyboard = {
       inline_keyboard: [
         [
           {
-            text: '🚀 Open TitanStream App',
+            text: '🚀 Launch Titan Stream',
             web_app: { url: this.webAppUrl },
           },
         ],
         [
-          { text: '🖥 Machine Health Status', callback_data: 'cmd_health_report' },
-          { text: '💰 View Ledger Wallet', callback_data: 'cmd_balance' },
+          { text: '📚 Learn How It Works', callback_data: 'edu_menu' },
+          { text: '🎁 Invite Friends', callback_data: 'cmd_referrals' },
         ],
         [
-          { text: '📚 Cloud Economy Academy', callback_data: 'edu_menu' },
-          { text: '👥 Referral Network Hub', callback_data: 'cmd_referrals' },
+          { text: '💬 Support Desk', callback_data: 'sup_menu' },
+          { text: '🔍 Run Account Check', callback_data: 'cmd_health_report' },
         ],
       ],
     };
