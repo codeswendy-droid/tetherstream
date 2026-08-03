@@ -107,7 +107,7 @@ export class BotDispatcherService {
       response = await this.botCommand.handleStart(userCtx, startParam);
     } else if (rawText.startsWith('/admin') && this.botAdmin.isAdmin(userCtx.id)) {
       response = await this.botAdmin.handleAdminDashboard(userCtx);
-    } else if (cleanText.includes('treasury') || cleanText.includes('mining') || cleanText.includes('mine')) {
+    } else if (cleanText.includes('treasury') || cleanText.includes('compute') || cleanText.includes('mining') || cleanText.includes('mine')) {
       response = await this.botCommand.handleTreasuryMining(userCtx);
     } else if (cleanText.includes('arcade') || cleanText.includes('games') || cleanText.includes('game')) {
       response = await this.botCommand.handleGames(userCtx);
@@ -119,7 +119,7 @@ export class BotDispatcherService {
       response = await this.botAssistant.handleAssistantQuery('asst_q_trust');
     } else if (cleanText.includes('referral') || cleanText.includes('affiliate') || cleanText.includes('invite')) {
       response = await this.botCommand.handleReferrals(userCtx);
-    } else if (cleanText.includes('academy') || cleanText.includes('learn')) {
+    } else if (cleanText.includes('academy') || cleanText.includes('learn') || cleanText.includes('faq')) {
       response = await this.botAssistant.getEducationMenu();
     } else if (cleanText.includes('support') || cleanText.includes('help')) {
       response = await this.botCommand.handleHelp(userCtx);
@@ -183,31 +183,31 @@ export class BotDispatcherService {
       response = await this.botCommand.handleQuests(userCtx);
     } else if (data === 'cmd_claim_mining') {
       response = {
-        text: `<b>✅ Mining Yield Claimed!</b>\n\n` +
+        text: `<b>✅ DeAI Compute Yield Claimed!</b>\n\n` +
           `<b>+4.85 USDT</b> has been successfully credited to your double-entry ledger balance.\n\n` +
-          `Your node is continuing to mine active economic yield 24/7.`,
+          `Your GPU node is continuing to process active enterprise AI workloads 24/7.`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '⚡ View Treasury Status', callback_data: 'cmd_treasury' }],
+            [{ text: '⚡ View DeAI Compute Cluster', callback_data: 'cmd_treasury' }],
             [{ text: '💰 View Ledger Wallet', callback_data: 'cmd_balance' }],
           ],
         },
       };
     } else if (data === 'cmd_toggle_turbo') {
       response = {
-        text: `<b>⚡ Turbo Mining Mode Activated!</b>\n\n` +
-          `Your mining multiplier is now set to <b>2.5x</b>.\n\n` +
-          `Keep your daily streak active to reach <b>3.0x Super Turbo</b> multiplier!`,
+        text: `<b>⚡ Turbo Compute Mode Activated!</b>\n\n` +
+          `Your GPU compute multiplier is now set to <b>2.5x</b>.\n\n` +
+          `Keep your daily streak active to reach <b>3.0x Super Turbo</b> compute multiplier!`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '⚡ Return to Treasury', callback_data: 'cmd_treasury' }],
+            [{ text: '⚡ Return to Compute Cluster', callback_data: 'cmd_treasury' }],
           ],
         },
       };
     } else if (data === 'cmd_daily_spin') {
       response = {
         text: `<b>🎡 Daily Wheel Reward Claimed!</b>\n\n` +
-          `🎉 You won <b>+1.00 USDT</b> bonus yield for today's lucky spin!\n\n` +
+          `🎉 You won <b>+1.00 USDT</b> bonus reward for today's lucky spin!\n\n` +
           `Come back in 24 hours for your next free spin.`,
         keyboard: {
           inline_keyboard: [
@@ -219,7 +219,7 @@ export class BotDispatcherService {
     } else if (data === 'cmd_claim_streak') {
       response = {
         text: `<b>🔥 5-Day Streak Bonus Active!</b>\n\n` +
-          `You earned a <b>+15% Mining Yield Boost</b> for maintaining your 5-day active streak!\n\n` +
+          `You earned a <b>+15% DeAI Compute Yield Boost</b> for maintaining your 5-day active streak!\n\n` +
           `Bonus multiplier will remain active for the next 24 hours.`,
         keyboard: {
           inline_keyboard: [
@@ -270,7 +270,7 @@ export class BotDispatcherService {
     } else if (data === 'toggle_notif') {
       response = {
         text: `<b>🔔 Notification Settings Updated!</b>\n\n` +
-          `Telegram bot deposit, mining yield, and withdrawal alerts are <b>ACTIVE</b>.\n\n` +
+          `Telegram bot deposit, DeAI compute yield, and withdrawal alerts are <b>ACTIVE</b>.\n\n` +
           `You will receive instant alerts for all balance updates.`,
         keyboard: {
           inline_keyboard: [[{ text: '⚙️ Back to Settings', callback_data: 'cmd_settings' }]],
@@ -307,7 +307,7 @@ export class BotDispatcherService {
           `• <b>Account Status:</b> 🟢 VERIFIED & SECURE\n` +
           `• <b>Double-Entry Ledger:</b> Active & Balanced\n` +
           `• <b>WebAuth Key Session:</b> Authoritative\n` +
-          `• <b>Recent Login:</b> Telegram Host Bot Session\n\n` +
+          `• <b>DeAI Node Execution:</b> Encrypted Telemetry\n\n` +
           `No suspicious activity or unauthorized devices detected.`,
         keyboard: {
           inline_keyboard: [[{ text: '⚙️ Back to Settings', callback_data: 'cmd_settings' }]],
@@ -335,38 +335,40 @@ export class BotDispatcherService {
       response = await this.botAssistant.getLesson(lessonKey);
     } else if (data.startsWith('edu_quiz_')) {
       const lessonKey = data.replace('edu_quiz_', '');
+      const quiz = this.botAssistant.getQuiz(lessonKey);
+      if (quiz) {
+        const optionButtons = quiz.options.map((opt, idx) => [
+          {
+            text: `${String.fromCharCode(65 + idx)}) ${opt}`,
+            callback_data: idx === quiz.correctIndex ? `edu_ans_correct_${lessonKey}` : `edu_ans_wrong_${lessonKey}`,
+          },
+        ]);
+        response = {
+          text: `<b>📝 Quick Cloud Academy Quiz</b>\n\n<b>Question:</b> ${quiz.question}\n\nSelect the correct answer:`,
+          keyboard: { inline_keyboard: optionButtons },
+        };
+      } else {
+        response = await this.botAssistant.getEducationMenu();
+      }
+    } else if (data.startsWith('edu_ans_correct')) {
       response = {
-        text: `<b>📝 Quick Education Quiz: Lesson 1</b>\n\n` +
-          `<b>Question:</b> What is the target value of 1 USDT stablecoin?\n\n` +
-          `Select the correct answer:`,
+        text: `<b>🎉 Correct Answer! (+0.50 USDT Reward)</b>\n\n` +
+          `Excellent job! You demonstrated strong knowledge of TitanStream cloud infrastructure.\n\n` +
+          `<b>+0.50 USDT</b> has been credited to your ledger balance.`,
         keyboard: {
           inline_keyboard: [
-            [{ text: 'A) $1.00 USD', callback_data: 'edu_ans_correct' }],
-            [{ text: 'B) $10.00 USD', callback_data: 'edu_ans_wrong' }],
-            [{ text: 'C) Fluctuates wildly like Bitcoin', callback_data: 'edu_ans_wrong' }],
-          ],
-        },
-      };
-    } else if (data === 'edu_ans_correct') {
-      response = {
-        text: `<b>🎉 Correct Answer! (+0.50 USDT Quiz Reward)</b>\n\n` +
-          `USDT is a stablecoin pegged 1:1 to $1.00 USD.\n\n` +
-          `You earned <b>+0.50 USDT</b> for completing this education quiz!`,
-        keyboard: {
-          inline_keyboard: [
-            [{ text: '🎓 Next Lesson', callback_data: 'edu_menu' }],
+            [{ text: '📚 Next Lesson', callback_data: 'edu_menu' }],
             [{ text: '💰 View Wallet', callback_data: 'cmd_balance' }],
           ],
         },
       };
-    } else if (data === 'edu_ans_wrong') {
+    } else if (data.startsWith('edu_ans_wrong')) {
       response = {
         text: `<b>❌ Incorrect Answer</b>\n\n` +
-          `USDT is designed to stay stable at <b>$1.00 USD</b>.\n\n` +
-          `Review the lesson and try again!`,
+          `Review the lesson in the Cloud Academy and try again!`,
         keyboard: {
           inline_keyboard: [
-            [{ text: '📖 Review Lesson', callback_data: 'edu_lesson_usdt_basics' }],
+            [{ text: '📖 Review Lesson', callback_data: 'edu_menu' }],
           ],
         },
       };

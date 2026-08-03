@@ -10,7 +10,7 @@ import { SupportCategory, SupportPriority } from '@prisma/client';
 export const getPersistentMainKeyboard = (webAppUrl: string) => ({
   keyboard: [
     [{ text: '🚀 Open TitanStream', web_app: { url: webAppUrl } }],
-    [{ text: '⚡ Treasury & Mining' }, { text: '🎰 Arcade Games' }, { text: '💰 Wallet & Cash' }],
+    [{ text: '⚡ Treasury & AI Compute' }, { text: '🎰 Arcade Games' }, { text: '💰 Wallet & Cash' }],
     [{ text: '🎁 Daily Quests' }, { text: '⭐ Trust & Limits' }, { text: '👥 Referral Hub' }],
     [{ text: '📚 Academy' }, { text: '🆘 Support Desk' }, { text: '⚙️ Settings & Security' }],
   ],
@@ -74,12 +74,13 @@ export class BotCommandService {
 
     return {
       text: `<b>TitanStream Mini App Hub 🚀</b>\n\n` +
-        `Welcome to TitanStream — the premier Telegram-native financial & yield engine.\n\n` +
+        `Welcome to TitanStream — the premier Telegram-native DeAI Cloud Infrastructure & Yield Engine.\n\n` +
         `Tap below to launch your personal dashboard:`,
       keyboard: {
         inline_keyboard: [
           [{ text: '🚀 Launch TitanStream App', web_app: { url: this.webAppUrl } }],
-          [{ text: '⚡ View Mining Rig', callback_data: 'cmd_treasury' }],
+          [{ text: '⚡ View DeAI Compute Node', callback_data: 'cmd_treasury' }],
+          [{ text: '📚 DeAI Infrastructure Academy', callback_data: 'edu_menu' }],
           [{ text: '🎰 Play Arcade Games', callback_data: 'cmd_games' }],
         ],
       },
@@ -90,20 +91,20 @@ export class BotCommandService {
     const gateResult = await this.botGate.processGateCheck(userCtx);
     if (!gateResult.verified) return { text: gateResult.message, keyboard: gateResult.keyboard };
 
-    const text = `<b>⚡ TitanStream Treasury & Mining Rig</b>\n\n` +
-      `Your automated mining node generates continuous economic yield based on your active mode and Trust Tier.\n\n` +
-      `<b>Mining Node Status:</b> 🟢 ONLINE & ACTIVE\n` +
-      `<b>Active Mode:</b> ⚡ Turbo (2.5x Multiplier)\n` +
-      `<b>Unclaimed Yield:</b> <b>4.85 USDT</b>\n` +
+    const text = `<b>⚡ TitanStream Treasury & DeAI Compute Cluster</b>\n\n` +
+      `Your automated GPU compute cluster processes enterprise AI workloads and generates continuous USDT compute yield based on your active mode and Trust Tier.\n\n` +
+      `<b>DeAI Node Status:</b> 🟢 ONLINE & PROCESSING AI WORKLOADS\n` +
+      `<b>Active Mode:</b> ⚡ Turbo (2.5x Compute Multiplier)\n` +
+      `<b>Unclaimed Compute Yield:</b> <b>4.85 USDT</b>\n` +
       `<b>Next Treasury Cycle Tick:</b> ⏱ 03h 42m remaining\n\n` +
-      `<i>Tip: Keep your node active daily to maintain your Treasury Multiplier streak!</i>`;
+      `<i>Tip: Keep your node active daily to maintain your GPU Cluster Multiplier streak!</i>`;
 
     return {
       text,
       keyboard: {
         inline_keyboard: [
-          [{ text: '🎁 Claim Mining Yield (4.85 USDT)', callback_data: 'cmd_claim_mining' }],
-          [{ text: '⚡ Boost to Turbo Mining Mode', callback_data: 'cmd_toggle_turbo' }],
+          [{ text: '🎁 Claim Compute Yield (4.85 USDT)', callback_data: 'cmd_claim_mining' }],
+          [{ text: '⚡ Boost to Turbo Compute Mode', callback_data: 'cmd_toggle_turbo' }],
           [{ text: '🚀 Launch Full Rig in Mini App', web_app: { url: `${this.webAppUrl}/mine` } }],
         ],
       },
@@ -139,11 +140,11 @@ export class BotCommandService {
     if (!gateResult.verified) return { text: gateResult.message, keyboard: gateResult.keyboard };
 
     const text = `<b>🎁 Daily Quests & Reputation Missions</b>\n\n` +
-      `Complete daily economic missions to earn bonus yield and unlock higher Trust Tiers!\n\n` +
+      `Complete daily economic missions to earn bonus compute yield and unlock higher Trust Tiers!\n\n` +
       `<b>Today's Active Missions:</b>\n` +
       `✅ <b>Daily Check-in:</b> Complete (+0.50 USDT)\n` +
-      `⏳ <b>Keep Node Active 24h:</b> In progress (18/24h)\n` +
-      `⏳ <b>Invite 1 Friend:</b> Pending (+2.00 USDT bonus)\n\n` +
+      `⏳ <b>Keep DeAI Node Active 24h:</b> In progress (18/24h)\n` +
+      `⏳ <b>Complete 1 Academy Quiz:</b> Pending (+0.50 USDT bonus)\n\n` +
       `<b>Daily Streak:</b> 🔥 <b>5 Days Active</b> (+15% Multiplier)`;
 
     return {
@@ -220,14 +221,14 @@ export class BotCommandService {
     const summary = await this.referralService.getUserReferralSummary(userCtx.id);
 
     const text = `<b>👥 TitanStream Referral & Affiliate Hub</b>\n\n` +
-      `Invite friends to TitanStream and earn instant rewards on every deposit & mining tick!\n\n` +
+      `Invite friends to TitanStream and earn instant rewards on every deposit & DeAI compute tick!\n\n` +
       `<b>Your Unique Invite Link:</b>\n<code>${summary.referralLink}</code>\n\n` +
       `<b>Affiliate Performance:</b>\n` +
       `• Total Invited: <b>${summary.totalInvited}</b>\n` +
       `• Qualified Friends: <b>${summary.qualifiedCount}</b>\n` +
       `• Rewards Earned: <b>${summary.totalEarnedUSDT.toFixed(2)} USDT</b>`;
 
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(summary.referralLink)}&text=${encodeURIComponent('Join TitanStream for 24/7 USDT mining & instant cashouts! 🚀')}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(summary.referralLink)}&text=${encodeURIComponent('Join TitanStream for 24/7 DeAI Compute Yield & instant cashouts! 🚀')}`;
 
     return {
       text,
@@ -244,12 +245,12 @@ export class BotCommandService {
   async handleHelp(userCtx: TelegramUserCtx): Promise<{ text: string; keyboard: any }> {
     return {
       text: `<b>💬 TitanStream Support & Assistance Desk</b>\n\n` +
-        `Need help with a deposit, cashout, node yield, or account limits? Select a topic below:`,
+        `Need help with a deposit, cashout, DeAI compute yield, or account limits? Select a topic below:`,
       keyboard: {
         inline_keyboard: [
           [{ text: '💳 Deposit Assistance', callback_data: 'ticket_PAYMENT_ISSUE' }],
           [{ text: '💸 Withdrawal Delay', callback_data: 'ticket_SETTLEMENT_DELAY' }],
-          [{ text: '⚡ Mining Rig Issue', callback_data: 'ticket_TECHNICAL_ISSUE' }],
+          [{ text: '⚡ DeAI Compute Node Issue', callback_data: 'ticket_TECHNICAL_ISSUE' }],
           [{ text: '👤 Account & Limit Upgrades', callback_data: 'ticket_ACCOUNT_ISSUE' }],
           [{ text: '⭐ Ask Trust AI Assistant', callback_data: 'assistant_menu' }],
         ],

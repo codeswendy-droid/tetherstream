@@ -18,43 +18,92 @@ export class BotAssistantService {
   private readonly logger = new Logger(BotAssistantService.name);
 
   private readonly lessons: Record<string, EducationLesson> = {
-    usdt_basics: {
-      id: 'usdt_basics',
-      title: '1️⃣ How USDT Works',
-      content: `<b>Lesson 1: How USDT Works 💵</b>\n\nUSDT (Tether) is a stablecoin pegged 1:1 to the US Dollar. Unlike volatile cryptocurrencies like Bitcoin, 1 USDT is designed to maintain a value of $1.00 USD.\n\n<b>Why use USDT in TitanStream?</b>\n• Zero volatility risk for daily cash holdings\n• Instant 24/7 transfer across borders\n• Easy conversion to your local Mobile Money currency`,
+    cloud_economy: {
+      id: 'cloud_economy',
+      title: '1️⃣ What is TitanStream Cloud Economy?',
+      content: `<b>Lesson 1: What is TitanStream Cloud Economy? 🌐</b>\n\n` +
+        `TitanStream allows users to participate in the growing <b>cloud computing economy</b>.\n\n` +
+        `<b>How it works:</b>\n` +
+        `• By pooling resources together, users help secure high-performance computing capacity that businesses rent daily.\n` +
+        `• Businesses rent this power to run software, AI models, and complex calculations.\n` +
+        `• Generated rental revenue is shared directly with network contributors in real-time!`,
       quiz: {
-        question: 'What is the target value of 1 USDT?',
-        options: ['$1.00 USD', '$10.00 USD', 'Fluctuates like Bitcoin'],
+        question: 'Where does the rental revenue in TitanStream come from?',
+        options: [
+          'Real companies renting computing power to run AI and software',
+          'Crypto mining lotteries',
+          'Government subsidies',
+        ],
         correctIndex: 0,
-        explanation: 'Correct! USDT is a stablecoin pegged 1:1 to $1.00 USD.',
+        explanation: 'Correct! Real companies pay to rent cloud compute capacity to run software, AI models, and automation.',
       },
     },
-    networks: {
-      id: 'networks',
-      title: '2️⃣ Understanding Crypto Networks',
-      content: `<b>Lesson 2: Crypto Networks 🌐</b>\n\nUSDT exists on multiple blockchain networks. When transferring USDT, you MUST use the matching network address:\n\n• <b>TRC20 (Tron):</b> Fast, low network gas fees ($1-$2).\n• <b>ERC20 (Ethereum):</b> High security, higher gas fees ($3-$15).\n• <b>Polygon / Arbitrum:</b> Ultra-fast, micro gas fees (< $0.10).\n\n<b>⚠️ Golden Rule:</b> Always make sure the sender and receiver use the SAME network!`,
+    ai_demand: {
+      id: 'ai_demand',
+      title: '2️⃣ Why AI Makes Cloud Compute Valuable',
+      content: `<b>Lesson 2: AI & Cloud Compute Demand 🤖⚡</b>\n\n` +
+        `<b>Why is AI driving cloud value?</b>\n` +
+        `• Artificial Intelligence requires massive, non-stop computing power to think, learn, and generate content.\n` +
+        `• Top companies like OpenAI, Microsoft, and Google rely heavily on giant networks of cloud computers.\n` +
+        `• Renting cloud capacity on demand is much cheaper and more flexible for companies than buying physical servers!`,
+      quiz: {
+        question: 'Why do companies rent cloud capacity instead of buying servers?',
+        options: [
+          'Renting is cheaper, flexible, and avoids hardware maintenance costs',
+          'They are not allowed to buy computers',
+          'Physical servers are illegal',
+        ],
+        correctIndex: 0,
+        explanation: 'Correct! Renting cloud capacity allows businesses to scale instantly without expensive hardware overhead.',
+      },
     },
-    security: {
-      id: 'security',
-      title: '3️⃣ Security & Safe Banking',
-      content: `<b>Lesson 3: Security & Anti-Phishing 🛡</b>\n\nProtect your TitanStream account:\n\n1. <b>Never share your Telegram recovery key or OTP</b> with anyone.\n2. TitanStream staff will <b>NEVER DM you first asking for funds</b>.\n3. Always verify you are interacting with official bot <code>@titanstream_bot</code>.`,
+    compute_power: {
+      id: 'compute_power',
+      title: '3️⃣ Compute Power & 24/7 Operations',
+      content: `<b>Lesson 3: Compute Power & 24/7 Earnings 🖥⏱</b>\n\n` +
+        `<b>What is Compute Power?</b>\n` +
+        `Compute Power is the raw processing speed of a computer, measured in Compute Units (CU).\n\n` +
+        `<b>Why do earnings continue when your phone is off?</b>\n` +
+        `Your earnings do not rely on your mobile phone or home internet. Cloud computers run 24/7 in professional, high-security data centers — always active and always rented!`,
+      quiz: {
+        question: 'Do your cloud machines stop earning when your phone is turned off?',
+        options: [
+          'No — Servers run 24/7 in high-security data centers regardless of your device status',
+          'Yes — Mobile phones must stay powered on',
+          'Only at night',
+        ],
+        correctIndex: 0,
+        explanation: 'Correct! TitanStream cloud servers run 24/7 in professional data centers independent of your phone.',
+      },
     },
-    safety: {
-      id: 'safety',
-      title: '4️⃣ Settlement & Cashout Safety',
-      content: `<b>Lesson 4: Cashout & Settlement Safety 💸</b>\n\nWhen conducting local mobile money cashouts:\n\n• Only release approval after confirming the money is in your Mobile Money account balance.\n• Check SMS notifications directly from your Mobile Money provider, not external numbers.\n• Support agents are available 24/7 via the <code>/help</code> menu.`,
+    usdt_cashouts: {
+      id: 'usdt_cashouts',
+      title: '4️⃣ USDT Stability & Instant Cashouts',
+      content: `<b>Lesson 4: USDT Stability & Instant Cashouts 💵💸</b>\n\n` +
+        `<b>USDT Digital Currency:</b>\n` +
+        `USDT is a stable digital currency pegged 1-to-1 with the US Dollar ($1.00 USD), keeping earnings safe from market volatility.\n\n` +
+        `<b>Instant Withdrawals:</b>\n` +
+        `Withdraw earnings 24/7 directly to local Mobile Money, Telegram CryptoBot, or your personal USDT wallet with zero hidden fees.`,
+      quiz: {
+        question: 'What is the value of 1 USDT stablecoin?',
+        options: ['$1.00 USD (Pegged 1-to-1)', '$100.00 USD', 'Changes every minute'],
+        correctIndex: 0,
+        explanation: 'Correct! USDT is a stable digital currency pegged 1-to-1 with $1.00 USD.',
+      },
     },
   };
 
   async getAssistantMenu(userCtx: TelegramUserCtx): Promise<{ text: string; keyboard: any }> {
     return {
-      text: `<b>⭐ TitanStream Trust Assistant</b>\n\nHow can I help you today? Choose a question below or pick a Financial Education lesson:`,
+      text: `<b>⭐ TitanStream Cloud Economy Assistant</b>\n\n` +
+        `Learn about cloud computing capacity, AI demand, and instant USDT rental revenue payouts. Choose a topic below:`,
       keyboard: {
         inline_keyboard: [
-          [{ text: '📈 How do I increase my limit?', callback_data: 'asst_q_limits' }],
-          [{ text: '🛡 What is Trust Score & Level?', callback_data: 'asst_q_trust' }],
-          [{ text: '🎁 How do referral rewards work?', callback_data: 'asst_q_rewards' }],
-          [{ text: '🎓 Open Financial Education Bot', callback_data: 'edu_menu' }],
+          [{ text: '🌐 What is TitanStream?', callback_data: 'edu_lesson_cloud_economy' }],
+          [{ text: '🤖 Why AI drives Cloud Compute value', callback_data: 'edu_lesson_ai_demand' }],
+          [{ text: '📈 How do I increase withdrawal limits?', callback_data: 'asst_q_limits' }],
+          [{ text: '🛡 Trust Score & Account Safety', callback_data: 'asst_q_trust' }],
+          [{ text: '🎓 Open Official Cloud Academy', callback_data: 'edu_menu' }],
           [{ text: '⬅️ Back to Main Menu', callback_data: 'cmd_start' }],
         ],
       },
@@ -63,9 +112,9 @@ export class BotAssistantService {
 
   async handleAssistantQuery(queryKey: string): Promise<{ text: string; keyboard: any }> {
     const responses: Record<string, string> = {
-      asst_q_limits: `<b>📈 How do I increase my withdrawal limits?</b>\n\nYour daily withdrawal limit grows automatically as your Trust Level increases:\n\n1. Complete successful funding & settlement transactions.\n2. Maintain 100% transaction completion rate with zero disputes.\n3. Keep your account active daily and complete financial education modules.\n\n<i>Higher levels unlock up to $10,000+ daily limits!</i>`,
-      asst_q_trust: `<b>🛡 What is Trust Score & Level?</b>\n\nTitanStream calculates a dynamic Trust Score (0 - 100) based on:\n• Account age & verification\n• Completed transaction history\n• Education quiz scores\n• Dispute-free activity\n\nHigher trust score upgrades your tier: NEW -> VERIFIED -> TRUSTED -> PREMIUM -> ELITE.`,
-      asst_q_rewards: `<b>🎁 How do referral rewards work?</b>\n\nWhen a friend joins using your referral link (<code>/referrals</code>) and completes their first successful transaction, you both earn USDT rewards credited directly to your balance!`,
+      asst_q_limits: `<b>📈 How do I increase my withdrawal limits?</b>\n\nYour daily cashout capacity grows automatically as your verified platform reputation increases:\n\n1. Maintain active Machine server capacity.\n2. Complete Academy learning modules & pass quizzes.\n3. Maintain 100% transaction completion rate with zero disputes.\n\n<i>Limits protect network liquidity while allowing high trust levels up to $10,000+ daily!</i>`,
+      asst_q_trust: `<b>🛡 What is Trust Score & Level?</b>\n\nTitanStream calculates a dynamic Trust Score (0 - 100) based on:\n• Server capacity allocation & uptime\n• Verified transaction history\n• Academy quiz completion\n• Dispute-free settlement activity\n\nTiers: NEW -> VERIFIED -> TRUSTED -> PREMIUM -> ELITE.`,
+      asst_q_rewards: `<b>🎁 How do referral rewards work?</b>\n\nReferrals help expand our shared cloud computing network to more participants. By inviting others, you help build a larger computer network. We reward this growth with direct USDT bonuses and trust score boosts!`,
     };
 
     const text = responses[queryKey] || `Information requested is currently updating.`;
@@ -83,14 +132,16 @@ export class BotAssistantService {
 
   async getEducationMenu(): Promise<{ text: string; keyboard: any }> {
     return {
-      text: `<b>🎓 TitanStream Financial Education Bot</b>\n\nMaster crypto stability, network safety, and financial literacy in 2-minute bite-sized lessons:`,
+      text: `<b>📚 TitanStream Cloud Economy Academy & FAQ</b>\n\n` +
+        `Master cloud computing, AI demand, and instant USDT rental revenue in 2-minute bite-sized lessons:\n\n` +
+        `<i>Pass quizzes to earn instant +0.50 USDT rewards credited to your ledger balance!</i>`,
       keyboard: {
         inline_keyboard: [
-          [{ text: '1️⃣ How USDT Works', callback_data: 'edu_lesson_usdt_basics' }],
-          [{ text: '2️⃣ Crypto Networks Explained', callback_data: 'edu_lesson_networks' }],
-          [{ text: '3️⃣ Security & Anti-Phishing', callback_data: 'edu_lesson_security' }],
-          [{ text: '4️⃣ Settlement Safety Rules', callback_data: 'edu_lesson_safety' }],
-          [{ text: '⬅️ Back to Trust Assistant', callback_data: 'assistant_menu' }],
+          [{ text: '1️⃣ What is TitanStream Cloud Economy?', callback_data: 'edu_lesson_cloud_economy' }],
+          [{ text: '2️⃣ Why AI Makes Cloud Compute Valuable', callback_data: 'edu_lesson_ai_demand' }],
+          [{ text: '3️⃣ Compute Power & 24/7 Operations', callback_data: 'edu_lesson_compute_power' }],
+          [{ text: '4️⃣ USDT Stability & Instant Cashouts', callback_data: 'edu_lesson_usdt_cashouts' }],
+          [{ text: '⬅️ Back to Main Menu', callback_data: 'cmd_start' }],
         ],
       },
     };
@@ -107,14 +158,18 @@ export class BotAssistantService {
     };
 
     if (lesson.quiz) {
-      keyboard.inline_keyboard.push([{ text: '📝 Take Quick Quiz', callback_data: `edu_quiz_${lessonKey}` }]);
+      keyboard.inline_keyboard.push([{ text: '📝 Take Quick Quiz (+0.50 USDT Reward)', callback_data: `edu_quiz_${lessonKey}` }]);
     }
 
-    keyboard.inline_keyboard.push([{ text: '🎓 Education Menu', callback_data: 'edu_menu' }]);
+    keyboard.inline_keyboard.push([{ text: '📚 Academy Menu', callback_data: 'edu_menu' }]);
 
     return {
       text: lesson.content,
       keyboard,
     };
+  }
+
+  getQuiz(lessonKey: string): { question: string; options: string[]; correctIndex: number; explanation: string } | null {
+    return this.lessons[lessonKey]?.quiz || null;
   }
 }
