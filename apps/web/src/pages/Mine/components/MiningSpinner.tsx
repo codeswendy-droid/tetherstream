@@ -139,6 +139,8 @@ export const MiningSpinner: React.FC = () => {
     displayPromoOutput,
     tapYieldPerTap,
     upgradeLimits,
+    ownedTierCodes,
+    userMachines,
   } = useMiningStore();
   const { setActiveTab } = useNavigationStore();
   const { preferLocalCurrency } = useSettingsStore();

@@ -145,9 +145,16 @@ export const useMiningStore = create<MiningState>((set, get) => {
       try {
         const machines = await machineService.getMyMachines();
         if (Array.isArray(machines)) {
-          const ownedTierCodes = machines.map((m) => m.tierCode);
-          const hasPurchased = machines.some((m) => m.tierCode !== 'TS_TRIAL' && m.status === 'ACTIVE') || get().baseSpeedGhs > 1.0;
-          const activeCount = machines.filter((m) => m.status === 'ACTIVE').length;
+          const ownedTierCodes = Array.from(new Set(['TS_TRIAL', ...machines.map((m) => m.tierCode)]));
+          const hasPurchased = machines.some((m) => m.tierCode !== 'TS_TRIAL' && (m.status === 'ACTIVE' || m.status === 'CREATED')) || get().baseSpeedGhs > 1.0;
+          const activeCount = machines.filter((m) => m.status === 'ACTIVE' || m.status === 'CREATED').length;
+          
+          const totalCapacity = machines
+            .filter((m) => m.status === 'ACTIVE' || m.status === 'CREATED')
+            .reduce((sum, m) => sum + (Number(m.capacityGhs) || 0), 0);
+          
+          const baseSpeedGhs = totalCapacity > 0 ? totalCapacity : get().baseSpeedGhs;
+
           if (hasPurchased) {
             localStorage.setItem('has_purchased_machine', 'true');
           }
@@ -156,6 +163,7 @@ export const useMiningStore = create<MiningState>((set, get) => {
             ownedTierCodes,
             hasPurchasedMachine: hasPurchased,
             activeMachinesCount: activeCount,
+            baseSpeedGhs,
           });
           useWalletStore.getState().updateBalance({ activeMachines: activeCount });
           return machines;
@@ -169,7 +177,10 @@ export const useMiningStore = create<MiningState>((set, get) => {
     isMachineOwned: (tierCode: string) => {
       if (tierCode === 'TS_TRIAL') return true;
       const s = get();
-      return s.ownedTierCodes.includes(tierCode) || s.userMachines.some((m) => m.tierCode === tierCode && m.status === 'ACTIVE');
+      return (
+        s.ownedTierCodes.includes(tierCode) ||
+        s.userMachines.some((m) => m.tierCode === tierCode && (m.status === 'ACTIVE' || m.status === 'CREATED'))
+      );
     },
 
     fetchMiningState: async () => {
@@ -266,12 +277,37 @@ export const useMiningStore = create<MiningState>((set, get) => {
     },
 
     upgradeBaseSpeed: (amount, tierCode) =>
-      set((state) => ({
-        baseSpeedGhs: state.baseSpeedGhs + amount,
-        ownedTierCodes: tierCode && !state.ownedTierCodes.includes(tierCode)
+      set((state) => {
+        const nextOwnedTierCodes = tierCode && !state.ownedTierCodes.includes(tierCode)
           ? [...state.ownedTierCodes, tierCode]
-          : state.ownedTierCodes,
-      })),
+          : state.ownedTierCodes;
+        
+        let nextUserMachines = [...state.userMachines];
+        if (tierCode && !nextUserMachines.some((m) => m.tierCode === tierCode)) {
+          const catItem = MACHINE_CATALOG.find((c) => c.tierCode === tierCode);
+          nextUserMachines.push({
+            id: `mach_${tierCode}_${Date.now()}`,
+            telegramUserId: '',
+            tierCode,
+            name: catItem?.name || tierCode,
+            purchasePrice: catItem?.priceUsdt || 0,
+            currency: 'USDT',
+            status: 'ACTIVE',
+            capacityGhs: amount,
+            lifetimeEarnings: 0,
+            purchasedAt: new Date().toISOString(),
+            activatedAt: new Date().toISOString(),
+          });
+        }
+        localStorage.setItem('has_purchased_machine', 'true');
+        return {
+          baseSpeedGhs: state.baseSpeedGhs + amount,
+          ownedTierCodes: nextOwnedTierCodes,
+          userMachines: nextUserMachines,
+          hasPurchasedMachine: true,
+          activeMachinesCount: nextUserMachines.length,
+        };
+      }),
     markMachinePurchased: () => {
       localStorage.setItem('has_purchased_machine', 'true');
       set({ hasPurchasedMachine: true });

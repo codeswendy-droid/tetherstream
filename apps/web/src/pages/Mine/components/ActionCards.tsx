@@ -7,7 +7,7 @@ import { showToast } from '../../../components/Toast';
 
 export const ActionCards: React.FC = () => {
   const { setActiveTab } = useNavigationStore();
-  const { unclaimedBalance, claimMinedYield, activeCurrency, machineMode, hasPurchasedMachine } = useMiningStore();
+  const { unclaimedBalance, claimMinedYield, activeCurrency, machineMode, hasPurchasedMachine, ownedTierCodes, userMachines } = useMiningStore();
 
   const safeUnclaimed = Number(unclaimedBalance) || 0;
 

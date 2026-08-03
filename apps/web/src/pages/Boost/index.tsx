@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 
 export const BoostScreen: React.FC = () => {
-  const { baseSpeedGhs, upgradeBaseSpeed, fetchMiningState, fetchUserMachines, isMachineOwned } = useMiningStore();
+  const { baseSpeedGhs, upgradeBaseSpeed, fetchMiningState, fetchUserMachines, isMachineOwned, ownedTierCodes, userMachines } = useMiningStore();
   const { preferLocalCurrency } = useSettingsStore();
   const { hapticFeedback } = useTelegram();
   const { transactions } = useWalletStore();
@@ -96,8 +96,9 @@ export const BoostScreen: React.FC = () => {
       const res = await machineService.purchaseMachine(selectedMachine.tierCode);
       if (res.success) {
         hapticFeedback.notificationOccurred('success');
-        await fetchMiningState();
+        upgradeBaseSpeed(selectedMachine.capacityGhs, selectedMachine.tierCode);
         await fetchUserMachines();
+        await fetchMiningState();
         await useWalletStore.getState().fetchBalanceFromEngine();
         setInvoiceStatus('PAID');
         showToast(`Machine ${selectedMachine.name} activated!`, 'success');
@@ -117,12 +118,14 @@ export const BoostScreen: React.FC = () => {
     try {
       const res = await machineService.purchaseMachine(selectedMachine.tierCode);
       if (res.success) {
-        await fetchMiningState();
+        upgradeBaseSpeed(selectedMachine.capacityGhs, selectedMachine.tierCode);
         await fetchUserMachines();
+        await fetchMiningState();
         await useWalletStore.getState().fetchBalanceFromEngine();
       } else {
-        await fetchMiningState();
+        upgradeBaseSpeed(selectedMachine.capacityGhs, selectedMachine.tierCode);
         await fetchUserMachines();
+        await fetchMiningState();
       }
     } catch (err) {
       console.warn('Sandbox simulation backend sync error:', err);
