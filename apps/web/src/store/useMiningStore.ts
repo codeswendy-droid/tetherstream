@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { miningService, type MiningStateResponse } from '../services/mining.service';
 import { machineService, type UserMachineAsset } from '../services/machineService';
 import { useWalletStore } from './useWalletStore';
+import { useCapacityStore } from './useCapacityStore';
 import { MACHINE_CATALOG } from '../data/machines';
 
 type Currency = 'USDT' | 'TON';
@@ -76,13 +77,40 @@ const DECAY_PER_TICK = 0.05; // mirrors backend multiplier decay (0.5x / second)
 let displayTicker: ReturnType<typeof setInterval> | null = null;
 let hydrated = false;
 
+const getLocalOwnedTiers = (): string[] => {
+  try {
+    const raw = localStorage.getItem('tether_owned_tier_codes');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const getLocalUserMachines = (): UserMachineAsset[] => {
+  try {
+    const raw = localStorage.getItem('tether_user_machines');
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
 export const useMiningStore = create<MiningState>((set, get) => {
   const initialPurchased = localStorage.getItem('has_purchased_machine') === 'true';
-  const initialBaseSpeed = initialPurchased ? 5.0 : 1.0;
+  const initialLocalTiers = getLocalOwnedTiers();
+  const initialOwnedTierCodes = Array.from(new Set(['TS_TRIAL', ...initialLocalTiers]));
+  
+  let initialSpeed = 1.0;
+  for (const code of initialOwnedTierCodes) {
+    const catalogItem = MACHINE_CATALOG.find((m) => m.tierCode === code);
+    if (catalogItem) {
+      initialSpeed = Math.max(initialSpeed, catalogItem.capacityGhs);
+    }
+  }
 
   return {
     activeCurrency: 'USDT',
-    baseSpeedGhs: initialBaseSpeed,
+    baseSpeedGhs: initialSpeed,
     coolerMultiplier: 1.0,
     maxMultiplier: 20.2,
     unclaimedBalance: 0.0,
@@ -91,11 +119,11 @@ export const useMiningStore = create<MiningState>((set, get) => {
     interactivePromotionalOutput: 0.0,
     isOverheated: false,
     cooldownRemaining: 0,
-    tapYieldPerTap: 0,
+    tapYieldPerTap: 0.02,
 
-    userMachines: [],
-    ownedTierCodes: ['TS_TRIAL'],
-    activeMachinesCount: 1,
+    userMachines: getLocalUserMachines(),
+    ownedTierCodes: initialOwnedTierCodes,
+    activeMachinesCount: initialOwnedTierCodes.length,
 
     displayUnclaimed: 0.0,
     displayMultiplier: 1.0,
@@ -112,7 +140,7 @@ export const useMiningStore = create<MiningState>((set, get) => {
     tonPrice: 110.00,
     usdtSpinnerIdx: 0,
     tonSpinnerIdx: 0,
-    hasPurchasedMachine: initialPurchased,
+    hasPurchasedMachine: initialPurchased || initialOwnedTierCodes.some(t => t !== 'TS_TRIAL'),
 
     /**
      * The single entry point for backend state. Every visual element renders
@@ -124,9 +152,14 @@ export const useMiningStore = create<MiningState>((set, get) => {
       const currentDisplay = get().displayUnclaimed;
       const snap = opts?.snapDisplay || !hydrated || session.unclaimedBalance < currentDisplay;
       hydrated = true;
+
+      // Keep higher speed if user owns upgraded machines locally
+      const currentSpeed = get().baseSpeedGhs;
+      const targetSpeed = Math.max(session.baseSpeedGhs || 1.0, currentSpeed);
+
       set({
         activeCurrency: session.activeCurrency,
-        baseSpeedGhs: session.baseSpeedGhs,
+        baseSpeedGhs: targetSpeed,
         coolerMultiplier: session.coolerMultiplier,
         unclaimedBalance: session.unclaimedBalance,
         machineMode: session.machineMode,
@@ -144,29 +177,44 @@ export const useMiningStore = create<MiningState>((set, get) => {
     fetchUserMachines: async () => {
       try {
         const machines = await machineService.getMyMachines();
+        const localOwned = getLocalOwnedTiers();
+        const localMachines = getLocalUserMachines();
+
         if (Array.isArray(machines)) {
-          const ownedTierCodes = Array.from(new Set(['TS_TRIAL', ...machines.map((m) => m.tierCode)]));
-          const hasPurchased = machines.some((m) => m.tierCode !== 'TS_TRIAL' && (m.status === 'ACTIVE' || m.status === 'CREATED')) || get().baseSpeedGhs > 1.0;
-          const activeCount = machines.filter((m) => m.status === 'ACTIVE' || m.status === 'CREATED').length;
+          const serverOwnedTiers = machines.map((m) => m.tierCode);
+          const ownedTierCodes = Array.from(new Set(['TS_TRIAL', ...serverOwnedTiers, ...localOwned]));
+          const hasPurchased = ownedTierCodes.some((t) => t !== 'TS_TRIAL') || localStorage.getItem('has_purchased_machine') === 'true';
+
+          const allMachines = [...machines];
+          for (const lm of localMachines) {
+            if (!allMachines.some((m) => m.tierCode === lm.tierCode)) {
+              allMachines.push(lm);
+            }
+          }
+
+          const activeCount = allMachines.filter((m) => m.status === 'ACTIVE' || m.status === 'CREATED').length;
           
-          const totalCapacity = machines
-            .filter((m) => m.status === 'ACTIVE' || m.status === 'CREATED')
-            .reduce((sum, m) => sum + (Number(m.capacityGhs) || 0), 0);
-          
-          const baseSpeedGhs = totalCapacity > 0 ? totalCapacity : get().baseSpeedGhs;
+          let totalCapacity = 0;
+          for (const tierCode of ownedTierCodes) {
+            const catItem = MACHINE_CATALOG.find((m) => m.tierCode === tierCode);
+            if (catItem) {
+              totalCapacity += catItem.capacityGhs;
+            }
+          }
+          const baseSpeedGhs = Math.max(totalCapacity > 0 ? totalCapacity : 1.0, get().baseSpeedGhs);
 
           if (hasPurchased) {
             localStorage.setItem('has_purchased_machine', 'true');
           }
           set({
-            userMachines: machines,
+            userMachines: allMachines,
             ownedTierCodes,
             hasPurchasedMachine: hasPurchased,
             activeMachinesCount: activeCount,
             baseSpeedGhs,
           });
           useWalletStore.getState().updateBalance({ activeMachines: activeCount });
-          return machines;
+          return allMachines;
         }
       } catch (err) {
         console.warn('Failed to fetch user machines:', err);
@@ -177,8 +225,10 @@ export const useMiningStore = create<MiningState>((set, get) => {
     isMachineOwned: (tierCode: string) => {
       if (tierCode === 'TS_TRIAL') return true;
       const s = get();
+      const localOwned = getLocalOwnedTiers();
       return (
         s.ownedTierCodes.includes(tierCode) ||
+        localOwned.includes(tierCode) ||
         s.userMachines.some((m) => m.tierCode === tierCode && (m.status === 'ACTIVE' || m.status === 'CREATED'))
       );
     },
@@ -283,8 +333,8 @@ export const useMiningStore = create<MiningState>((set, get) => {
           : state.ownedTierCodes;
         
         let nextUserMachines = [...state.userMachines];
+        const catItem = MACHINE_CATALOG.find((c) => c.tierCode === tierCode);
         if (tierCode && !nextUserMachines.some((m) => m.tierCode === tierCode)) {
-          const catItem = MACHINE_CATALOG.find((c) => c.tierCode === tierCode);
           nextUserMachines.push({
             id: `mach_${tierCode}_${Date.now()}`,
             telegramUserId: '',
@@ -293,15 +343,33 @@ export const useMiningStore = create<MiningState>((set, get) => {
             purchasePrice: catItem?.priceUsdt || 0,
             currency: 'USDT',
             status: 'ACTIVE',
-            capacityGhs: amount,
+            capacityGhs: catItem?.capacityGhs || amount,
             lifetimeEarnings: 0,
             purchasedAt: new Date().toISOString(),
             activatedAt: new Date().toISOString(),
           });
         }
+
+        let totalCapacity = 0;
+        for (const code of nextOwnedTierCodes) {
+          const item = MACHINE_CATALOG.find((m) => m.tierCode === code);
+          if (item) totalCapacity += item.capacityGhs;
+        }
+        const finalSpeed = Math.max(state.baseSpeedGhs + amount, totalCapacity);
+
         localStorage.setItem('has_purchased_machine', 'true');
+        localStorage.setItem('tether_owned_tier_codes', JSON.stringify(nextOwnedTierCodes));
+        localStorage.setItem('tether_user_machines', JSON.stringify(nextUserMachines));
+
+        // Sync with capacity engine
+        try {
+          useCapacityStore.getState().addCapacity('PREMIUM_PURCHASE', Math.round((catItem?.capacityGhs || amount) * 10), `Purchased ${catItem?.name || tierCode}`);
+        } catch (e) {
+          console.warn('Failed to add capacity:', e);
+        }
+
         return {
-          baseSpeedGhs: state.baseSpeedGhs + amount,
+          baseSpeedGhs: finalSpeed,
           ownedTierCodes: nextOwnedTierCodes,
           userMachines: nextUserMachines,
           hasPurchasedMachine: true,

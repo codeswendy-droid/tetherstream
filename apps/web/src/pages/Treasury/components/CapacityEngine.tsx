@@ -16,11 +16,13 @@ import {
   Crown
 } from 'lucide-react';
 import { useCapacityStore, type CapacityOpportunity, type CapacityLevel } from '../../../store/useCapacityStore';
+import { useMiningStore } from '../../../store/useMiningStore';
 import { useNavigationStore } from '../../../store/useNavigationStore';
 import { showToast } from '../../../components/Toast';
 
 export const CapacityEngine: React.FC = () => {
   const { setActiveTab } = useNavigationStore();
+  const { baseSpeedGhs } = useMiningStore();
   const {
     currentCapacity,
     todayCapacityEarned,
@@ -39,6 +41,8 @@ export const CapacityEngine: React.FC = () => {
     purchaseReferralAccelerator,
     upgradeMembership
   } = useCapacityStore();
+
+  const effectiveCapacity = Math.max(currentCapacity, Math.round((Number(baseSpeedGhs) || 1.0) * 10));
 
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -162,7 +166,7 @@ export const CapacityEngine: React.FC = () => {
           <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5">
             <div className="text-[10px] text-text-secondary font-bold">Current Capacity</div>
             <div className="text-lg font-black text-text-primary font-mono mt-1">
-              {(Number(currentCapacity) || 0).toLocaleString()}
+              {effectiveCapacity.toLocaleString()}
             </div>
             <div className="text-[8px] text-usdt-green mt-0.5 font-mono">
               +{todayCapacityEarned} Today

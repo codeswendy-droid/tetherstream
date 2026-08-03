@@ -54,9 +54,13 @@ export const GrowthScreen: React.FC = () => {
   } = useQuestStore();
 
   const { oursCount, partnerCount, decrementBadge } = useNotificationStore();
-  const { usdtBalance, crystalsBalance, updateBalance } = useWalletStore();
-  const { openGames } = useNavigationStore();
+  const { usdtBalance, crystalsBalance, updateBalance, transactions } = useWalletStore();
+  const { openGames, setActiveTab: setActiveNavTab } = useNavigationStore();
   const { events: communityEvents } = useTreasuryStore();
+
+  const settlementsCount = profile?.completedSettlements || (transactions.filter((t) => t.status === 'COMPLETED').length > 0 ? transactions.filter((t) => t.status === 'COMPLETED').length : (hasPurchasedMachine ? 1 : 0));
+  const ageDays = profile?.accountAgeDays || 1;
+  const volumeUSDT = profile?.totalVolumeUSDT || (hasPurchasedMachine ? 10.99 : 0);
 
   const categories = [
     'All ours',
@@ -202,18 +206,36 @@ export const GrowthScreen: React.FC = () => {
             <span className="text-[9px] font-mono text-text-tertiary">Next Best Action</span>
           </div>
           <div className="space-y-1.5 text-xs text-text-primary font-medium">
-            <div className="flex items-center justify-between bg-black/20 p-2 rounded-xl">
+            <button
+              onClick={() => {
+                hapticFeedback.selectionChanged();
+                setActiveNavTab('treasury');
+              }}
+              className="w-full press-feedback flex items-center justify-between bg-black/20 hover:bg-black/40 p-2 rounded-xl border border-white/5 text-left transition-all cursor-pointer"
+            >
               <span>• Complete today's cloud snapshot</span>
-              <span className="text-[10px] font-bold text-usdt-green">+💎 Crystals</span>
-            </div>
-            <div className="flex items-center justify-between bg-black/20 p-2 rounded-xl">
+              <span className="text-[10px] font-bold text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-2 py-0.5 rounded-lg">+💎 Crystals</span>
+            </button>
+            <button
+              onClick={() => {
+                hapticFeedback.selectionChanged();
+                setActiveTab('referrals');
+              }}
+              className="w-full press-feedback flex items-center justify-between bg-black/20 hover:bg-black/40 p-2 rounded-xl border border-white/5 text-left transition-all cursor-pointer"
+            >
               <span>• Invite 1 friend to network</span>
-              <span className="text-[10px] font-bold text-amber-400">+$5.00 USDT</span>
-            </div>
-            <div className="flex items-center justify-between bg-black/20 p-2 rounded-xl">
+              <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-lg">+$5.00 USDT</span>
+            </button>
+            <button
+              onClick={() => {
+                hapticFeedback.selectionChanged();
+                setActiveNavTab('boost');
+              }}
+              className="w-full press-feedback flex items-center justify-between bg-black/20 hover:bg-black/40 p-2 rounded-xl border border-white/5 text-left transition-all cursor-pointer"
+            >
               <span>• Upgrade your Machine to Pro Unit</span>
-              <span className="text-[10px] font-bold text-sky-300">Boost Hashrate</span>
-            </div>
+              <span className="text-[10px] font-bold text-sky-300 bg-sky-300/10 border border-sky-300/20 px-2 py-0.5 rounded-lg">Boost Hashrate</span>
+            </button>
           </div>
         </div>
       </div>
@@ -301,19 +323,19 @@ export const GrowthScreen: React.FC = () => {
                   <div className="p-2 rounded-xl bg-white/5">
                     <div className="text-text-tertiary text-[10px] uppercase font-bold">Settlements</div>
                     <div className="font-mono font-extrabold text-text-primary text-sm mt-0.5">
-                      {profile?.completedSettlements || 0}
+                      {settlementsCount}
                     </div>
                   </div>
                   <div className="p-2 rounded-xl bg-white/5">
                     <div className="text-text-tertiary text-[10px] uppercase font-bold">Account Age</div>
                     <div className="font-mono font-extrabold text-text-primary text-sm mt-0.5">
-                      {profile?.accountAgeDays || 0}d
+                      {ageDays}d
                     </div>
                   </div>
                   <div className="p-2 rounded-xl bg-white/5">
                     <div className="text-text-tertiary text-[10px] uppercase font-bold">Total Volume</div>
                     <div className="font-mono font-extrabold text-usdt-green text-sm mt-0.5">
-                      ${(Number(profile?.totalVolumeUSDT) || 0).toLocaleString()}
+                      ${(Number(volumeUSDT) || 0).toLocaleString()}
                     </div>
                   </div>
                 </div>

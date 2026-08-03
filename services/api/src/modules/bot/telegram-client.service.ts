@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
 export interface TelegramChatMember {
   status: 'creator' | 'administrator' | 'member' | 'restricted' | 'left' | 'kicked';
@@ -37,10 +37,27 @@ export interface SendMessageOptions {
 }
 
 @Injectable()
-export class TelegramClientService {
+export class TelegramClientService implements OnModuleInit {
   private readonly logger = new Logger(TelegramClientService.name);
   private readonly botToken = process.env.TELEGRAM_BOT_TOKEN || 'MOCK_BOT_TOKEN';
   private readonly baseUrl = `https://api.telegram.org/bot${this.botToken}`;
+
+  async onModuleInit() {
+    if (this.botToken !== 'MOCK_BOT_TOKEN' && process.env.TELEGRAM_WEBHOOK_URL) {
+      const cleanBase = process.env.TELEGRAM_WEBHOOK_URL.replace(/\/$/, '');
+      const fullWebhookUrl = cleanBase.endsWith('/api/v1/bot/webhook')
+        ? cleanBase
+        : `${cleanBase}/api/v1/bot/webhook`;
+
+      this.logger.log(`Registering Telegram Webhook: ${fullWebhookUrl}`);
+      const res = await this.setWebhook(fullWebhookUrl);
+      if (res.ok) {
+        this.logger.log(`✅ Telegram Webhook bound successfully to ${fullWebhookUrl}`);
+      } else {
+        this.logger.error(`❌ Failed to bind Telegram Webhook: ${res.description}`);
+      }
+    }
+  }
 
   async getChatMember(chatId: string | number, userId: string | number): Promise<TelegramChatMember | null> {
     if (this.botToken === 'MOCK_BOT_TOKEN') {
