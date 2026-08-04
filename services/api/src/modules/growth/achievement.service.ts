@@ -210,7 +210,150 @@ export class AchievementService {
         target: 7,
         compute: async (id) => this.computeClaimStreak(id),
       },
+      // ── Titan Reactor ────────────────────────────────────────────────────
+      {
+        code: 'REACTOR_FIRST_RUN',
+        name: 'First Reactor',
+        description: 'Play Titan Reactor for the first time.',
+        tier: 'BRONZE',
+        icon: '⚛️',
+        target: 1,
+        compute: async (id) => (await this.gameStat(id, 'titan-core-reactor'))?.gamesPlayed ?? 0,
+      },
+      {
+        code: 'REACTOR_COMBO_MASTER',
+        name: 'Combo Master',
+        description: 'Reach a 10x combo streak in Titan Reactor.',
+        tier: 'SILVER',
+        icon: '🔥',
+        target: 10,
+        compute: async (id) => (await this.gameStat(id, 'titan-core-reactor'))?.bestCombo ?? 0,
+      },
+      {
+        code: 'REACTOR_PERFECT_ACCURACY',
+        name: 'Perfect Accuracy',
+        description: 'Finish a Titan Reactor run with 100% accuracy.',
+        tier: 'GOLD',
+        icon: '🎯',
+        target: 100,
+        compute: async (id) => (await this.gameStat(id, 'titan-core-reactor'))?.bestAccuracy ?? 0,
+      },
+      {
+        code: 'REACTOR_CHAMPION',
+        name: 'Reactor Champion',
+        description: 'Score 500 or more in a single Titan Reactor run.',
+        tier: 'DIAMOND',
+        icon: '👑',
+        target: 500,
+        compute: async (id) => (await this.gameStat(id, 'titan-core-reactor'))?.highestScore ?? 0,
+      },
+      // ── Power Grid ───────────────────────────────────────────────────────
+      {
+        code: 'GRID_FIRST_CIRCUIT',
+        name: 'First Circuit',
+        description: 'Complete your first Power Grid level.',
+        tier: 'BRONZE',
+        icon: '🔌',
+        target: 1,
+        compute: async (id) => (await this.gameStat(id, 'power-grid'))?.levelsCompleted ?? 0,
+      },
+      {
+        code: 'GRID_ENGINEER',
+        name: 'Grid Engineer',
+        description: 'Complete 15 Power Grid levels in total.',
+        tier: 'SILVER',
+        icon: '⚙️',
+        target: 15,
+        compute: async (id) => (await this.gameStat(id, 'power-grid'))?.levelsCompleted ?? 0,
+      },
+      {
+        code: 'GRID_PERFECT_CONNECTION',
+        name: 'Perfect Connection',
+        description: 'Finish a Power Grid level with 100% efficiency.',
+        tier: 'GOLD',
+        icon: '💡',
+        target: 100,
+        compute: async (id) => (await this.gameStat(id, 'power-grid'))?.bestEfficiency ?? 0,
+      },
+      {
+        code: 'GRID_ENERGY_ARCHITECT',
+        name: 'Energy Architect',
+        description: 'Complete 40 Power Grid levels in total.',
+        tier: 'PLATINUM',
+        icon: '🏗️',
+        target: 40,
+        compute: async (id) => (await this.gameStat(id, 'power-grid'))?.levelsCompleted ?? 0,
+      },
+      // ── Hoop Masters ─────────────────────────────────────────────────────
+      {
+        code: 'HOOPS_SHARPSHOOTER',
+        name: 'Sharpshooter',
+        description: 'Score 15 or more in a single Hoop Masters run.',
+        tier: 'SILVER',
+        icon: '🏀',
+        target: 15,
+        compute: async (id) => (await this.gameStat(id, 'hoop-masters'))?.highestScore ?? 0,
+      },
+      {
+        code: 'HOOPS_PERFECT_TEN',
+        name: 'Ten Perfect Runs',
+        description: 'Win 10 Hoop Masters runs.',
+        tier: 'GOLD',
+        icon: '🎯',
+        target: 10,
+        compute: async (id) => (await this.gameStat(id, 'hoop-masters'))?.gamesWon ?? 0,
+      },
+      // ── Crypto Roulette ──────────────────────────────────────────────────
+      {
+        code: 'ROULETTE_LUCKY_SPIN',
+        name: 'Lucky Spin',
+        description: 'Win any prize from Crypto Roulette.',
+        tier: 'BRONZE',
+        icon: '🎡',
+        target: 1,
+        compute: async (id) => (await this.gameStat(id, 'crypto-roulette'))?.gamesWon ?? 0,
+      },
+      {
+        code: 'ROULETTE_HIGH_ROLLER',
+        name: 'High Roller',
+        description: 'Win 100+ Crystals in a single roulette spin.',
+        tier: 'GOLD',
+        icon: '💎',
+        target: 100,
+        compute: async (id) => {
+          const best = await this.prisma.gameSession.findFirst({
+            where: { telegramUserId: id, gameId: 'crypto-roulette', status: 'COMPLETED' },
+            orderBy: { crystalsEarned: 'desc' },
+            select: { crystalsEarned: true },
+          });
+          return best?.crystalsEarned ?? 0;
+        },
+      },
+      {
+        code: 'ROULETTE_FORTUNE_SEEKER',
+        name: 'Fortune Seeker',
+        description: 'Play Crypto Roulette 25 times.',
+        tier: 'SILVER',
+        icon: '🎰',
+        target: 25,
+        compute: async (id) => (await this.gameStat(id, 'crypto-roulette'))?.gamesPlayed ?? 0,
+      },
     ];
+  }
+
+  private async gameStat(telegramUserId: bigint, gameId: string) {
+    return this.prisma.gamePlayerStat.findUnique({
+      where: { telegramUserId_gameId: { telegramUserId, gameId } },
+      select: {
+        gamesPlayed: true,
+        gamesWon: true,
+        highestScore: true,
+        bestCombo: true,
+        bestAccuracy: true,
+        levelsCompleted: true,
+        bestEfficiency: true,
+      },
+    });
   }
 
   /**

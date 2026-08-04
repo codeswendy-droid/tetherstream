@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { financialService, type TransactionRecord } from '../services/financialService';
 import { settlementService, type SettlementSessionView } from '../services/settlementService';
+import { gamesService } from '../services/gamesService';
 import { useTreasuryStore } from './useTreasuryStore';
 import { useUserNotificationStore } from './useUserNotificationStore';
 import { useMiningStore } from './useMiningStore';
+import { useGameStore } from './useGameStore';
 const ACTIVE_STATUS_SET = new Set([
   'CREATED',
   'INITIALIZED',
@@ -145,6 +147,19 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         txs = get().transactions;
       }
 
+      // Crystal balance lives in the Game Economy Service (own ledger)
+      let crystalsVal = get().crystalsBalance;
+      if (typeof data.crystalsBalance === 'number') {
+        crystalsVal = data.crystalsBalance;
+      } else {
+        try {
+          const crystalData = await gamesService.getBalance();
+          crystalsVal = crystalData.balance;
+        } catch (crystalErr) {
+          // Game Economy offline — keep last known value
+        }
+      }
+
       // Compute lifetime deposits, withdrawals, rewards, and active machines
       let depTotal = 0;
       let wthTotal = 0;
@@ -167,7 +182,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       set({
         usdtBalance: usdtVal,
         tonBalance: tonVal,
-        crystalsBalance: data.crystalsBalance ?? get().crystalsBalance,
+        crystalsBalance: crystalsVal,
         pendingUsdt: pendingUsdtVal,
         transactions: txs,
         lifetimeDeposits: depTotal,

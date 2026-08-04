@@ -330,6 +330,13 @@ model User {
   userPreferences           UserPreferences?
   userMachines              UserMachine[]
   achievements              Achievement[]
+  crystalAccount            CrystalAccount?
+  crystalTransactions       CrystalTransaction[]
+  gameSessions              GameSession[]
+  gameProfile               GameProfile?
+  gamePlayerStats           GamePlayerStat[]
+  gameRewardGrants          GameRewardGrant[]
+  gameChallengeCompletions  GameChallengeCompletion[]
 
   @@index([state])
   @@index([createdAt])
@@ -1944,4 +1951,292 @@ model SupportMessage {
 
   @@index([ticketId])
   @@map("support_messages")
+}
+
+// ============================================================
+// GAME ECONOMY — closed-loop crystal economy + game sessions
+// ============================================================
+
+enum CrystalTransactionType {
+  DAILY_LOGIN
+  GAME_ENTRY
+  GAME_REWARD
+  MACHINE_BONUS
+  ACHIEVEMENT
+  EVENT_BONUS
+  MYSTERY_CHEST
+  BOOST
+  COSMETIC
+  TOURNAMENT
+  RETRY
+  PURCHASE
+  ADMIN_ADJUSTMENT
+  REVERSAL
+}
+
+enum GameSessionStatus {
+  STARTED
+  COMPLETED
+  REJECTED
+  VOID
+  EXPIRED
+}
+
+enum GameDifficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+enum GameChallengeObjective {
+  SCORE_AT_LEAST
+  FEWER_MOVES
+  WINS
+  PLAYS
+  PERFECT_ACCURACY
+  PERFECT_SESSION
+}
+
+enum GameRewardGrantType {
+  XP
+  EVENT_POINTS
+  MYSTERY_BOX
+  MACHINE_BOOST
+  ACHIEVEMENT_PROGRESS
+  BOOST_TOKEN
+}
+
+/// First-class crystal balance. Crystals are the gameplay currency and are
+/// intentionally kept separate from financial (USDT/TON) balances.
+model CrystalAccount {
+  id             String   @id @default(uuid()) @map("account_id")
+  telegramUserId BigInt   @unique @map("telegram_user_id")
+  balance        Int      @default(0) @map("balance")
+  lifetimeEarned Int      @default(0) @map("lifetime_earned")
+  lifetimeSpent  Int      @default(0) @map("lifetime_spent")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user         User                 @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  transactions CrystalTransaction[]
+
+  @@map("crystal_accounts")
+}
+
+/// Signed, append-only crystal ledger. `balanceAfter` snapshots the account
+/// balance after each movement so the ledger is independently auditable.
+model CrystalTransaction {
+  id             String                @id @default(uuid()) @map("tx_id")
+  telegramUserId BigInt                @map("telegram_user_id")
+  accountId      String                @map("account_id")
+  type           CrystalTransactionType @map("tx_type")
+  amount         Int                   @map("amount")
+  balanceAfter   Int                   @map("balance_after")
+  reference      String                @unique @map("reference")
+  metadata       Json?                 @map("metadata")
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  account CrystalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+
+  @@index([telegramUserId, createdAt])
+  @@index([type])
+  @@map("crystal_transactions")
+}
+
+/// Configurable game catalog. Reward tables are server-side JSON config so
+/// administrators can tune costs, limits and payouts without deploys.
+model GameCatalog {
+  id                   String         @id @default(uuid()) @map("id")
+  gameId               String         @unique @map("game_id")
+  code                 String         @map("code")
+  name                 String         @map("name")
+  description          String         @map("description")
+  category             String         @map("category")
+  icon                 String         @default("🎮") @map("icon")
+  accentColor          String         @default("#00e676") @map("accent_color")
+  crystalCost          Int            @default(5) @map("crystal_cost")
+  dailyLimit           Int            @default(10) @map("daily_limit")
+  estimatedDurationSec Int            @default(60) @map("estimated_duration_sec")
+  difficulty           GameDifficulty @default(MEDIUM) @map("difficulty")
+  enabled              Boolean        @default(true) @map("enabled")
+  rewardConfig         Json           @default("{}") @map("reward_config")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  sessions GameSession[]
+  events   GameEvent[]
+  playerStats     GamePlayerStat[]
+  dailyChallenges GameDailyChallenge[]
+
+  @@map("game_catalog")
+}
+
+/// Server-authoritative game session. The client never decides payouts;
+/// every session is validated and rewarded by the backend.
+model GameSession {
+  id                String            @id @default(uuid()) @map("session_id")
+  telegramUserId    BigInt            @map("telegram_user_id")
+  gameId            String            @map("game_id")
+  status            GameSessionStatus @default(STARTED) @map("status")
+  crystalCost       Int               @map("crystal_cost")
+  serverStartedAt   DateTime          @default(now()) @map("server_started_at")
+  serverEndedAt     DateTime?         @map("server_ended_at")
+  durationMs        Int?              @map("duration_ms")
+  score             Int               @default(0) @map("score")
+  crystalsEarned    Int               @default(0) @map("crystals_earned")
+  usdtEarned        Decimal?          @db.Decimal(36, 18) @map("usdt_earned")
+  validation        Json?             @map("validation")
+  reference         String            @unique @map("reference")
+  createdAt         DateTime          @default(now()) @map("created_at")
+
+  user User         @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  game GameCatalog  @relation(fields: [gameId], references: [gameId], onDelete: Restrict)
+
+  @@index([telegramUserId, createdAt])
+  @@index([gameId, createdAt])
+  @@index([telegramUserId, gameId, createdAt])
+  @@index([createdAt])
+  @@map("game_sessions")
+}
+
+/// Per-user game progression. Best scores, streaks and totals feed the
+/// leaderboard and progression UI.
+model GameProfile {
+  telegramUserId     BigInt    @id @map("telegram_user_id")
+  highestScore       Int       @default(0) @map("highest_score")
+  gamesPlayed        Int       @default(0) @map("games_played")
+  gamesWon           Int       @default(0) @map("games_won")
+  winStreak          Int       @default(0) @map("win_streak")
+  bestWinStreak      Int       @default(0) @map("best_win_streak")
+  dailyStreak        Int       @default(0) @map("daily_streak")
+  totalCrystalsEarned Int      @default(0) @map("total_crystals_earned")
+  totalCrystalsSpent Int       @default(0) @map("total_crystals_spent")
+  xpTotal            Int       @default(0) @map("xp_total")
+  xpLevel            Int       @default(1) @map("xp_level")
+  challengesCompleted Int      @default(0) @map("challenges_completed")
+  lastPlayedAt       DateTime? @map("last_played_at")
+  lastDailyClaimAt   DateTime? @map("last_daily_claim_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+
+  @@map("game_profiles")
+}
+
+/// Per-user, per-game progression statistics. Powers personal bests, game
+/// achievements and the Game Hub's "Personal Best" display.
+model GamePlayerStat {
+  id             String   @id @default(uuid()) @map("stat_id")
+  telegramUserId BigInt   @map("telegram_user_id")
+  gameId         String   @map("game_id")
+  gamesPlayed    Int      @default(0) @map("games_played")
+  gamesWon       Int      @default(0) @map("games_won")
+  highestScore   Int      @default(0) @map("highest_score")
+  bestCombo      Int      @default(0) @map("best_combo")
+  bestAccuracy   Int      @default(0) @map("best_accuracy")
+  bestReactionMs Int      @default(0) @map("best_reaction_ms")
+  bestMoves      Int      @default(0) @map("best_moves")
+  bestTimeMs     Int      @default(0) @map("best_time_ms")
+  bestEfficiency Int      @default(0) @map("best_efficiency")
+  levelsCompleted Int     @default(0) @map("levels_completed")
+  perfectSessions Int     @default(0) @map("perfect_sessions")
+  xpEarned       Int      @default(0) @map("xp_earned")
+  lastPlayedAt   DateTime @default(now()) @map("last_played_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User        @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  game GameCatalog @relation(fields: [gameId], references: [gameId], onDelete: Restrict)
+
+  @@unique([telegramUserId, gameId])
+  @@index([gameId, highestScore])
+  @@map("game_player_stats")
+}
+
+/// Non-currency reward grants issued by the Rewards Engine (XP, event points,
+/// mystery boxes, machine boost tokens, achievement progress, boost tokens).
+/// Append-only with unique references so grants are idempotent.
+model GameRewardGrant {
+  id             String               @id @default(uuid()) @map("grant_id")
+  telegramUserId BigInt               @map("telegram_user_id")
+  gameId         String               @map("game_id")
+  sessionId      String?              @map("session_id")
+  type           GameRewardGrantType  @map("type")
+  amount         Int                  @default(0) @map("amount")
+  reference      String               @unique @map("reference")
+  metadata       Json?                @map("metadata")
+  createdAt      DateTime             @default(now()) @map("created_at")
+
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+
+  @@index([telegramUserId, createdAt])
+  @@index([type])
+  @@map("game_reward_grants")
+}
+
+/// Rotating daily challenge definitions. Admin configures a pool; each day the
+/// engine activates the next due challenge so objectives rotate automatically.
+model GameDailyChallenge {
+  id            String                 @id @default(uuid()) @map("challenge_id")
+  code          String                 @unique @map("code")
+  gameId        String                 @map("game_id")
+  title         String                 @map("title")
+  description   String                 @map("description")
+  objectiveType GameChallengeObjective @map("objective_type")
+  target        Int                    @map("target")
+  rewardCrystals Int                   @default(20) @map("reward_crystals")
+  rewardXp      Int                    @default(25) @map("reward_xp")
+  enabled       Boolean                @default(true) @map("enabled")
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @updatedAt @map("updated_at")
+
+  game GameCatalog @relation(fields: [gameId], references: [gameId], onDelete: Restrict)
+
+  completions GameChallengeCompletion[]
+
+  @@index([enabled])
+  @@map("game_daily_challenges")
+}
+
+/// Which user completed which daily challenge on which day (idempotent).
+model GameChallengeCompletion {
+  id             String   @id @default(uuid()) @map("completion_id")
+  telegramUserId BigInt   @map("telegram_user_id")
+  challengeId    String   @map("challenge_id")
+  challengeDay   DateTime @map("challenge_day")
+  sessionId      String   @map("session_id")
+  rewardCrystals Int      @default(0) @map("reward_crystals")
+  rewardXp       Int      @default(0) @map("reward_xp")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user      User              @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  challenge GameDailyChallenge @relation(fields: [challengeId], references: [id], onDelete: Restrict)
+
+  @@unique([telegramUserId, challengeId, challengeDay])
+  @@map("game_challenge_completions")
+}
+
+/// Seasonal / weekend events. Active events apply configurable multipliers to
+/// crystal and USDT payouts for specific games (or all games when null).
+model GameEvent {
+  id               String    @id @default(uuid()) @map("event_id")
+  code             String    @unique @map("code")
+  title            String    @map("title")
+  description      String    @map("description")
+  gameId           String?   @map("game_id")
+  crystalMultiplier Int      @default(1) @map("crystal_multiplier")
+  usdtMultiplier   Decimal   @default(1) @db.Decimal(36, 18) @map("usdt_multiplier")
+  startsAt         DateTime  @map("starts_at")
+  endsAt           DateTime  @map("ends_at")
+  enabled          Boolean   @default(true) @map("enabled")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  game GameCatalog? @relation(fields: [gameId], references: [gameId], onDelete: SetNull)
+
+  @@index([enabled, startsAt, endsAt])
+  @@map("game_events")
 }

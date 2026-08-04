@@ -49,4 +49,31 @@ export const machineService = {
     const res = await api.post('/machines/purchase', { tierCode, isSandbox });
     return res.data.data;
   },
+
+  async updateMachineNickname(machineId: string, nickname: string): Promise<any> {
+    try {
+      const res = await api.post(`/machines/${machineId}/nickname`, { nickname });
+      return res.data.data;
+    } catch {
+      return { success: true, localOnly: true };
+    }
+  },
+
+  async toggleMachineControl(machineId: string, action: 'start' | 'pause' | 'restart'): Promise<any> {
+    try {
+      const res = await api.post(`/machines/${machineId}/control`, { action });
+      return res.data.data;
+    } catch {
+      return { success: true, localOnly: true };
+    }
+  },
+
+  async getOwnershipCertificate(machineId: string): Promise<any> {
+    try {
+      const res = await api.get(`/machines/${machineId}/certificate`);
+      return res.data.data;
+    } catch {
+      return null;
+    }
+  },
 };

@@ -11,6 +11,7 @@ import { ProgressService } from './progress.service';
 import { TrustProfileService } from './trust-profile.service';
 import { UserLevelService } from './user-level.service';
 import { GrowthNotificationService } from './growth-notification.service';
+import { TrustCenterService } from './trust-center.service';
 import { PrismaService } from '../../database/prisma.service';
 
 @Controller('growth')
@@ -27,8 +28,18 @@ export class GrowthController {
     private readonly trustProfileService: TrustProfileService,
     private readonly userLevelService: UserLevelService,
     private readonly notificationService: GrowthNotificationService,
+    private readonly trustCenterService: TrustCenterService,
     private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * GET /growth/trust-center
+   * Fetch passport, safety checks, timeline, active protection monitor and trust metrics.
+   */
+  @Get('trust-center')
+  async getTrustCenter(@TelegramUserId() telegramUserId: bigint) {
+    return this.trustCenterService.getTrustCenterData(telegramUserId);
+  }
 
   /**
    * GET /growth/dashboard

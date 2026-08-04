@@ -10,6 +10,10 @@ import { TreasuryScreen } from './pages/Treasury';
 import { SplashScreen } from './pages/Splash';
 import { WalletScreen } from './pages/Wallet/WalletScreen';
 import { GrowthScreen } from './pages/Growth/GrowthScreen';
+import { GrowScreen } from './pages/Grow/GrowScreen';
+import { TitanHubScreen } from './pages/TitanHub/TitanHubScreen';
+import { RewardsScreen } from './pages/Rewards/RewardsScreen';
+import { ProfileScreen } from './pages/Profile/ProfileScreen';
 import { OverviewPage } from './pages/admin/overview';
 import { OrdersPage } from './pages/admin/orders';
 import { OperationsPage } from './pages/admin/operations';
@@ -26,6 +30,7 @@ import { AuditPage } from './pages/admin/audit';
 import { HealthPage } from './pages/admin/health';
 import { SettingsPage } from './pages/admin/settings';
 import { AdminSupportPage } from './pages/admin/support';
+import { GamesAdminPage } from './pages/admin/games';
 import { useNavigationStore } from './store/useNavigationStore';
 import { useMissionRunnerStore } from './store/useMissionRunnerStore';
 import { useMiningStore } from './store/useMiningStore';
@@ -57,6 +62,7 @@ function AdminRoutes() {
         <Route path="withdrawals" element={<WithdrawalsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="support" element={<AdminSupportPage />} />
+        <Route path="games" element={<GamesAdminPage />} />
         <Route path="risk" element={<RiskPage />} />
         <Route path="automation" element={<AutomationPage />} />
         <Route path="revenue" element={<RevenuePage />} />
@@ -103,13 +109,12 @@ function MainApp() {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'friends': return <FriendsScreen />;
-      case 'boost': return <BoostScreen />;
       case 'wallet': return <WalletScreen />;
-      case 'growth': return <GrowthScreen />;
-      case 'mine': return <MineScreen />;
-      case 'treasury': return <TreasuryScreen />;
-      default: return <MineScreen />;
+      case 'grow': return <GrowScreen />;
+      case 'hub': return <TitanHubScreen />;
+      case 'rewards': return <RewardsScreen />;
+      case 'profile': return <ProfileScreen />;
+      default: return <TitanHubScreen />;
     }
   };
 
@@ -218,6 +223,7 @@ export function App() {
               <Route path="withdrawals" element={<WithdrawalsPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="support" element={<AdminSupportPage />} />
+              <Route path="games" element={<GamesAdminPage />} />
               <Route path="risk" element={<RiskPage />} />
               <Route path="automation" element={<AutomationPage />} />
               <Route path="revenue" element={<RevenuePage />} />
