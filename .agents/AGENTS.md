@@ -7,4 +7,14 @@
   - Don't silently promote an operator → hold a promotion ceremony.
   - Don't quietly archive a machine → let the user review its legacy and achievements.
   - Don't make the machine feel like a background process → make it feel like a living asset that welcomes its operator back.
+- **Operating Experience (OX) Production Acceptance Rules**:
+  - *Golden Rule*: A user should never have to ask, "Why is this on this page?" No two pages may answer the same question.
+  - Every page has exactly one primary purpose, one distinct emotion, and one dominant visual focal point.
+  - No two pages may have the same layout hierarchy.
+  - No card, section, or widget may appear on multiple pages without being redesigned for that page's specific purpose.
+  - Every page must contain: A hero section, a clear primary action, supporting information, historical context, and a next recommended action (no dead ends!).
+  - Empty states must educate, motivate, and direct the user toward the next meaningful action.
+  - The Spinner remains the visual and emotional centerpiece of the Hub and is never visually overshadowed.
+  - The platform should feel like one connected operating system, not five independent applications.
+
 

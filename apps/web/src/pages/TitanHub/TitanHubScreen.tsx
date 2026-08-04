@@ -194,6 +194,57 @@ export const TitanHubScreen: React.FC = () => {
         <BalanceDisplay />
       </div>
 
+      {/* DYNAMIC PRIORITY BANNER: Unclaimed Yield Ready */}
+      {unclaimedBalance > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 rounded-2xl bg-gradient-to-r from-usdt-green/20 to-emerald-600/20 border border-usdt-green/40 flex items-center justify-between shadow-lg"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-usdt-green/20 text-usdt-green flex items-center justify-center font-bold">
+              <Zap size={16} />
+            </div>
+            <div>
+              <div className="text-xs font-black text-text-primary">
+                ₮{unclaimedBalance.toFixed(2)} Yield Ready to Claim
+              </div>
+              <div className="text-[10px] text-text-tertiary">
+                Accumulated from your active machine fleet.
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => useMiningStore.getState().claimMinedYield()}
+            className="py-1.5 px-3 rounded-xl bg-usdt-green text-app-bg font-black text-xs shadow-md press-feedback"
+          >
+            Claim Now
+          </button>
+        </motion.div>
+      )}
+
+      {/* DYNAMIC PRIORITY: Paused Machine Alert Elevates Machine Controls */}
+      {activeRecord?.status === 'PAUSED' && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={18} />
+            <span className="text-xs font-black">
+              {activeRecord.nickname} is currently PAUSED. Resume to generate yield.
+            </span>
+          </div>
+          <button
+            onClick={() => useMachineOwnershipStore.getState().setMachineStatus(selectedTierCode, 'RUNNING')}
+            className="py-1 px-3 rounded-xl bg-amber-500 text-app-bg font-black text-xs press-feedback"
+          >
+            Resume
+          </button>
+        </motion.div>
+      )}
+
       {/* OPERATIONAL HUD TELEMETRY */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
