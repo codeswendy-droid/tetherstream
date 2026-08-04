@@ -37,7 +37,7 @@ export const TitanHubScreen: React.FC = () => {
   const refreshState = useTitanStateEngine((state) => state.refreshState);
   
   const [syncStep, setSyncStep] = useState(0);
-  const [isSyncing, setIsSyncing] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(titanState.syncStatus !== 'COMPLETE');
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showShopSection, setShowShopSection] = useState(false);
   const [selectedTierCode, setSelectedTierCode] = useState<string>('TS_TRIAL');
@@ -57,6 +57,20 @@ export const TitanHubScreen: React.FC = () => {
     initializeDefaultCore();
 
     const syncSequence = async () => {
+      if (titanState.syncStatus === 'COMPLETE') {
+        // Just refresh backend state silently in the background
+        try {
+          await Promise.all([
+            fetchMiningState(),
+            fetchBalanceFromEngine(),
+            fetchUserMachines(),
+          ]);
+        } catch (err) {
+          console.warn('[SYNC] Hydration failed:', err);
+        }
+        return;
+      }
+
       updateSyncStatus('SYNCING');
       
       for (let i = 0; i < syncSteps.length; i++) {
