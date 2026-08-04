@@ -113,37 +113,42 @@ const TON_SPINNERS: SpinnerModel[] = MACHINE_CATALOG.map((m, idx) => {
   };
 });
 
-export const MiningSpinner: React.FC = () => {
-  const { 
-    activeCurrency, 
-    tap, 
-    coolerMultiplier, 
-    maxMultiplier,
-    isOverheated,
-    cooldownRemaining,
-    baseSpeedGhs,
-    tapsToday,
-    tapsThisWeek,
-    tapsThisMonth,
-    dailyTapLimit,
-    weeklyTapLimit,
-    monthlyTapLimit,
-    usdtSpinnerIdx,
-    tonSpinnerIdx,
-    setUsdtSpinnerIdx,
-    setTonSpinnerIdx,
-    hasPurchasedMachine,
-    isMiningLocked,
-    isMachineOwned,
-    machineMode,
-    displayPromoOutput,
-    tapYieldPerTap,
-    upgradeLimits,
-    ownedTierCodes,
-    userMachines,
-  } = useMiningStore();
+export const MiningSpinner = React.memo(() => {
+  // Stable individual selectors from useMiningStore to prevent redundant renders
+  const activeCurrency = useMiningStore((s) => s.activeCurrency);
+  const tap = useMiningStore((s) => s.tap);
+  const coolerMultiplier = useMiningStore((s) => s.coolerMultiplier);
+  const maxMultiplier = useMiningStore((s) => s.maxMultiplier);
+  const isOverheated = useMiningStore((s) => s.isOverheated);
+  const cooldownRemaining = useMiningStore((s) => s.cooldownRemaining);
+  const baseSpeedGhs = useMiningStore((s) => s.baseSpeedGhs);
+  const tapsToday = useMiningStore((s) => s.tapsToday);
+  const tapsThisWeek = useMiningStore((s) => s.tapsThisWeek);
+  const tapsThisMonth = useMiningStore((s) => s.tapsThisMonth);
+  const dailyTapLimit = useMiningStore((s) => s.dailyTapLimit);
+  const weeklyTapLimit = useMiningStore((s) => s.weeklyTapLimit);
+  const monthlyTapLimit = useMiningStore((s) => s.monthlyTapLimit);
+  const usdtSpinnerIdx = useMiningStore((s) => s.usdtSpinnerIdx);
+  const tonSpinnerIdx = useMiningStore((s) => s.tonSpinnerIdx);
+  const setUsdtSpinnerIdx = useMiningStore((s) => s.setUsdtSpinnerIdx);
+  const setTonSpinnerIdx = useMiningStore((s) => s.setTonSpinnerIdx);
+  const hasPurchasedMachine = useMiningStore((s) => s.hasPurchasedMachine);
+  const isMiningLocked = useMiningStore((s) => s.isMiningLocked);
+  const isMachineOwned = useMiningStore((s) => s.isMachineOwned);
+  const machineMode = useMiningStore((s) => s.machineMode);
+  const displayPromoOutput = useMiningStore((s) => s.displayPromoOutput);
+  const tapYieldPerTap = useMiningStore((s) => s.tapYieldPerTap);
+  const upgradeLimits = useMiningStore((s) => s.upgradeLimits);
+  const ownedTierCodes = useMiningStore((s) => s.ownedTierCodes);
+  const userMachines = useMiningStore((s) => s.userMachines);
+
   const { setActiveTab } = useNavigationStore();
-  const { preferLocalCurrency } = useSettingsStore();
+
+  // Stable settings selectors
+  const preferLocalCurrency = useSettingsStore((s) => s.preferLocalCurrency);
+  const graphicsQuality = useSettingsStore((s) => s.graphicsQuality);
+  const reducedMotion = useSettingsStore((s) => s.reducedMotion);
+
   const { selectedCountry, getLocalAmount } = useCountryStore();
   const showLocal = preferLocalCurrency && !!selectedCountry && selectedCountry.code !== 'US';
 
@@ -229,16 +234,16 @@ export const MiningSpinner: React.FC = () => {
   const activeSpinnerIdx = isUsdt ? usdtSpinnerIdx : tonSpinnerIdx;
   const activeSpinner = activeSpinners[activeSpinnerIdx];
 
-  const [fanRotation, setFanRotation] = useState(0);
+  // DOM Refs for direct GPU-accelerated rotation updates (Phase 3 & Phase 5)
+  const rotorPrimaryRef = React.useRef<HTMLDivElement>(null);
+  const rotorSecondaryRef = React.useRef<HTMLDivElement>(null);
+  const rotorTertiaryRef = React.useRef<HTMLDivElement>(null);
 
-
-  // Fan spinning speed — driven entirely by unified mining state.
-  // Base speed comes from the machine configuration (spinnerSpeedMultiplier /
-  // promoSpinnerSpeedMultiplier); the cooler multiplier adds acceleration and
-  // the machine mode selects which configured speed profile is active.
+  // Fan spinning speed — driven entirely by unified mining state and updated via DOM Refs
   useEffect(() => {
     let animFrame: number;
     let lastTime = performance.now();
+    let currentRotation = 0;
     const isLocked = isMiningLocked();
 
     const animate = (time: number) => {
@@ -250,21 +255,68 @@ export const MiningSpinner: React.FC = () => {
           ? activeSpinner.promoSpinnerSpeedMultiplier
           : activeSpinner.baseSpeedMultiplier;
 
-      const intensity = 0.2 + 0.8 * Math.min(1, (Number(coolerMultiplier) || 1) / maxMultiplier);
-      const revolutionsPerSec = configMultiplier * intensity;
-      const rotationSpeed = (isAnyLimitReached || isOverheated || isLocked) ? 0 : ((revolutionsPerSec * 360) / 1000) * delta;
-      setFanRotation((prev) => (prev + rotationSpeed) % 360);
+      const intensity = 0.3 + 0.7 * Math.min(1, (Number(coolerMultiplier) || 1) / maxMultiplier);
+      const revolutionsPerSec = configMultiplier * intensity * 2.2;
+      
+      // Stop spinning if paused, locked, overheated, or reduced motion is enabled
+      const rotationSpeed = (isAnyLimitReached || isOverheated || isLocked || reducedMotion)
+        ? 0
+        : ((revolutionsPerSec * 360) / 1000) * delta;
+
+      currentRotation = (currentRotation + rotationSpeed) % 360;
+
+      // Direct style updates bypass React reconciliation completely for maximum performance
+      if (rotorPrimaryRef.current) {
+        let factor = 1.0;
+        if (activeSpinner.id === 'ripple-x14') factor = 1.2;
+        else if (activeSpinner.id === 'surge-r28') factor = 1.1;
+        else if (activeSpinner.id === 'torrent-v63') factor = 1.4;
+        else if (activeSpinner.id === 'cascade-m91') factor = 1.8;
+        else if (activeSpinner.id === 'streamtitan-2028' || activeSpinner.id === 'free-trial') factor = 1.3;
+        rotorPrimaryRef.current.style.transform = `rotate(${currentRotation * factor}deg)`;
+      }
+
+      if (rotorSecondaryRef.current) {
+        let factor = -1.5;
+        if (activeSpinner.id === 'cascade-m91') factor = -1.3;
+        else if (activeSpinner.id === 'streamtitan-2028') factor = -1.7;
+        rotorSecondaryRef.current.style.transform = `rotate(${currentRotation * factor}deg)`;
+      }
+
+      if (rotorTertiaryRef.current) {
+        const factor = 0.4;
+        rotorTertiaryRef.current.style.transform = `rotate(${currentRotation * factor}deg)`;
+      }
 
       animFrame = requestAnimationFrame(animate);
     };
 
-    animFrame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animFrame);
-  }, [coolerMultiplier, isAnyLimitReached, isOverheated, activeSpinner.baseSpeedMultiplier, activeSpinner.promoSpinnerSpeedMultiplier, isMiningLocked, machineMode, maxMultiplier]);
+    // Phase 6: Minimize / Tab visibility optimization
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(animFrame);
+      } else {
+        lastTime = performance.now();
+        animFrame = requestAnimationFrame(animate);
+      }
+    };
 
-  // Heat smoke generation when multiplier is high or overheated
+    animFrame = requestAnimationFrame(animate);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      cancelAnimationFrame(animFrame);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [coolerMultiplier, isAnyLimitReached, isOverheated, activeSpinner.baseSpeedMultiplier, activeSpinner.promoSpinnerSpeedMultiplier, isMiningLocked, machineMode, maxMultiplier, reducedMotion, activeSpinner.id]);
+
+  // Heat smoke generation when multiplier is high or overheated (Phase 8: battery optimization - skipped on low graphics)
   useEffect(() => {
     if (coolerMultiplier < 6.0 && !isOverheated) {
+      if (smoke.length > 0) setSmoke([]);
+      return;
+    }
+    if (graphicsQuality === 'low' || reducedMotion) {
       if (smoke.length > 0) setSmoke([]);
       return;
     }
@@ -289,9 +341,9 @@ export const MiningSpinner: React.FC = () => {
     }, 80);
 
     return () => clearInterval(interval);
-  }, [coolerMultiplier, isOverheated, smoke.length]);
+  }, [coolerMultiplier, isOverheated, smoke.length, graphicsQuality, reducedMotion]);
 
-  // Live coin particle physics updating loop
+  // Live coin particle physics updating loop (skipped if low graphics)
   useEffect(() => {
     if (particles.length === 0) return;
 
@@ -302,7 +354,7 @@ export const MiningSpinner: React.FC = () => {
             ...p,
             y: p.y + p.vy,
             x: p.x + p.vx,
-            vy: p.vy + 0.12, // gravity pulls them down
+            vy: p.vy + 0.12,
             rotation: p.rotation + p.rotSpeed,
           }))
           .filter((p) => p.y < 350)
@@ -356,20 +408,22 @@ export const MiningSpinner: React.FC = () => {
       showToast("Trust Score increased! Thank you for maintaining active compute operations. 🛡️", "info");
     }
 
-    const newParticle: Particle = {
-      id: Date.now() + Math.random(),
-      x: x + (Math.random() * 20 - 10),
-      y: y - 10,
-      vx: (Math.random() - 0.5) * 4,
-      vy: -Math.random() * 5 - 4,
-      rotation: Math.random() * 360,
-      rotSpeed: (Math.random() - 0.5) * 12,
-      text: isUsdt && showLocal && selectedCountry
-        ? `+${selectedCountry.currencySymbol}${(tapYield * (Number(selectedCountry.exchangeRate) || 1)).toLocaleString(undefined, selectedCountry.numberFormat || { maximumFractionDigits: 2 })}`
-        : `+${(Number(tapYield) || 0).toFixed(4)} ${activeCurrency}`,
-    };
+    if (graphicsQuality !== 'low' && !reducedMotion) {
+      const newParticle: Particle = {
+        id: Date.now() + Math.random(),
+        x: x + (Math.random() * 20 - 10),
+        y: y - 10,
+        vx: (Math.random() - 0.5) * 4,
+        vy: -Math.random() * 5 - 4,
+        rotation: Math.random() * 360,
+        rotSpeed: (Math.random() - 0.5) * 12,
+        text: isUsdt && showLocal && selectedCountry
+          ? `+${selectedCountry.currencySymbol}${(tapYield * (Number(selectedCountry.exchangeRate) || 1)).toLocaleString(undefined, selectedCountry.numberFormat || { maximumFractionDigits: 2 })}`
+          : `+${(Number(tapYield) || 0).toFixed(4)} ${activeCurrency}`,
+      };
 
-    setParticles((prev) => [...prev.slice(-12), newParticle]);
+      setParticles((prev) => [...prev.slice(-12), newParticle]);
+    }
   };
 
   const temperature = Math.min(99.9, 30 + (coolerMultiplier - 1.0) * 3.2);
@@ -643,8 +697,8 @@ export const MiningSpinner: React.FC = () => {
                     </div>
                     {/* 3-Blade Micro-Rotor */}
                     <div
+                      ref={rotorPrimaryRef}
                       className="absolute inset-4 rounded-full flex items-center justify-center pointer-events-none z-15"
-                      style={{ transform: `rotate(${fanRotation}deg)` }}
                     >
                       {[...Array(3)].map((_, i) => (
                         <div
@@ -670,7 +724,7 @@ export const MiningSpinner: React.FC = () => {
                     </div>
                   </>
                 );
-
+ 
               case 'ripple-x14': // Tier 1: Ripple X14 — 10-Blade Titanium Intake Compressor Stage
                 return (
                   <>
@@ -694,8 +748,8 @@ export const MiningSpinner: React.FC = () => {
                     </div>
                     {/* 10 Angled Compressor Blades */}
                     <div
+                      ref={rotorPrimaryRef}
                       className="absolute inset-5 rounded-full flex items-center justify-center pointer-events-none z-15"
-                      style={{ transform: `rotate(${fanRotation * 1.2}deg)` }}
                     >
                       {[...Array(10)].map((_, i) => (
                         <div
@@ -719,8 +773,8 @@ export const MiningSpinner: React.FC = () => {
                   <>
                     {/* Outer Turbine Stage (Clockwise, 12 Curved Blades) */}
                     <div
+                      ref={rotorPrimaryRef}
                       className="absolute inset-4 rounded-full flex items-center justify-center pointer-events-none z-15"
-                      style={{ transform: `rotate(${fanRotation * 1.1}deg)` }}
                     >
                       {[...Array(12)].map((_, i) => (
                         <div
@@ -739,8 +793,8 @@ export const MiningSpinner: React.FC = () => {
 
                     {/* Inner Turbine Stage (Counter-Clockwise, 12 Blades) */}
                     <div
+                      ref={rotorSecondaryRef}
                       className="absolute inset-9 rounded-full flex items-center justify-center pointer-events-none z-15"
-                      style={{ transform: `rotate(${-fanRotation * 1.5}deg)` }}
                     >
                       {[...Array(12)].map((_, i) => (
                         <div
@@ -783,8 +837,8 @@ export const MiningSpinner: React.FC = () => {
                     </div>
                     {/* 5 Wide Curved Hydrofoil Impellers */}
                     <div
+                      ref={rotorPrimaryRef}
                       className="absolute inset-4 rounded-full flex items-center justify-center pointer-events-none z-15"
-                      style={{ transform: `rotate(${fanRotation * 1.4}deg)` }}
                     >
                       {[...Array(5)].map((_, i) => (
                         <div
@@ -820,15 +874,13 @@ export const MiningSpinner: React.FC = () => {
                     />
                     {/* Inner Roll Gimbal Ring */}
                     <div
+                      ref={rotorSecondaryRef}
                       className="absolute inset-7 rounded-full border-2 border-cyan-400/60 pointer-events-none z-15"
-                      style={{
-                        transform: `rotate(${-fanRotation * 1.3}deg)`,
-                      }}
                     />
                     {/* Central 6-Blade Articulated Flywheel */}
                     <div
+                      ref={rotorPrimaryRef}
                       className="absolute inset-8 rounded-full flex items-center justify-center pointer-events-none z-15"
-                      style={{ transform: `rotate(${fanRotation * 1.8}deg)` }}
                     >
                       {[...Array(6)].map((_, i) => (
                         <div
@@ -852,8 +904,8 @@ export const MiningSpinner: React.FC = () => {
                   <>
                     {/* Outer 14-Blade Compressor Rotor Ring (CW) */}
                     <div
+                      ref={rotorPrimaryRef}
                       className="absolute inset-3 rounded-full flex items-center justify-center pointer-events-none z-15"
-                      style={{ transform: `rotate(${fanRotation * 1.3}deg)` }}
                     >
                       {[...Array(14)].map((_, i) => (
                         <div
@@ -872,8 +924,8 @@ export const MiningSpinner: React.FC = () => {
 
                     {/* Inner 14-Blade Counter-Rotating Turbine Disc (CCW) */}
                     <div
+                      ref={rotorSecondaryRef}
                       className="absolute inset-8 rounded-full flex items-center justify-center pointer-events-none z-15"
-                      style={{ transform: `rotate(${-fanRotation * 1.7}deg)` }}
                     >
                       {[...Array(14)].map((_, i) => (
                         <div
@@ -892,8 +944,8 @@ export const MiningSpinner: React.FC = () => {
 
                     {/* 8 Autonomous Thermal Cooling Vanes */}
                     <div
+                      ref={rotorTertiaryRef}
                       className="absolute inset-1 rounded-full flex items-center justify-center pointer-events-none z-15"
-                      style={{ transform: `rotate(${fanRotation * 0.4}deg)` }}
                     >
                       {[...Array(8)].map((_, i) => (
                         <div
@@ -958,9 +1010,9 @@ export const MiningSpinner: React.FC = () => {
               </div>
               <span className="text-[10px] font-black text-error-red tracking-widest uppercase font-sans">Capacity Limit!</span>
               <span className="text-[9px] font-bold text-white mt-1 font-sans">
-                {isDailyLimitReached && `Daily Limit Reached (${tapsToday}/${dailyTapLimit})`}
-                {!isDailyLimitReached && isWeeklyLimitReached && `Weekly Limit Reached (${tapsThisWeek}/${weeklyTapLimit})`}
-                {!isDailyLimitReached && !isWeeklyLimitReached && isMonthlyLimitReached && `Monthly Limit Reached (${tapsThisMonth}/${monthlyTapLimit})`}
+                {isDailyLimitReached && 'Daily Earning Capacity Reached'}
+                {!isDailyLimitReached && isWeeklyLimitReached && 'Weekly Earning Capacity Reached'}
+                {!isDailyLimitReached && !isWeeklyLimitReached && isMonthlyLimitReached && 'Monthly Earning Capacity Reached'}
               </span>
               <span className="text-[8px] text-text-tertiary mt-0.5 max-w-[125px] leading-tight font-sans font-medium">
                 Compute capacity threshold reached. Upgrade limits to resume.
@@ -1030,4 +1082,4 @@ export const MiningSpinner: React.FC = () => {
       })()}
     </div>
   );
-};
+});

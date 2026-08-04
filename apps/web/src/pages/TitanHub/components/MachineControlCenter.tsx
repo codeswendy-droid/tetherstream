@@ -38,7 +38,7 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({ acti
     handleToggleState('PAUSED');
     setTimeout(() => {
       handleToggleState('RUNNING');
-      addTimelineEvent(activeTierCode, 'Restarted', 'Hasher core soft restarted by operator command.');
+      addTimelineEvent(activeTierCode, 'Restarted', 'Machine restarted successfully.');
     }, 800);
   };
 
@@ -54,7 +54,7 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({ acti
     setDiagnosticResult(null);
     setTimeout(() => {
       setIsDiagnosticRunning(false);
-      setDiagnosticResult('ALL SYSTEMS OPERATIONAL (100% HEALTH, 0 ERRORS)');
+      setDiagnosticResult('All good! Your machine is healthy.');
     }, 1200);
   };
 
@@ -171,7 +171,7 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({ acti
           className="py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-text-secondary font-extrabold text-xs flex items-center justify-center gap-1.5 hover:border-white/20 transition-colors press-feedback"
         >
           <Activity size={14} className={isDiagnosticRunning ? 'animate-spin text-ton-blue' : ''} />
-          Diag
+          Health
         </button>
       </div>
 

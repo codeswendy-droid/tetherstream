@@ -70,6 +70,7 @@ export interface SettingsState {
   compactMode: boolean;
   largeText: boolean;
   reducedMotion: boolean;
+  graphicsQuality: 'low' | 'medium' | 'high';
 
   // Security
   twoFactorEnabled: boolean;
@@ -79,6 +80,22 @@ export interface SettingsState {
   // Generic updater action
   updateSetting: <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => void;
 }
+
+const autoDetectGraphics = (): 'low' | 'medium' | 'high' => {
+  if (typeof navigator === 'undefined') return 'high';
+  const ram = (navigator as any).deviceMemory;
+  const cores = navigator.hardwareConcurrency;
+  
+  // Low-end device: RAM <= 3GB or CPU Cores <= 4
+  if ((ram && ram <= 3) || (cores && cores <= 4)) {
+    return 'low';
+  }
+  // Mid-range: RAM <= 6GB or CPU Cores <= 6
+  if ((ram && ram <= 6) || (cores && cores <= 6)) {
+    return 'medium';
+  }
+  return 'high';
+};
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
@@ -158,6 +175,7 @@ export const useSettingsStore = create<SettingsState>()(
       compactMode: false,
       largeText: false,
       reducedMotion: false,
+      graphicsQuality: autoDetectGraphics(),
 
       twoFactorEnabled: false,
       connectedTelegram: '',

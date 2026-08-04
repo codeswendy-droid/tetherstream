@@ -68,7 +68,7 @@ export const WalletScreen: React.FC = () => {
     return <DestinationLoader destination="wallet" />;
   }
 
-  const username = user?.first_name || 'Operator';
+  const username = user?.first_name || 'User';
   const totalAssetsUsdt = usdtBalance + unclaimedBalance;
 
   return (
@@ -77,9 +77,9 @@ export const WalletScreen: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-usdt-green font-mono">
-            Financial Center
+            Your Wallet
           </span>
-          <h1 className="text-2xl font-black text-text-primary tracking-tight">Portfolio</h1>
+          <h1 className="text-2xl font-black text-text-primary tracking-tight">My Wallet</h1>
         </div>
 
         <div className="flex items-center gap-2">
@@ -104,10 +104,10 @@ export const WalletScreen: React.FC = () => {
         <div className="relative flex flex-col gap-1 mb-4">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-text-tertiary">
-              Total Account Net Worth
+              Your Total Balance
             </span>
             <span className="text-[10px] font-mono font-bold text-usdt-green bg-usdt-green/10 px-2 py-0.5 rounded-full border border-usdt-green/20">
-              VERIFIED LEDGER
+              VERIFIED
             </span>
           </div>
 
@@ -132,18 +132,18 @@ export const WalletScreen: React.FC = () => {
             <div className="text-base font-black text-usdt-green font-mono">
               ₮{usdtBalance.toFixed(2)}
             </div>
-            <div className="text-[9px] text-text-tertiary">Liquid Wallet</div>
+            <div className="text-[9px] text-text-tertiary">Wallet Balance</div>
           </div>
 
           <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
             <div className="flex items-center justify-between text-[10px] text-text-tertiary uppercase font-extrabold mb-1">
-              <span>Unclaimed Yield</span>
+              <span>Ready to Collect</span>
               <Lock size={12} className="text-amber-400" />
             </div>
             <div className="text-base font-black text-amber-400 font-mono">
               ₮{unclaimedBalance.toFixed(2)}
             </div>
-            <div className="text-[9px] text-text-tertiary">Accumulating in Hub</div>
+            <div className="text-[9px] text-text-tertiary">From your machines</div>
           </div>
         </div>
 
@@ -154,7 +154,7 @@ export const WalletScreen: React.FC = () => {
             className="py-3 rounded-2xl bg-usdt-green text-app-bg font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-usdt-green/20 press-feedback"
           >
             <PlusCircle size={16} />
-            <span>Deposit Funds</span>
+            <span>Add Money</span>
           </button>
 
           <button
@@ -162,7 +162,7 @@ export const WalletScreen: React.FC = () => {
             className="py-3 rounded-2xl bg-white/10 border border-white/15 text-text-primary font-black text-xs flex items-center justify-center gap-2 hover:bg-white/15 transition-colors press-feedback"
           >
             <ArrowDownLeft size={16} />
-            <span>Withdraw Money</span>
+            <span>Take Out Money</span>
           </button>
         </div>
       </motion.div>
@@ -181,10 +181,10 @@ export const WalletScreen: React.FC = () => {
             </div>
             <div>
               <div className="text-xs font-black text-text-primary">
-                ₮{unclaimedBalance.toFixed(2)} Mined Yield Ready
+                ₮{unclaimedBalance.toFixed(2)} Earnings Ready to Collect
               </div>
               <div className="text-[10px] text-text-secondary">
-                Your Titan node is active. Tap to claim in Titan Hub.
+                Your machine is earning money! Tap to collect.
               </div>
             </div>
           </div>
@@ -197,14 +197,14 @@ export const WalletScreen: React.FC = () => {
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-text-tertiary flex items-center gap-2">
             <PieChart size={14} className="text-usdt-green" />
-            Financial Activity & Settlements
+            Money History
           </h2>
           <button
             onClick={() => setIsHistoryModalOpen(true)}
             className="text-[10px] font-extrabold text-usdt-green hover:underline flex items-center gap-1"
           >
             <History size={12} />
-            <span>Full Ledger</span>
+            <span>See All</span>
           </button>
         </div>
 
@@ -238,9 +238,9 @@ export const WalletScreen: React.FC = () => {
         ) : (
           <EmptyState
             icon={<History size={20} />}
-            title="No Financial Transactions Yet"
-            description="Your deposit and withdrawal history will appear here once you make your first financial transaction."
-            actionLabel="Deposit Money"
+            title="No Transactions Yet"
+            description="Your money history will appear here after your first transaction."
+            actionLabel="Add Money"
             onAction={() => setIsFundingModalOpen(true)}
             accentColor="green"
           />
@@ -253,9 +253,9 @@ export const WalletScreen: React.FC = () => {
           <ShieldCheck size={20} />
         </div>
         <div>
-          <h3 className="text-xs font-black text-text-primary">100% Reserve & Ledger Audited</h3>
+          <h3 className="text-xs font-black text-text-primary">Your Money Is 100% Safe</h3>
           <p className="text-[10px] text-text-secondary leading-relaxed">
-            All user USDT and Mobile Money balances are fully collateralized and backed 1:1 on-chain.
+            All your money is fully protected and verified.
           </p>
         </div>
       </div>

@@ -16,5 +16,7 @@
   - Empty states must educate, motivate, and direct the user toward the next meaningful action.
   - The Spinner remains the visual and emotional centerpiece of the Hub and is never visually overshadowed.
   - The platform should feel like one connected operating system, not five independent applications.
+- **Visual Performance Budget Rule**: *Every new visual component must have a defined performance budget.* Before merging, it should be tested on a low-end device profile (or equivalent browser throttling) to ensure it doesn't introduce noticeable lag. The spinner should remain the smoothest element in the application, because it's the product's signature interaction.
+
 
 

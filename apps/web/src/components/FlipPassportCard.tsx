@@ -83,14 +83,14 @@ export const FlipPassportCard: React.FC<FlipPassportCardProps> = ({
             </div>
 
             <div className="bg-white/5 rounded-2xl p-2.5 border border-white/5">
-              <div className="text-[9px] font-bold text-text-tertiary uppercase">Fleet Size</div>
+              <div className="text-[9px] font-bold text-text-tertiary uppercase">Machines</div>
               <div className="text-base font-black text-text-primary font-mono mt-0.5">
-                {totalMachines} Nodes
+                {totalMachines} Owned
               </div>
             </div>
 
             <div className="bg-white/5 rounded-2xl p-2.5 border border-white/5">
-              <div className="text-[9px] font-bold text-text-tertiary uppercase">Operator Rank</div>
+              <div className="text-[9px] font-bold text-text-tertiary uppercase">Your Level</div>
               <div className="text-xs font-black text-gold font-mono mt-1 uppercase">
                 {level}
               </div>
@@ -112,7 +112,7 @@ export const FlipPassportCard: React.FC<FlipPassportCardProps> = ({
             <div className="flex items-center gap-2">
               <ShieldCheck size={18} className="text-gold" />
               <span className="text-xs font-black uppercase text-gold tracking-widest font-mono">
-                Official Security & Verification Ledger
+                Official Security & Verification
               </span>
             </div>
             <span className="text-[9px] text-text-tertiary font-mono">TAP TO RETURN</span>
@@ -124,15 +124,15 @@ export const FlipPassportCard: React.FC<FlipPassportCardProps> = ({
               <span className="font-mono font-bold text-text-primary">{serialNumber}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-text-tertiary">Commissioned On:</span>
+              <span className="text-text-tertiary">Joined On:</span>
               <span className="font-mono font-bold text-text-primary">{commissionDate}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-text-tertiary">Reserve Backing:</span>
-              <span className="font-mono font-bold text-usdt-green">100% USDT Collateralized</span>
+              <span className="text-text-tertiary">Money Protection:</span>
+              <span className="font-mono font-bold text-usdt-green">100% Safe & Protected</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-text-tertiary">Ledger Status:</span>
+              <span className="text-text-tertiary">Account Status:</span>
               <span className="font-mono font-bold text-gold uppercase">Synchronized & Active</span>
             </div>
           </div>
