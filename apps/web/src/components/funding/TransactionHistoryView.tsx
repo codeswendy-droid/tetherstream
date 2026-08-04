@@ -117,8 +117,8 @@ export const TransactionHistoryView: React.FC<TransactionHistoryViewProps> = ({ 
       <div className="flex items-center gap-1 p-1 rounded-xl bg-control-bg border border-white/10 text-[10px] sm:text-xs">
         {[
           { key: 'all', label: 'All Activity' },
-          { key: 'deposits', label: 'Deposits' },
-          { key: 'settlements', label: 'Settlements' },
+          { key: 'deposits', label: 'Money In' },
+          { key: 'settlements', label: 'Payments' },
         ].map((tab) => (
           <button
             key={tab.key}

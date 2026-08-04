@@ -202,7 +202,7 @@ export const TitanHubScreen: React.FC = () => {
           <div className="flex-1 min-w-0">
             <div className="text-[9px] font-extrabold uppercase tracking-wider text-usdt-green mb-0.5 font-mono flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-usdt-green animate-pulse" />
-              Welcome Back Operator
+              Welcome Back
             </div>
             <div className="text-xs font-black text-text-primary leading-tight truncate">
               {activeRecord?.nickname ? `${activeRecord.nickname} online • ${titanContext.titanMessage}` : titanContext.titanMessage}
@@ -240,10 +240,10 @@ export const TitanHubScreen: React.FC = () => {
             </div>
             <div>
               <div className="text-xs font-black text-text-primary">
-                ₮{unclaimedBalance.toFixed(2)} Yield Ready to Claim
+                ₮{unclaimedBalance.toFixed(2)} Earnings Ready to Collect
               </div>
               <div className="text-[10px] text-text-tertiary">
-                Accumulated from your active machine fleet.
+                Earned by your machines.
               </div>
             </div>
           </div>
@@ -251,39 +251,12 @@ export const TitanHubScreen: React.FC = () => {
             onClick={() => useMiningStore.getState().claimMinedYield()}
             className="py-1.5 px-3 rounded-xl bg-usdt-green text-app-bg font-black text-xs shadow-md press-feedback"
           >
-            Claim Now
+            Collect Now
           </button>
         </motion.div>
       )}
 
-      {/* SECTION: TAP PROGRESS BAR (Belongs beneath daily claim, always visible) */}
-      <div className="web3-card rounded-2xl p-4 border border-white/10 relative overflow-hidden">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-400 font-mono">
-            Compute Tap Capacity
-          </span>
-          <span className="text-xs font-mono font-bold text-text-primary">
-            {tapsToday} / {dailyTapLimit} Taps
-          </span>
-        </div>
-        <div className="w-full h-3 bg-control-bg rounded-full overflow-hidden p-0.5 border border-white/5 relative">
-          <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 shadow-[0_0_10px_rgba(6,182,212,0.4)]"
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min(100, Math.max(0, (tapsToday / (dailyTapLimit || 1)) * 100))}%` }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-          />
-        </div>
-        <div className="flex justify-between items-center mt-2 text-[9px] font-mono text-text-tertiary">
-          <span>0%</span>
-          {tapsToday >= dailyTapLimit ? (
-            <span className="text-red-400 font-bold">Daily Tap Limit Reached</span>
-          ) : (
-            <span>{((tapsToday / (dailyTapLimit || 1)) * 100).toFixed(0)}% Capacity Used</span>
-          )}
-          <span>100%</span>
-        </div>
-      </div>
+
 
       {/* OPERATIONAL HUD TELEMETRY */}
       <motion.div
@@ -295,7 +268,7 @@ export const TitanHubScreen: React.FC = () => {
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-extrabold text-text-tertiary uppercase tracking-wider flex items-center gap-2">
             <Activity size={14} className="text-ton-blue" />
-            Operational Telemetry
+            Machine Activity
           </h3>
           <span className="text-[10px] font-mono text-usdt-green bg-usdt-green/10 px-2 py-0.5 rounded-full border border-usdt-green/20">
             LIVE FEED
@@ -306,7 +279,7 @@ export const TitanHubScreen: React.FC = () => {
           <div className="bg-control-bg/50 rounded-xl p-2.5 border border-white/5">
             <div className="text-[9px] font-bold text-text-tertiary uppercase">Power</div>
             <div className="text-sm font-black text-text-primary font-mono mt-1">
-              {Math.round(titanState.machinePower)} GH/s
+              {Math.round(titanState.machinePower)} Power
             </div>
           </div>
           <div className="bg-control-bg/50 rounded-xl p-2.5 border border-white/5">
@@ -343,7 +316,7 @@ export const TitanHubScreen: React.FC = () => {
           <div className="flex items-center gap-2">
             <AlertTriangle size={18} />
             <span className="text-xs font-black">
-              {activeRecord.nickname} is currently PAUSED. Resume to generate yield.
+              {activeRecord.nickname} is paused. Start it to continue earning.
             </span>
           </div>
           <button
@@ -388,7 +361,7 @@ export const TitanHubScreen: React.FC = () => {
             <div className="w-8 h-8 rounded-lg bg-gold/10 text-gold flex items-center justify-center">
               <Activity size={16} />
             </div>
-            <span className="text-[10px] font-extrabold text-text-primary">Claim</span>
+            <span className="text-[10px] font-extrabold text-text-primary">Collect</span>
           </button>
           <button 
             onClick={() => setShowShopSection(!showShopSection)}
@@ -424,7 +397,7 @@ export const TitanHubScreen: React.FC = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-extrabold text-text-tertiary uppercase tracking-wider flex items-center gap-2">
                   <ShoppingCart size={14} className="text-ton-blue" />
-                  Titan Infrastructure Catalog
+                  Machine Shop
                 </h3>
                 <button
                   onClick={() => setShowEducationModal(true)}
@@ -475,7 +448,7 @@ export const TitanHubScreen: React.FC = () => {
 
                       <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
                         <div className="bg-white/5 rounded-lg p-2">
-                          <div className="text-[9px] font-bold text-text-tertiary uppercase">Daily Yield</div>
+                          <div className="text-[9px] font-bold text-text-tertiary uppercase">Daily Earnings</div>
                           <div className="text-xs font-extrabold text-usdt-green font-mono mt-0.5">
                             ₮{machine.dailyYieldUsdt.toFixed(2)}
                           </div>
@@ -494,7 +467,7 @@ export const TitanHubScreen: React.FC = () => {
                           className="w-full py-2.5 rounded-xl bg-gradient-to-r from-usdt-green to-[#00c853] text-app-bg font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-usdt-green/20 press-feedback"
                         >
                           <ShoppingCart size={14} />
-                          Purchase Infrastructure
+                          Buy Machine
                         </button>
                       )}
                     </div>
@@ -640,7 +613,7 @@ export const TitanHubScreen: React.FC = () => {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs font-extrabold text-text-tertiary uppercase tracking-wider flex items-center gap-2 font-mono">
               <Sparkles size={14} className="text-cyan-400 animate-pulse" />
-              Ecosystem Recommendation
+              Suggested Next Step
             </h3>
           </div>
 
@@ -648,10 +621,10 @@ export const TitanHubScreen: React.FC = () => {
             <div className="space-y-3 text-xs">
               <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
                 <span className="font-extrabold block text-white text-[13px] mb-1">
-                  ⭐ Action Advised: {titanState.recommendedMachine} Upgrade
+                  ⭐ Recommended: {titanState.recommendedMachine} Upgrade
                 </span>
                 <p className="text-[11px] text-text-secondary leading-relaxed">
-                  {titanState.upgradeBenefit || 'Upgrading hardware expands capacity and operational yield multipliers.'}
+                  {titanState.upgradeBenefit || 'A stronger machine earns more money every day.'}
                 </p>
               </div>
               <button
@@ -663,13 +636,13 @@ export const TitanHubScreen: React.FC = () => {
                 className="w-full py-3 rounded-2xl bg-cyan-500 text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 press-feedback"
               >
                 <ShoppingCart size={14} />
-                <span>Acquire Recommended Hardware</span>
+                <span>Get This Machine</span>
               </button>
             </div>
           ) : (
             <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-3.5 text-xs text-text-secondary">
               <CheckCircle size={18} className="text-usdt-green shrink-0" />
-              <span>All active infrastructure components operating within optimal specifications. No upgrades recommended at this time.</span>
+              <span>All your machines are running great! No upgrades needed right now.</span>
             </div>
           )}
         </div>

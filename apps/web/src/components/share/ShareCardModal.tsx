@@ -78,35 +78,35 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          className="w-full max-w-sm bg-gradient-to-b from-card-bg via-app-bg to-control-bg border border-usdt-green/40 rounded-3xl p-6 shadow-2xl space-y-5 text-text-primary"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="web3-card max-w-sm w-full rounded-3xl p-5 border border-white/10 flex flex-col gap-4 relative overflow-hidden bg-app-bg select-none"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="text-usdt-green" size={20} />
-              <h3 className="text-sm font-black uppercase tracking-wider">Share Proof of Progress</h3>
-            </div>
+          <div className="flex justify-between items-center pb-2 border-b border-white/10">
+            <h3 className="text-sm font-black text-text-primary uppercase tracking-wide">Flex Progress & Achievements</h3>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10"
+              className="p-1 rounded-full bg-white/5 border border-white/10 text-text-tertiary hover:text-text-primary"
             >
               <X size={16} />
             </button>
           </div>
 
-          {/* Branded Share Card Preview */}
-          <div className="relative overflow-hidden rounded-2xl p-5 border border-usdt-green/40 bg-gradient-to-br from-usdt-green/20 via-black to-control-bg shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-usdt-green animate-ping" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-usdt-green">TITAN STREAM ECONOMY</span>
+          {/* PREVIEW CARD TO FLEX */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-[#0c141d] via-card-bg to-control-bg border border-usdt-green/30 space-y-3 shadow-xl">
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="text-[9px] font-extrabold uppercase tracking-widest text-usdt-green font-mono">Titan Verified</span>
+                <h4 className="text-sm font-black text-text-primary mt-0.5">@{username}</h4>
               </div>
-              <span className="text-[9px] font-mono text-text-tertiary">Verified On-Chain</span>
+              <div className="px-2 py-0.5 rounded-full bg-usdt-green/20 border border-usdt-green/30 text-usdt-green font-mono text-[9px] font-extrabold uppercase">
+                ACTIVE
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <div className="text-xs text-text-tertiary font-bold uppercase">{username}'s Node</div>
+            <div className="pt-2 border-t border-white/5">
+              <span className="text-[10px] text-text-tertiary font-bold uppercase block">Current Tier Rank</span>
               <div className="text-lg font-black text-text-primary flex items-center gap-1.5">
                 <Trophy size={18} className="text-amber-400" />
                 <span>{userRank}</span>
@@ -117,13 +117,13 @@ export const ShareCardModal: React.FC<ShareCardModalProps> = ({
               <div className="p-2.5 rounded-xl bg-white/5 border border-white/5">
                 <span className="text-[9px] text-text-tertiary font-bold uppercase block">Active Power</span>
                 <span className="font-mono font-extrabold text-usdt-green flex items-center gap-1 mt-0.5">
-                  <Zap size={12} /> {totalPowerGhs} GH/s
+                  <Zap size={12} /> {(totalPowerGhs * 10).toFixed(0)} Power
                 </span>
               </div>
               <div className="p-2.5 rounded-xl bg-white/5 border border-white/5">
                 <span className="text-[9px] text-text-tertiary font-bold uppercase block">Active Machines</span>
                 <span className="font-mono font-extrabold text-text-primary flex items-center gap-1 mt-0.5">
-                  <Cpu size={12} className="text-sky-400" /> {activeMachines} Nodes
+                  <Cpu size={12} className="text-sky-400" /> {activeMachines} Machines
                 </span>
               </div>
             </div>

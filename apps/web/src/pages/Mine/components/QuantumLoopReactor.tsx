@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
+import { useSettingsStore } from '../../../store/useSettingsStore';
 
 export interface QuantumLoopReactorRef {
   triggerTap: () => void;
@@ -335,7 +336,16 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
 
     // Initialize floating particle instances
     useEffect(() => {
-      const particleCount = typeof window !== 'undefined' && (window.devicePixelRatio || 1) > 1.5 ? 24 : 16;
+      const isMotionReduced = useSettingsStore.getState().reducedMotion;
+      const graphicsQ = useSettingsStore.getState().graphicsQuality;
+      
+      let particleCount = typeof window !== 'undefined' && (window.devicePixelRatio || 1) > 1.5 ? 24 : 16;
+      if (graphicsQ === 'low' || isMotionReduced) {
+        particleCount = 0;
+      } else if (graphicsQ === 'medium') {
+        particleCount = 8;
+      }
+
       const initialParticles: Particle[] = [];
 
       for (let i = 0; i < particleCount; i++) {
@@ -365,6 +375,10 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
         const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
         const width = 216;
         const height = 216;
+
+        const isMotionReduced = useSettingsStore.getState().reducedMotion;
+        const graphicsQ = useSettingsStore.getState().graphicsQuality;
+        const glowMultiplier = (graphicsQ === 'low' || isMotionReduced) ? 0 : (graphicsQ === 'medium' ? 0.25 : 1.0);
 
         if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
           canvas.width = width * dpr;
@@ -481,19 +495,20 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
 
         // --- UNSYNCHRONIZED MOTION SPEEDS (DIFF RHYTHM PER SUBSYSTEM) ---
         const speedBoost = 1 + s.tapSpeedSurge + s.intakeSurge * 0.8;
+        const motionMult = isMotionReduced ? 0 : 1;
 
         // Subsystem speeds (never synchronized!)
-        const compressorSpeed = 0.8 * intensity * speedBoost * (1 + s.bladeFlex * 0.6);
-        const turbineInnerSpeed = 2.2 * intensity * speedBoost * (1 + s.turbineSurge * 0.9);
-        const turbineOuterSpeed = -1.4 * intensity * speedBoost * (1 + s.turbineSurge * 0.7);
-        const statorSpeed = 0.3 * intensity * speedBoost;
-        const impellerSpeed = 1.6 * intensity * speedBoost;
-        const gyroPitchSpeed = 0.9 * intensity * speedBoost;
-        const gyroRollSpeed = -1.3 * intensity * speedBoost;
-        const gyroYawSpeed = 0.6 * intensity * speedBoost;
-        const magneticRotorSpeed = 3.0 * intensity * speedBoost;
-        const quantumLoop1Speed = 0.5 * intensity * speedBoost;
-        const quantumLoop2Speed = -0.7 * intensity * speedBoost;
+        const compressorSpeed = 0.8 * intensity * speedBoost * (1 + s.bladeFlex * 0.6) * motionMult;
+        const turbineInnerSpeed = 2.2 * intensity * speedBoost * (1 + s.turbineSurge * 0.9) * motionMult;
+        const turbineOuterSpeed = -1.4 * intensity * speedBoost * (1 + s.turbineSurge * 0.7) * motionMult;
+        const statorSpeed = 0.3 * intensity * speedBoost * motionMult;
+        const impellerSpeed = 1.6 * intensity * speedBoost * motionMult;
+        const gyroPitchSpeed = 0.9 * intensity * speedBoost * motionMult;
+        const gyroRollSpeed = -1.3 * intensity * speedBoost * motionMult;
+        const gyroYawSpeed = 0.6 * intensity * speedBoost * motionMult;
+        const magneticRotorSpeed = 3.0 * intensity * speedBoost * motionMult;
+        const quantumLoop1Speed = 0.5 * intensity * speedBoost * motionMult;
+        const quantumLoop2Speed = -0.7 * intensity * speedBoost * motionMult;
 
         s.compressorAngle += compressorSpeed * dt;
         s.turbineInnerAngle += turbineInnerSpeed * dt;
@@ -541,7 +556,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
         ctx.lineWidth = 1.8;
         ctx.globalAlpha = 0.8;
         ctx.shadowColor = primaryColor;
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 12 * glowMultiplier;
         ctx.beginPath();
         ctx.arc(cx, cy, coreRadius * 0.9, 0, Math.PI * 2);
         ctx.stroke();
@@ -568,7 +583,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
           ctx.lineWidth = bm.width || 2.0;
           ctx.globalAlpha = Math.max(0, bm.alpha);
           ctx.shadowColor = primaryColor;
-          ctx.shadowBlur = 14;
+          ctx.shadowBlur = 14 * glowMultiplier;
           ctx.beginPath();
           ctx.moveTo(bx, by);
           ctx.lineTo(cx, cy);
@@ -592,7 +607,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
           ctx.lineWidth = sw.isStabilization ? 4.0 : 2.5;
           ctx.globalAlpha = Math.max(0, sw.alpha);
           ctx.shadowColor = primaryColor;
-          ctx.shadowBlur = 18;
+          ctx.shadowBlur = 18 * glowMultiplier;
           ctx.beginPath();
           ctx.arc(cx, cy, sw.r, 0, Math.PI * 2);
           ctx.stroke();
@@ -615,7 +630,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
           ctx.lineWidth = 2.0;
           ctx.globalAlpha = Math.max(0, rp.alpha);
           ctx.shadowColor = secondaryColor;
-          ctx.shadowBlur = 14;
+          ctx.shadowBlur = 14 * glowMultiplier;
           ctx.beginPath();
           ctx.arc(cx, cy, rp.r, 0, Math.PI * 2);
           ctx.stroke();
@@ -633,7 +648,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
             ctx.lineWidth = width;
             ctx.globalAlpha = 0.75;
             ctx.shadowColor = color;
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 10 * glowMultiplier;
             ctx.beginPath();
             ctx.arc(cx, cy, r, angle, angle + Math.PI * 1.25);
             ctx.stroke();
@@ -651,7 +666,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
           ctx.strokeStyle = primaryColor;
           ctx.lineWidth = 1.5;
           ctx.shadowColor = primaryColor;
-          ctx.shadowBlur = 8;
+          ctx.shadowBlur = 8 * glowMultiplier;
           for (let i = 0; i < 3; i++) {
             ctx.rotate((Math.PI * 2) / 3);
             ctx.fillRect(28, -3, 14, 6);
@@ -694,7 +709,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
           ctx.lineWidth = 2.5;
           ctx.globalAlpha = 0.85;
           ctx.shadowColor = colors.primaryHex;
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 10 * glowMultiplier;
           ctx.beginPath();
           ctx.arc(0, 0, outerR, 0, Math.PI * 2);
           ctx.stroke();
@@ -750,7 +765,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
           ctx.strokeStyle = colors.primaryHex;
           ctx.lineWidth = 2.4;
           ctx.shadowColor = colors.primaryHex;
-          ctx.shadowBlur = 12;
+          ctx.shadowBlur = 12 * glowMultiplier;
 
           for (let i = 0; i < numTurbineBlades; i++) {
             const angle = (i * (Math.PI * 2)) / numTurbineBlades;
@@ -768,7 +783,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
           ctx.strokeStyle = colors.secondaryHex;
           ctx.lineWidth = 2.0;
           ctx.shadowColor = colors.secondaryHex;
-          ctx.shadowBlur = 14;
+          ctx.shadowBlur = 14 * glowMultiplier;
 
           for (let i = 0; i < numTurbineBlades; i++) {
             const angle = (i * (Math.PI * 2)) / numTurbineBlades;
@@ -813,7 +828,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
           ctx.lineWidth = 4.0;
           ctx.globalAlpha = 0.35 + Math.sin(timeSec * 3) * 0.1;
           ctx.shadowColor = colors.primaryHex;
-          ctx.shadowBlur = 16;
+          ctx.shadowBlur = 16 * glowMultiplier;
           ctx.beginPath();
           ctx.arc(cx, cy, ductR, 0, Math.PI * 2);
           ctx.stroke();
@@ -834,7 +849,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
             ctx.strokeStyle = colors.secondaryHex;
             ctx.lineWidth = 1.5;
             ctx.shadowColor = colors.secondaryHex;
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 10 * glowMultiplier;
             ctx.beginPath();
             ctx.moveTo(30, 0);
             ctx.quadraticCurveTo(60, 20, 88, 5);
@@ -861,7 +876,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
           ctx.lineWidth = 3.0;
           ctx.globalAlpha = 0.9;
           ctx.shadowColor = colors.primaryHex;
-          ctx.shadowBlur = 14;
+          ctx.shadowBlur = 14 * glowMultiplier;
           ctx.beginPath();
           ctx.arc(0, 0, 94, 0, Math.PI * 2);
           ctx.stroke();
@@ -876,7 +891,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
           ctx.lineWidth = 2.4;
           ctx.globalAlpha = 0.85;
           ctx.shadowColor = colors.secondaryHex;
-          ctx.shadowBlur = 14;
+          ctx.shadowBlur = 14 * glowMultiplier;
           ctx.beginPath();
           ctx.arc(0, 0, 68, 0, Math.PI * 2);
           ctx.stroke();
@@ -893,7 +908,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
 
             ctx.fillStyle = '#ffffff';
             ctx.shadowColor = colors.accentHex;
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 10 * glowMultiplier;
             ctx.beginPath();
             ctx.arc(bx, by, 4.5, 0, Math.PI * 2);
             ctx.fill();
@@ -924,7 +939,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
             ctx.strokeStyle = colors.primaryHex;
             ctx.lineWidth = 1.8;
             ctx.shadowColor = colors.primaryHex;
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 10 * glowMultiplier;
             ctx.beginPath();
             ctx.rect(-6, -2, 12, 4);
             ctx.fill();
@@ -949,7 +964,7 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
           ctx.globalAlpha = p.opacity * (0.65 + s.coreFlash * 0.35) * (1 - s.idleFactor * 0.3);
           if (p.isSpark) {
             ctx.shadowColor = '#ffffff';
-            ctx.shadowBlur = 8;
+            ctx.shadowBlur = 8 * glowMultiplier;
           }
           ctx.beginPath();
           ctx.arc(px, py, p.size, 0, Math.PI * 2);
@@ -961,8 +976,22 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
         animFrameId = requestAnimationFrame(render);
       };
 
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          cancelAnimationFrame(animFrameId);
+        } else {
+          stateRef.current.lastTime = performance.now();
+          animFrameId = requestAnimationFrame(render);
+        }
+      };
+
       animFrameId = requestAnimationFrame(render);
-      return () => cancelAnimationFrame(animFrameId);
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      return () => {
+        cancelAnimationFrame(animFrameId);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }, [coolerMultiplier, isOverheated, isLocked, personality, onDiscoveryEvent, activeTierIdx]);
 
     return (
