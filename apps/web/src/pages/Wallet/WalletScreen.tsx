@@ -24,6 +24,7 @@ import { WithdrawModal } from '../../components/funding/WithdrawModal';
 import { TransactionHistoryView } from '../../components/funding/TransactionHistoryView';
 import { CurrencyDisplay } from '../../components/DualCurrencyDisplay';
 import { EmptyState } from '../../components/EmptyState';
+import { DestinationLoader } from '../../components/DestinationLoader';
 import { useTelegram } from '../../context/TelegramContext';
 
 export const WalletScreen: React.FC = () => {
@@ -62,6 +63,10 @@ export const WalletScreen: React.FC = () => {
     fetchTransactions(5, 0);
     fetchUserMachines();
   };
+
+  if (isLoadingBalance && usdtBalance === 0) {
+    return <DestinationLoader destination="wallet" />;
+  }
 
   const username = user?.first_name || 'Operator';
   const totalAssetsUsdt = usdtBalance + unclaimedBalance;

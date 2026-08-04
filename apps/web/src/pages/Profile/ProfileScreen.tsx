@@ -25,10 +25,12 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useMachineOwnershipStore } from '../../store/useMachineOwnershipStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useTelegram } from '../../context/TelegramContext';
+import { FlipPassportCard } from '../../components/FlipPassportCard';
+import { DestinationLoader } from '../../components/DestinationLoader';
 import { showToast } from '../../components/Toast';
 
 export const ProfileScreen: React.FC = () => {
-  const { profile, fetchGrowthProfile } = useGrowthStore();
+  const { profile, isLoading, fetchGrowthProfile } = useGrowthStore();
   const { trustScore } = useTreasuryStore();
   const { session, clearSession, user: authUser } = useAuthStore();
   const { ownerships, openCertificate, openOwnersManual } = useMachineOwnershipStore();
@@ -40,6 +42,10 @@ export const ProfileScreen: React.FC = () => {
   useEffect(() => {
     fetchGrowthProfile();
   }, [fetchGrowthProfile]);
+
+  if (isLoading && !profile) {
+    return <DestinationLoader destination="profile" />;
+  }
 
   const handleLogout = () => {
     hapticFeedback.impactOccurred('medium');
@@ -69,78 +75,14 @@ export const ProfileScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* HERO SECTION — Titan Passport Card (60% Focal Point) */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl p-5 bg-gradient-to-br from-[#121622] via-card-bg to-[#090b10] border-2 border-gold/40 relative overflow-hidden shadow-2xl"
-      >
-        {/* Decorative Gold Seal */}
-        <div className="absolute top-0 right-0 w-44 h-44 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gold to-amber-600 p-0.5 shadow-lg shadow-gold/20">
-              <div className="w-full h-full bg-[#0b0e14] rounded-[14px] flex items-center justify-center text-gold font-black text-xl">
-                {username[0].toUpperCase()}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-black text-text-primary leading-tight">{username}</h2>
-                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-usdt-green/20 text-usdt-green uppercase tracking-wider border border-usdt-green/30">
-                  Verified Operator
-                </span>
-              </div>
-              <p className="text-xs text-text-tertiary font-mono mt-0.5">{handle}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Passport Status Metrics Grid */}
-        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gold/20">
-          <div className="bg-white/5 rounded-2xl p-2.5 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Trust Score</div>
-            <div className="text-base font-black text-usdt-green font-mono mt-0.5">
-              {trustScore}/100
-            </div>
-          </div>
-
-          <div className="bg-white/5 rounded-2xl p-2.5 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Fleet Size</div>
-            <div className="text-base font-black text-text-primary font-mono mt-0.5">
-              {totalOwnedMachines} Nodes
-            </div>
-          </div>
-
-          <div className="bg-white/5 rounded-2xl p-2.5 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Level Tier</div>
-            <div className="text-xs font-black text-gold font-mono mt-1 uppercase">
-              {profile?.level || 'VERIFIED'}
-            </div>
-          </div>
-        </div>
-
-        {/* PRIMARY ACTION BUTTON */}
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          <button
-            onClick={() => setActiveTabState('certificates')}
-            className="py-2.5 rounded-2xl bg-gradient-to-r from-gold to-gold-bright text-app-bg font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-gold/20 press-feedback"
-          >
-            <Award size={15} />
-            <span>View Certificates</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('hub')}
-            className="py-2.5 rounded-2xl bg-white/10 border border-white/15 text-text-primary font-black text-xs flex items-center justify-center gap-1.5 hover:bg-white/15 transition-colors press-feedback"
-          >
-            <Cpu size={15} />
-            <span>Inspect Fleet</span>
-          </button>
-        </div>
-      </motion.div>
+      {/* HERO SECTION — 3D FLIP TITAN PASSPORT CARD (Profile WOW Moment) */}
+      <FlipPassportCard
+        username={username}
+        handle={handle}
+        trustScore={trustScore}
+        totalMachines={totalOwnedMachines}
+        level={profile?.level || 'VERIFIED'}
+      />
 
       {/* CROSS-PAGE CONTINUITY BANNER (No Dead Ends) */}
       <motion.div
@@ -158,7 +100,7 @@ export const ProfileScreen: React.FC = () => {
               Fleet Runtime Milestone Reached
             </div>
             <div className="text-[10px] text-text-secondary">
-              Your hardware fleet has surpassed 100 continuous runtime hours. Tap to view Fleet.
+              Your hardware fleet has surpassed 100 continuous runtime hours. Tap to inspect Titan Hub.
             </div>
           </div>
         </div>

@@ -9,6 +9,7 @@ import { CapacityEngine } from '../Treasury/components/CapacityEngine';
 import { HeroProgress } from '../../components/rewards/HeroProgress';
 import { AchievementsCabinet } from '../../components/rewards/AchievementsCabinet';
 import { RewardHistorySection } from '../../components/rewards/RewardHistorySection';
+import { DestinationLoader } from '../../components/DestinationLoader';
 
 export const RewardsScreen: React.FC = () => {
   const { fetchDashboardData } = useGrowthStore();

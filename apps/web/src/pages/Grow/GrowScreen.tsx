@@ -5,6 +5,7 @@ import { useReferralStore } from '../../store/useReferralStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { showToast } from '../../components/Toast';
 import { EmptyState } from '../../components/EmptyState';
+import { DestinationLoader } from '../../components/DestinationLoader';
 import { Copy, Share2, Users, Flame, Star, Award, Gift, CheckCircle, Clock, AlertCircle, TrendingUp, Sparkles, ChevronRight, BarChart3 } from 'lucide-react';
 import { EducationCard } from '../../components/EducationCard';
 
@@ -35,6 +36,10 @@ export const GrowScreen: React.FC = () => {
   useEffect(() => {
     fetchReferrals();
   }, [fetchReferrals]);
+
+  if (isLoading && referrals.length === 0) {
+    return <DestinationLoader destination="grow" />;
+  }
 
   const handleCopy = () => {
     if (!referralLink) return;
