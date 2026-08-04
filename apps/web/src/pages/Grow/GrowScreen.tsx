@@ -62,13 +62,13 @@ export const GrowScreen: React.FC = () => {
 
   return (
     <div className="p-4 flex flex-col gap-5 select-none relative pb-28 bg-[#050c12] min-h-full">
-      {/* DESTINATION HEADER — Business Expansion & Momentum */}
+      {/* DESTINATION HEADER — Friends & Network */}
       <div className="flex items-center justify-between">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-cyan-400 font-mono">
-            Network Operations
+            Grow Your Circle
           </span>
-          <h1 className="text-2xl font-black text-text-primary tracking-tight">Business Growth</h1>
+          <h1 className="text-2xl font-black text-text-primary tracking-tight">Titan Friends</h1>
         </div>
 
         <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-bold">
@@ -76,11 +76,11 @@ export const GrowScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* HERO SECTION — Network Health & Growth Score (60% Focal Point) */}
+      {/* HERO SECTION — Friends Network Momentum */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl p-5 bg-gradient-to-br from-[#081825] via-card-bg to-[#050c12] border border-cyan-500/30 relative overflow-hidden shadow-2xl"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl p-5 bg-gradient-to-br from-[#081825] via-card-bg to-[#050c12] border border-cyan-500/30 relative overflow-hidden shadow-2xl"
       >
         <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -89,27 +89,27 @@ export const GrowScreen: React.FC = () => {
             Network Momentum
           </span>
           <span className="text-[10px] font-mono font-bold text-usdt-green bg-usdt-green/10 px-2 py-0.5 rounded-full border border-usdt-green/20">
-            LEVEL 1 NETWORK
+            FRIENDS CIRCLE
           </span>
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Invited Operators</div>
+            <div className="text-[9px] font-bold text-text-tertiary uppercase">Friends Joined</div>
             <div className="text-xl font-black text-text-primary font-mono mt-1">
               {invitedCount}
             </div>
           </div>
 
           <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Active Partners</div>
+            <div className="text-[9px] font-bold text-text-tertiary uppercase">Active Friends</div>
             <div className="text-xl font-black text-cyan-400 font-mono mt-1">
               {activeReferralsCount}
             </div>
           </div>
 
           <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Growth Bonus</div>
+            <div className="text-[9px] font-bold text-text-tertiary uppercase">Referral Rewards</div>
             <div className="text-xl font-black text-usdt-green font-mono mt-1">
               ₮{earnedUsdt.toFixed(2)}
             </div>
@@ -122,7 +122,7 @@ export const GrowScreen: React.FC = () => {
           className="w-full py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-teal-400 text-app-bg font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 press-feedback"
         >
           <Share2 size={16} />
-          <span>INVITE FRIENDS & GROW NETWORK</span>
+          <span>INVITE FRIENDS</span>
         </button>
       </motion.div>
 
@@ -174,15 +174,15 @@ export const GrowScreen: React.FC = () => {
         </motion.div>
       )}
 
-      {/* SUPPORTING SECTION — Network Members & Leaderboard (30%) */}
+      {/* SUPPORTING SECTION — Friends Roster */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-text-tertiary flex items-center gap-2">
             <Users size={14} className="text-cyan-400" />
-            Network Roster
+            Friends Roster
           </h2>
           <span className="text-[10px] font-mono text-text-tertiary">
-            {referrals.length} Total Members
+            {referrals.length} Total Friends
           </span>
         </div>
 
@@ -216,9 +216,9 @@ export const GrowScreen: React.FC = () => {
         ) : (
           <EmptyState
             icon={<Users size={20} />}
-            title="Your Network is Getting Started"
-            description="Invite your first operator friend to earn 5 USDT bonuses as soon as they complete their initial setup!"
-            actionLabel="Invite First Friend"
+            title="Your Circle is Getting Started"
+            description="Invite your first friend to earn USDT bonuses when they join and complete their first setup!"
+            actionLabel="Invite a Friend"
             onAction={handleShare}
             accentColor="cyan"
           />
@@ -231,9 +231,9 @@ export const GrowScreen: React.FC = () => {
           <BarChart3 size={20} />
         </div>
         <div>
-          <h3 className="text-xs font-black text-text-primary">Exponential Network Multipliers</h3>
+          <h3 className="text-xs font-black text-text-primary">Grow & Earn Together</h3>
           <p className="text-[10px] text-text-secondary leading-relaxed">
-            Every active friend added to your Titan network increases your daily referral hash rate bonus indefinitely.
+            Invite friends, track their achievements, and earn referral bonuses when they operate their machines.
           </p>
         </div>
       </div>
