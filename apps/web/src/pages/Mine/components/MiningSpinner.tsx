@@ -1016,11 +1016,7 @@ export const MiningSpinner: React.FC = () => {
         };
 
         return (
-          <div className="w-full max-w-[320px] mt-4 grid grid-cols-3 gap-2 text-center text-xs font-mono">
-            <div className="bg-control-bg/70 border border-white/10 rounded-2xl p-2 flex flex-col items-center justify-center shadow-sm">
-              <span className="text-[9px] text-text-tertiary font-bold font-sans uppercase">Daily Taps</span>
-              <span className="font-extrabold text-text-primary text-xs mt-0.5">{tapsToday} / {dailyTapLimit}</span>
-            </div>
+          <div className="w-full max-w-[320px] mt-4 grid grid-cols-2 gap-2 text-center text-xs font-mono">
             <div className="bg-control-bg/70 border border-white/10 rounded-2xl p-2 flex flex-col items-center justify-center shadow-sm">
               <span className="text-[9px] text-text-tertiary font-bold font-sans uppercase">Output / Tap</span>
               <span className="font-extrabold text-usdt-green text-xs mt-0.5">{formatOutputPerTap(currentTapYieldVal)}</span>
