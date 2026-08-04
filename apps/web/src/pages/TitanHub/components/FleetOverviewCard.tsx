@@ -49,7 +49,7 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-xs font-extrabold text-text-tertiary uppercase tracking-wider flex items-center gap-2">
           <Cpu size={14} className="text-usdt-green" />
-          Fleet Overview
+          Your Machines
         </h3>
         <span className="text-[10px] font-mono text-usdt-green bg-usdt-green/10 px-2 py-0.5 rounded-full border border-usdt-green/20">
           {activeCount}/{totalMachinesCount} ACTIVE
@@ -60,19 +60,19 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
         <div className="bg-control-bg/60 rounded-xl p-2.5 border border-white/5">
           <div className="text-[9px] font-bold text-text-tertiary uppercase">Total Power</div>
           <div className="text-sm font-black text-text-primary font-mono mt-1">
-            {baseSpeedGhs.toFixed(1)} GH/s
+            {(baseSpeedGhs * 10).toFixed(0)} Power
           </div>
         </div>
 
         <div className="bg-control-bg/60 rounded-xl p-2.5 border border-white/5">
-          <div className="text-[9px] font-bold text-text-tertiary uppercase">Fleet Health</div>
+          <div className="text-[9px] font-bold text-text-tertiary uppercase">Machine Health</div>
           <div className="text-sm font-black text-usdt-green font-mono mt-1">
             {fleetHealth}%
           </div>
         </div>
 
         <div className="bg-control-bg/60 rounded-xl p-2.5 border border-white/5">
-          <div className="text-[9px] font-bold text-text-tertiary uppercase">Workload</div>
+          <div className="text-[9px] font-bold text-text-tertiary uppercase">Status</div>
           <div className="text-sm font-black text-ton-blue font-mono mt-1">
             OPTIMAL
           </div>

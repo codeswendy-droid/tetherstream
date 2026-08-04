@@ -139,13 +139,13 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
             <li>Tap <strong>Open Mobile Money</strong> above to open your phone dialer.</li>
             <li>Confirm the payment details and enter your Mobile Money PIN.</li>
             <li>Once completed, tap <strong>I Have Sent Payment</strong> below.</li>
-            <li>Our Treasury Operator will verify the transfer and credit your wallet.</li>
+            <li>We will verify the transfer and add the money to your wallet.</li>
           </ol>
         </div>
 
         {verificationSubmitted ? (
           <div className="p-3.5 rounded-xl bg-usdt-green/15 border border-usdt-green/30 text-usdt-green text-xs font-bold text-center">
-            🟢 Payment submitted for verification! Your balance will update automatically upon operator approval.
+            🟢 Payment submitted! Your balance will update automatically once verified.
           </div>
         ) : (
           <button
@@ -169,14 +169,14 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
           <Smartphone size={20} />
         </div>
         <div>
-          <h3 className="text-sm font-extrabold text-text-primary">Mobile Money Deposit Order</h3>
-          <p className="text-xs text-text-tertiary">Fund USDT instantly via USSD push launcher or Mobile Money</p>
+          <h3 className="text-sm font-extrabold text-text-primary">Add Money via Mobile Money</h3>
+          <p className="text-xs text-text-tertiary">Add money instantly using your phone</p>
         </div>
       </div>
 
       {/* Network Selector */}
       <div className="space-y-1.5">
-        <label className="text-xs font-bold uppercase tracking-wider text-text-tertiary">Select Operator Network</label>
+        <label className="text-xs font-bold uppercase tracking-wider text-text-tertiary">Choose your network</label>
         <div className="grid grid-cols-2 gap-2">
           {['MTN', 'AIRTEL'].map((net) => (
             <button

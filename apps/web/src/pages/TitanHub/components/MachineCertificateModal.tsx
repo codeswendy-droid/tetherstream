@@ -18,7 +18,7 @@ export const MachineCertificateModal: React.FC = () => {
   const record = Object.values(ownerships).find((r) => r.machineId === activeCertificateId || r.certificateId === activeCertificateId) || Object.values(ownerships)[0];
   const catalogItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === record.tierCode.toUpperCase()) || MACHINE_CATALOG[0];
 
-  const ownerName = user?.username ? `@${user.username}` : user?.firstName ? user.firstName : 'Titan Stream Operator';
+  const ownerName = user?.username ? `@${user.username}` : user?.firstName ? user.firstName : 'Titan Stream User';
 
   const handleCopyLink = () => {
     const text = `Official Titan Stream Ownership Certificate\nOwner: ${ownerName}\nMachine: ${record.nickname} (${catalogItem.name})\nSerial: ${record.serialNumber}\nCertificate ID: ${record.certificateId}`;
@@ -61,7 +61,7 @@ export const MachineCertificateModal: React.FC = () => {
               Certificate of Ownership
             </div>
             <h2 className="text-xs font-bold text-text-tertiary uppercase tracking-wider mb-4">
-              Titan Stream Infrastructure Registry
+              Titan Stream Machine Registry
             </h2>
 
             <div className="w-full h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent mb-4" />

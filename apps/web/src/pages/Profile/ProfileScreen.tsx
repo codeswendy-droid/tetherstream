@@ -78,9 +78,9 @@ export const ProfileScreen: React.FC = () => {
     window.location.reload();
   };
 
-  const username = settings.displayName || user?.first_name || authUser?.firstName || 'Titan Operator';
+  const username = settings.displayName || user?.first_name || authUser?.firstName || 'User';
   const telegramUserId = session?.user?.telegramUserId || authUser?.telegramUserId || user?.id || 0;
-  const handle = user?.username ? `@${user.username}` : `Operator ID #${telegramUserId}`;
+  const handle = user?.username ? `@${user.username}` : `User ID #${telegramUserId}`;
   const totalOwnedMachines = Object.keys(ownerships).length;
 
   const createdAt = session?.user?.createdAt || authUser?.createdAt || new Date().toISOString();
@@ -92,7 +92,7 @@ export const ProfileScreen: React.FC = () => {
     settings.updateSetting('displayName', displayNameInput.trim());
     settings.updateSetting('connectedWhatsApp', whatsappInput.trim());
     hapticFeedback.notificationOccurred('success');
-    showToast('Profile credentials saved!', 'success');
+    showToast('Profile saved!', 'success');
   };
 
   const handleExportData = () => {
@@ -137,7 +137,7 @@ export const ProfileScreen: React.FC = () => {
     hapticFeedback.notificationOccurred('error');
     clearSession();
     localStorage.clear();
-    showToast('Account successfully terminated.', 'success');
+    showToast('Account deleted.', 'success');
     window.location.reload();
   };
 
@@ -147,9 +147,9 @@ export const ProfileScreen: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-gold font-mono">
-            Identity Registry
+            Your Profile
           </span>
-          <h1 className="text-2xl font-black text-text-primary tracking-tight">Titan Passport</h1>
+          <h1 className="text-2xl font-black text-text-primary tracking-tight">My Profile</h1>
         </div>
 
         <div className="w-10 h-10 rounded-2xl bg-gold/15 border border-gold/30 text-gold flex items-center justify-center font-bold">
@@ -184,7 +184,7 @@ export const ProfileScreen: React.FC = () => {
               Fleet Runtime Milestone Reached
             </div>
             <div className="text-[10px] text-text-secondary">
-              Your hardware fleet has surpassed 100 continuous runtime hours. Tap to inspect Titan Hub.
+              Your machines have been running for over 100 hours! Tap to see your dashboard.
             </div>
           </div>
         </div>
@@ -225,7 +225,7 @@ export const ProfileScreen: React.FC = () => {
         <div className="space-y-3">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-text-tertiary flex items-center gap-2">
             <Cpu size={14} className="text-gold" />
-            Active Fleet Credentials
+            Your Machines
           </h2>
 
           <div className="web3-card rounded-2xl divide-y divide-white/5 border border-white/10 overflow-hidden text-xs">
@@ -266,7 +266,7 @@ export const ProfileScreen: React.FC = () => {
         <div className="space-y-3">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-text-tertiary flex items-center gap-2">
             <Award size={14} className="text-gold" />
-            Verified Infrastructure Certificates
+            Machine Certificates
           </h2>
 
           <div className="grid grid-cols-1 gap-2.5">
@@ -301,13 +301,13 @@ export const ProfileScreen: React.FC = () => {
         <div className="space-y-4">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-text-tertiary flex items-center gap-2">
             <Settings size={14} className="text-text-tertiary" />
-            Ecosystem Settings Console
+            App Settings
           </h2>
 
           {/* Group 1: Account Preferences */}
           <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
             <h3 className="text-xs font-black uppercase text-gold font-mono flex items-center gap-1.5 border-b border-white/5 pb-2">
-              <User size={13} /> Account Credentials
+              <User size={13} /> Account Details
             </h3>
             
             <div className="space-y-2 text-xs">
@@ -317,7 +317,7 @@ export const ProfileScreen: React.FC = () => {
                   type="text"
                   value={displayNameInput}
                   onChange={(e) => setDisplayNameInput(e.target.value)}
-                  placeholder="Enter operator name..."
+                  placeholder="Enter your name..."
                   className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-text-primary focus:outline-none focus:border-gold transition-colors font-mono"
                 />
               </div>
@@ -402,7 +402,7 @@ export const ProfileScreen: React.FC = () => {
 
             <div className="space-y-2.5 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Notify on Deposits</span>
+                <span className="text-text-secondary">When money is added</span>
                 <input
                   type="checkbox"
                   checked={settings.notifyDeposits}
@@ -411,7 +411,7 @@ export const ProfileScreen: React.FC = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Notify on Withdrawals</span>
+                <span className="text-text-secondary">When money is taken out</span>
                 <input
                   type="checkbox"
                   checked={settings.notifyWithdrawals}
@@ -420,7 +420,7 @@ export const ProfileScreen: React.FC = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Reward Claims Ready</span>
+                <span className="text-text-secondary">When earnings are ready</span>
                 <input
                   type="checkbox"
                   checked={settings.notifyRewardReady}
@@ -429,7 +429,7 @@ export const ProfileScreen: React.FC = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Referrals Joined</span>
+                <span className="text-text-secondary">When a friend joins</span>
                 <input
                   type="checkbox"
                   checked={settings.notifyReferralJoined}
@@ -448,7 +448,7 @@ export const ProfileScreen: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1.5 pt-2 border-t border-white/5">
-                <span className="font-extrabold text-text-secondary">Notification Delivery Channel</span>
+                <span className="font-extrabold text-text-secondary">Send alerts via</span>
                 <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
                   {(['push', 'telegram', 'whatsapp'] as const).map((ch) => (
                     <button
@@ -474,7 +474,7 @@ export const ProfileScreen: React.FC = () => {
 
             <div className="space-y-2.5 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Show profile to referral network</span>
+                <span className="text-text-secondary">Show my profile to friends I invited</span>
                 <input
                   type="checkbox"
                   checked={settings.showProfileToReferrals}
@@ -483,7 +483,7 @@ export const ProfileScreen: React.FC = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Participate in global leaderboards</span>
+                <span className="text-text-secondary">Show me on leaderboards</span>
                 <input
                   type="checkbox"
                   checked={settings.showLeaderboard}
@@ -492,7 +492,7 @@ export const ProfileScreen: React.FC = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Hide live hash rate earnings</span>
+                <span className="text-text-secondary">Hide my earnings from others</span>
                 <input
                   type="checkbox"
                   checked={settings.hideEarnings}
@@ -501,7 +501,7 @@ export const ProfileScreen: React.FC = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Share statistics with affiliates</span>
+                <span className="text-text-secondary">Share my stats with friends</span>
                 <input
                   type="checkbox"
                   checked={settings.shareReferralStats}
@@ -515,12 +515,12 @@ export const ProfileScreen: React.FC = () => {
           {/* Group 4: Machine Preferences */}
           <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
             <h3 className="text-xs font-black uppercase text-gold font-mono flex items-center gap-1.5 border-b border-white/5 pb-2">
-              <Sliders size={13} /> Machine Node Preferences
+              <Sliders size={13} /> Machine Settings
             </h3>
 
             <div className="space-y-2.5 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Auto-open Titan Hub on launch</span>
+                <span className="text-text-secondary">Open dashboard when app starts</span>
                 <input
                   type="checkbox"
                   checked={settings.autoOpenHub}
@@ -538,7 +538,7 @@ export const ProfileScreen: React.FC = () => {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Telemetry display mode</span>
+                <span className="text-text-secondary">Display style</span>
                 <select
                   value={settings.telemetryMode}
                   onChange={(e) => settings.updateSetting('telemetryMode', e.target.value as any)}
@@ -564,12 +564,12 @@ export const ProfileScreen: React.FC = () => {
           {/* Group 5: Appearance settings */}
           <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
             <h3 className="text-xs font-black uppercase text-gold font-mono flex items-center gap-1.5 border-b border-white/5 pb-2">
-              <Palette size={13} /> Theme Aesthetics
+              <Palette size={13} /> Look & Feel
             </h3>
 
             <div className="space-y-2.5 text-xs">
               <div className="flex flex-col gap-1.5">
-                <span className="text-text-secondary">Active UI Accent Color</span>
+                <span className="text-text-secondary">Theme Color</span>
                 <div className="grid grid-cols-4 gap-2">
                   {[
                     { key: 'green', color: 'bg-usdt-green border-usdt-green/40' },
@@ -593,7 +593,7 @@ export const ProfileScreen: React.FC = () => {
               </div>
               
               <div className="flex items-center justify-between pt-2">
-                <span className="text-text-secondary">Compact dashboard layout</span>
+                <span className="text-text-secondary">Compact view</span>
                 <input
                   type="checkbox"
                   checked={settings.compactMode}
@@ -611,13 +611,33 @@ export const ProfileScreen: React.FC = () => {
                   className="accent-gold w-4 h-4"
                 />
               </div>
+
+              <div className="flex flex-col gap-1.5 pt-2 border-t border-white/5">
+                <span className="text-text-secondary font-extrabold">Graphics Quality</span>
+                <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
+                  {(['low', 'medium', 'high'] as const).map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => settings.updateSetting('graphicsQuality', q)}
+                      className={`py-1.5 rounded-lg text-[10px] font-black uppercase font-mono transition-all ${
+                        settings.graphicsQuality === q ? 'bg-gold text-app-bg' : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[9px] text-text-tertiary">
+                  Low graphics profile disables shadow glows and reduces CPU/GPU load.
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Group 6: Security, Sessions & Support */}
           <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
             <h3 className="text-xs font-black uppercase text-gold font-mono flex items-center gap-1.5 border-b border-white/5 pb-2">
-              <Key size={13} /> Security Ledger
+              <Key size={13} /> Security & Login
             </h3>
 
             <div className="space-y-3 text-xs">
@@ -643,7 +663,7 @@ export const ProfileScreen: React.FC = () => {
                 <div className="flex justify-between items-center text-[10px]">
                   <div className="flex flex-col">
                     <span className="font-bold text-text-primary flex items-center gap-1">
-                      <Smartphone size={10} className="text-usdt-green" /> Client Session (Active now)
+                      <Smartphone size={10} className="text-usdt-green" /> This device (Active now)
                     </span>
                     <span className="text-text-tertiary mt-0.5 font-mono">Kampala, Uganda · 127.0.0.1</span>
                   </div>
@@ -667,7 +687,7 @@ export const ProfileScreen: React.FC = () => {
                   }}
                   className="py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-text-secondary hover:text-text-primary font-extrabold flex items-center justify-center transition-colors press-feedback"
                 >
-                  <span>Revoke Others</span>
+                  <span>Log out other devices</span>
                 </button>
               </div>
 
@@ -677,7 +697,7 @@ export const ProfileScreen: React.FC = () => {
                   className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/15 border border-red-500/30 text-red-400 font-extrabold rounded-xl flex items-center justify-center gap-1.5 transition-colors press-feedback animate-pulse"
                 >
                   <Trash2 size={14} />
-                  <span>Terminate & Delete Account</span>
+                  <span>Delete My Account</span>
                 </button>
               </div>
             </div>
@@ -688,7 +708,7 @@ export const ProfileScreen: React.FC = () => {
             className="w-full py-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 font-extrabold text-xs flex items-center justify-center gap-2 hover:bg-red-500/20 transition-colors press-feedback"
           >
             <LogOut size={16} />
-            <span>Sign Out of Session</span>
+            <span>Sign Out</span>
           </button>
         </div>
       )}
@@ -708,9 +728,9 @@ export const ProfileScreen: React.FC = () => {
               </div>
 
               <div>
-                <h3 className="text-sm font-black text-text-primary uppercase tracking-wide">Danger Zone</h3>
+                <h3 className="text-sm font-black text-text-primary uppercase tracking-wide">Delete Account</h3>
                 <p className="text-xs text-text-secondary leading-relaxed mt-1">
-                  This will permanently terminate your operator profile, clear your USDT wallet, and remove your hardware fleet. This cannot be undone.
+                  This will permanently delete your account, remove your wallet balance, and remove all your machines. This cannot be undone.
                 </p>
               </div>
 
