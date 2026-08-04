@@ -167,11 +167,12 @@ export const TitanHubScreen: React.FC = () => {
           </div>
           
           <div className="flex-1 min-w-0">
-            <div className="text-[9px] font-extrabold uppercase tracking-wider text-text-tertiary mb-0.5">
-              Titan Status
+            <div className="text-[9px] font-extrabold uppercase tracking-wider text-usdt-green mb-0.5 font-mono flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-usdt-green animate-pulse" />
+              Welcome Back Operator
             </div>
             <div className="text-xs font-black text-text-primary leading-tight truncate">
-              {titanContext.titanMessage}
+              {activeRecord?.nickname ? `${activeRecord.nickname} online • ${titanContext.titanMessage}` : titanContext.titanMessage}
             </div>
           </div>
           
