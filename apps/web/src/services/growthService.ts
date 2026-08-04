@@ -299,6 +299,11 @@ export const growthService = {
     return res.data.data;
   },
 
+  async getTrustCenter(): Promise<any> {
+    const res = await api.get('/growth/trust-center');
+    return res.data.data;
+  },
+
   async getAnalyticsOverview(): Promise<GrowthAnalyticsOverview> {
     const res = await api.get('/admin/growth/analytics-overview');
     return res.data.data;

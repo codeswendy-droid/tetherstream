@@ -501,5 +501,61 @@ export class MachineService {
       message: `Machine upgraded to ${targetTier.name} (${targetTier.capacityGhs} GH/s) successfully!`,
     };
   }
+
+  async updateNickname(telegramUserId: string, machineId: string, nickname: string) {
+    try {
+      const machine = await this.prisma.userMachine.findFirst({
+        where: { id: machineId, telegramUserId: BigInt(telegramUserId) },
+      });
+      if (machine) {
+        await this.prisma.userMachine.update({
+          where: { id: machineId },
+          data: { name: nickname },
+        });
+      }
+    } catch {
+      // Graceful fallback for custom IDs or non-persisted trial machines
+    }
+    return { success: true, machineId, nickname };
+  }
+
+  async toggleControl(telegramUserId: string, machineId: string, action: 'start' | 'pause' | 'restart') {
+    const status = action === 'pause' ? 'PAUSED' : 'ACTIVE';
+    try {
+      const machine = await this.prisma.userMachine.findFirst({
+        where: { id: machineId, telegramUserId: BigInt(telegramUserId) },
+      });
+      if (machine) {
+        await this.prisma.userMachine.update({
+          where: { id: machineId },
+          data: { status },
+        });
+      }
+    } catch {
+      // Graceful fallback
+    }
+    return { success: true, machineId, status };
+  }
+
+  async getCertificate(telegramUserId: string, machineId: string) {
+    try {
+      const machine = await this.prisma.userMachine.findFirst({
+        where: { id: machineId, telegramUserId: BigInt(telegramUserId) },
+      });
+      if (machine) {
+        return {
+          machineId: machine.id,
+          tierCode: machine.tierCode,
+          name: machine.name,
+          capacityGhs: machine.capacityGhs.toNumber(),
+          commissionedAt: machine.purchasedAt,
+          activatedAt: machine.activatedAt,
+          certificateId: `CERT-${machine.tierCode}-${machine.id.slice(0, 8)}`,
+        };
+      }
+    } catch {}
+    return null;
+  }
 }
+
 

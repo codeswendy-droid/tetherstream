@@ -1,16 +1,17 @@
-import { Zap, Cpu, Vault, Wallet, TrendingUp } from 'lucide-react';
+import { Wallet, TrendingUp, Cpu, Gift, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { useTreasuryStore } from '../store/useTreasuryStore';
 import { Badge } from '../components/Badge';
 
-type TabId = 'friends' | 'boost' | 'mine' | 'treasury' | 'wallet' | 'growth';
+type TabId = 'wallet' | 'grow' | 'hub' | 'rewards' | 'profile';
 
 interface NavItem {
   id: TabId;
   label: string;
   icon: React.ReactNode;
   badge?: number;
+  isCenter?: boolean;
 }
 
 export const BottomNav: React.FC = () => {
@@ -21,10 +22,10 @@ export const BottomNav: React.FC = () => {
 
   const navItems: NavItem[] = [
     { id: 'wallet', label: 'Wallet', icon: <Wallet size={18} /> },
-    { id: 'growth', label: 'Grow', icon: <TrendingUp size={18} /> },
-    { id: 'mine', label: 'Assets', icon: <Cpu size={19} /> },
-    { id: 'treasury', label: 'Rewards', icon: <Vault size={18} />, badge: claimableMissionsCount },
-    { id: 'boost', label: 'Shop', icon: <Zap size={18} /> },
+    { id: 'grow', label: 'Grow', icon: <TrendingUp size={18} /> },
+    { id: 'hub', label: 'Titan Hub', icon: <Cpu size={22} />, isCenter: true },
+    { id: 'rewards', label: 'Rewards', icon: <Gift size={18} />, badge: claimableMissionsCount },
+    { id: 'profile', label: 'Profile', icon: <User size={18} /> },
   ];
 
   return (
@@ -41,13 +42,22 @@ export const BottomNav: React.FC = () => {
               ${isActive ? 'text-usdt-green' : 'text-text-secondary hover:text-text-primary'}
             `}
           >
-            {/* Animated active backdrop capsule - fits perfectly inside the selected item */}
+            {/* Animated active backdrop capsule */}
             {isActive && (
               <motion.div
                 layoutId="activeTabIndicator"
-                className="absolute inset-x-1.5 inset-y-1 rounded-xl bg-usdt-green/10 border border-usdt-green/20 shadow-[0_0_12px_rgba(0,230,118,0.15)]"
+                className={`absolute inset-x-1.5 inset-y-1 rounded-xl border shadow-[0_0_12px_rgba(0,230,118,0.15)] ${
+                  item.isCenter
+                    ? 'bg-usdt-green/15 border-usdt-green/30'
+                    : 'bg-usdt-green/10 border-usdt-green/20'
+                }`}
                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
               />
+            )}
+
+            {/* Center hub glow ring */}
+            {item.isCenter && isActive && (
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-usdt-green/40 blur-sm" />
             )}
 
             <div className="relative z-10 mb-0.5 flex items-center justify-center">

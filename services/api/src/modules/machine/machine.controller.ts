@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { MachineService } from './machine.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
@@ -52,5 +52,37 @@ export class MachineController {
     @Body('targetTierCode') targetTierCode: string,
   ) {
     return this.service.upgradeMachineTier(telegramUserId, currentMachineId, targetTierCode);
+  }
+
+  @Post(':id/nickname')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Set custom nickname for owned cloud machine' })
+  async updateNickname(
+    @TelegramUserId() telegramUserId: bigint,
+    @Param('id') machineId: string,
+    @Body('nickname') nickname: string,
+  ) {
+    return this.service.updateNickname(telegramUserId.toString(), machineId, nickname);
+  }
+
+  @Post(':id/control')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Set machine operational status (start/pause/restart)' })
+  async toggleControl(
+    @TelegramUserId() telegramUserId: bigint,
+    @Param('id') machineId: string,
+    @Body('action') action: 'start' | 'pause' | 'restart',
+  ) {
+    return this.service.toggleControl(telegramUserId.toString(), machineId, action);
+  }
+
+  @Get(':id/certificate')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get ownership certificate metadata for specified machine' })
+  async getCertificate(
+    @TelegramUserId() telegramUserId: bigint,
+    @Param('id') machineId: string,
+  ) {
+    return this.service.getCertificate(telegramUserId.toString(), machineId);
   }
 }

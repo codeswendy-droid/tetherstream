@@ -14,6 +14,7 @@ import { TrustProfileService } from './trust-profile.service';
 import { UserLevelService } from './user-level.service';
 import { GrowthNotificationService } from './growth-notification.service';
 import { GrowthAnalyticsService } from './growth-analytics.service';
+import { TrustCenterService } from './trust-center.service';
 import { GrowthController } from './growth.controller';
 import { GrowthAdminController } from './growth-admin.controller';
 import { GrowthAnalyticsController } from './growth-analytics.controller';
@@ -37,6 +38,7 @@ import { FraudModule } from '../fraud/fraud.module';
     UserLevelService,
     GrowthNotificationService,
     GrowthAnalyticsService,
+    TrustCenterService,
   ],
   exports: [
     GrowthEventService,
@@ -51,6 +53,7 @@ import { FraudModule } from '../fraud/fraud.module';
     UserLevelService,
     GrowthNotificationService,
     GrowthAnalyticsService,
+    TrustCenterService,
   ],
 })
 export class GrowthModule implements OnModuleInit {

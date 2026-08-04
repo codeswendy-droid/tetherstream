@@ -10,6 +10,10 @@ import { TreasuryScreen } from './pages/Treasury';
 import { SplashScreen } from './pages/Splash';
 import { WalletScreen } from './pages/Wallet/WalletScreen';
 import { GrowthScreen } from './pages/Growth/GrowthScreen';
+import { GrowScreen } from './pages/Grow/GrowScreen';
+import { TitanHubScreen } from './pages/TitanHub/TitanHubScreen';
+import { RewardsScreen } from './pages/Rewards/RewardsScreen';
+import { ProfileScreen } from './pages/Profile/ProfileScreen';
 import { OverviewPage } from './pages/admin/overview';
 import { OrdersPage } from './pages/admin/orders';
 import { OperationsPage } from './pages/admin/operations';
@@ -105,13 +109,12 @@ function MainApp() {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'friends': return <FriendsScreen />;
-      case 'boost': return <BoostScreen />;
       case 'wallet': return <WalletScreen />;
-      case 'growth': return <GrowthScreen />;
-      case 'mine': return <MineScreen />;
-      case 'treasury': return <TreasuryScreen />;
-      default: return <MineScreen />;
+      case 'grow': return <GrowScreen />;
+      case 'hub': return <TitanHubScreen />;
+      case 'rewards': return <RewardsScreen />;
+      case 'profile': return <ProfileScreen />;
+      default: return <TitanHubScreen />;
     }
   };
 

@@ -13,6 +13,7 @@ interface GrowthState {
   rewards: RewardItem[];
   qualification: QualificationStatus | null;
   dashboardData: any | null;
+  trustCenterData: any | null;
   isLoading: boolean;
   error: string | null;
 
@@ -21,6 +22,7 @@ interface GrowthState {
   fetchRewards: () => Promise<void>;
   fetchQualification: () => Promise<void>;
   fetchDashboardData: () => Promise<void>;
+  fetchTrustCenterData: () => Promise<void>;
 }
 
 export const useGrowthStore = create<GrowthState>((set) => ({
@@ -29,6 +31,7 @@ export const useGrowthStore = create<GrowthState>((set) => ({
   rewards: [],
   qualification: null,
   dashboardData: null,
+  trustCenterData: null,
   isLoading: false,
   error: null,
 
@@ -75,6 +78,15 @@ export const useGrowthStore = create<GrowthState>((set) => ({
       set({ dashboardData: data });
     } catch (err: any) {
       console.warn('Failed to load growth dashboard:', err?.message);
+    }
+  },
+
+  fetchTrustCenterData: async () => {
+    try {
+      const data = await growthService.getTrustCenter();
+      set({ trustCenterData: data });
+    } catch (err: any) {
+      console.warn('Failed to load trust center:', err?.message);
     }
   },
 }));
