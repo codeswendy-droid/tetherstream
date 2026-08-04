@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck,
   Award,
@@ -17,7 +17,15 @@ import {
   Globe,
   Bell,
   Activity,
-  FileCheck
+  FileCheck,
+  Download,
+  Trash2,
+  Sliders,
+  Palette,
+  Smartphone,
+  Key,
+  Check,
+  X
 } from 'lucide-react';
 import { useGrowthStore } from '../../store/useGrowthStore';
 import { useTreasuryStore } from '../../store/useTreasuryStore';
@@ -25,6 +33,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useMachineOwnershipStore } from '../../store/useMachineOwnershipStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useTelegram } from '../../context/TelegramContext';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import { FlipPassportCard } from '../../components/FlipPassportCard';
 import { DestinationLoader } from '../../components/DestinationLoader';
 import { showToast } from '../../components/Toast';
@@ -36,12 +45,26 @@ export const ProfileScreen: React.FC = () => {
   const { ownerships, openCertificate, openOwnersManual } = useMachineOwnershipStore();
   const { setActiveTab } = useNavigationStore();
   const { hapticFeedback, user } = useTelegram();
+  const settings = useSettingsStore();
 
   const [activeTab, setActiveTabState] = useState<'passport' | 'certificates' | 'settings'>('passport');
+  
+  // Settings Tab Inner States
+  const [displayNameInput, setDisplayNameInput] = useState(settings.displayName || user?.first_name || authUser?.firstName || '');
+  const [whatsappInput, setWhatsappInput] = useState(settings.connectedWhatsApp);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
 
   useEffect(() => {
     fetchGrowthProfile();
   }, [fetchGrowthProfile]);
+
+  useEffect(() => {
+    // Keep setting display name locally in sync with store
+    if (settings.displayName) {
+      setDisplayNameInput(settings.displayName);
+    }
+  }, [settings.displayName]);
 
   if (isLoading && !profile) {
     return <DestinationLoader destination="profile" />;
@@ -55,9 +78,68 @@ export const ProfileScreen: React.FC = () => {
     window.location.reload();
   };
 
-  const username = user?.first_name || authUser?.username || 'Titan Operator';
-  const handle = user?.username ? `@${user.username}` : 'Operator ID #0482';
+  const username = settings.displayName || user?.first_name || authUser?.firstName || 'Titan Operator';
+  const telegramUserId = session?.user?.telegramUserId || authUser?.telegramUserId || user?.id || 0;
+  const handle = user?.username ? `@${user.username}` : `Operator ID #${telegramUserId}`;
   const totalOwnedMachines = Object.keys(ownerships).length;
+
+  const createdAt = session?.user?.createdAt || authUser?.createdAt || new Date().toISOString();
+  const commissionDate = new Date(createdAt).toISOString().split('T')[0];
+  const serialNumber = `SN-PASS-${telegramUserId.toString().slice(-6)}`;
+
+  // Save changes to display name and whatsapp
+  const handleSaveAccountProfile = () => {
+    settings.updateSetting('displayName', displayNameInput.trim());
+    settings.updateSetting('connectedWhatsApp', whatsappInput.trim());
+    hapticFeedback.notificationOccurred('success');
+    showToast('Profile credentials saved!', 'success');
+  };
+
+  const handleExportData = () => {
+    const userData = {
+      username: username,
+      telegramId: telegramUserId,
+      settings: {
+        language: settings.language,
+        preferLocalCurrency: settings.preferLocalCurrency,
+        timeZone: settings.timeZone,
+        dateFormat: settings.dateFormat,
+        notifyChannel: settings.notifyChannel,
+        accentColor: settings.accentColor,
+        telemetryMode: settings.telemetryMode,
+      },
+      fleet: Object.values(ownerships).map(o => ({
+        machineId: o.machineId,
+        tierCode: o.tierCode,
+        nickname: o.nickname,
+        serialNumber: o.serialNumber,
+        status: o.status,
+      })),
+      timestamp: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(userData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `titan-operator-${telegramUserId}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Profile data exported successfully!', 'success');
+  };
+
+  const handleDeleteAccount = () => {
+    if (deleteConfirmationText !== 'DELETE MY ACCOUNT') {
+      showToast('Please type the exact phrase to confirm.', 'error');
+      return;
+    }
+    hapticFeedback.notificationOccurred('error');
+    clearSession();
+    localStorage.clear();
+    showToast('Account successfully terminated.', 'success');
+    window.location.reload();
+  };
 
   return (
     <div className="p-4 flex flex-col gap-5 select-none relative pb-28 bg-[#090b10] min-h-full">
@@ -82,6 +164,8 @@ export const ProfileScreen: React.FC = () => {
         trustScore={trustScore}
         totalMachines={totalOwnedMachines}
         level={profile?.level || 'VERIFIED'}
+        serialNumber={serialNumber}
+        commissionDate={commissionDate}
       />
 
       {/* CROSS-PAGE CONTINUITY BANNER (No Dead Ends) */}
@@ -144,7 +228,7 @@ export const ProfileScreen: React.FC = () => {
             Active Fleet Credentials
           </h2>
 
-          <div className="web3-card rounded-2xl divide-y divide-white/5 border border-white/10 overflow-hidden">
+          <div className="web3-card rounded-2xl divide-y divide-white/5 border border-white/10 overflow-hidden text-xs">
             {Object.values(ownerships).map((rec) => (
               <div key={rec.machineId} className="p-3.5 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-3">
@@ -212,26 +296,390 @@ export const ProfileScreen: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 3: APP SETTINGS & SECURITY (At the bottom as per OX rule) */}
+      {/* TAB 3: APP SETTINGS & SECURITY */}
       {activeTab === 'settings' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-text-tertiary flex items-center gap-2">
             <Settings size={14} className="text-text-tertiary" />
-            Account Settings & Preferences
+            Ecosystem Settings Console
           </h2>
 
-          <div className="web3-card rounded-2xl divide-y divide-white/5 border border-white/10 overflow-hidden text-xs">
-            <div className="p-3 flex items-center justify-between">
-              <span className="font-extrabold text-text-primary">App Language</span>
-              <span className="text-text-tertiary font-mono">English (US)</span>
+          {/* Group 1: Account Preferences */}
+          <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
+            <h3 className="text-xs font-black uppercase text-gold font-mono flex items-center gap-1.5 border-b border-white/5 pb-2">
+              <User size={13} /> Account Credentials
+            </h3>
+            
+            <div className="space-y-2 text-xs">
+              <div className="flex flex-col gap-1.5">
+                <span className="font-extrabold text-text-secondary">Display Name</span>
+                <input
+                  type="text"
+                  value={displayNameInput}
+                  onChange={(e) => setDisplayNameInput(e.target.value)}
+                  placeholder="Enter operator name..."
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-text-primary focus:outline-none focus:border-gold transition-colors font-mono"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="font-extrabold text-text-secondary">Connected WhatsApp (Option)</span>
+                <input
+                  type="text"
+                  value={whatsappInput}
+                  onChange={(e) => setWhatsappInput(e.target.value)}
+                  placeholder="+256..."
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-text-primary focus:outline-none focus:border-gold transition-colors font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <div className="flex flex-col gap-1">
+                  <span className="font-extrabold text-text-secondary">Language</span>
+                  <select
+                    value={settings.language}
+                    onChange={(e) => settings.updateSetting('language', e.target.value)}
+                    className="bg-black/40 border border-white/10 rounded-xl px-2 py-1.5 text-text-primary font-mono focus:outline-none"
+                  >
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="sw">Swahili</option>
+                    <option value="lg">Luganda</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="font-extrabold text-text-secondary">Time Zone</span>
+                  <select
+                    value={settings.timeZone}
+                    onChange={(e) => settings.updateSetting('timeZone', e.target.value)}
+                    className="bg-black/40 border border-white/10 rounded-xl px-2 py-1.5 text-text-primary font-mono focus:outline-none"
+                  >
+                    <option value="UTC">UTC</option>
+                    <option value="EST">EST</option>
+                    <option value="EAT">EAT (East Africa)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <span className="font-extrabold text-text-secondary">Date Format</span>
+                <select
+                  value={settings.dateFormat}
+                  onChange={(e) => settings.updateSetting('dateFormat', e.target.value as any)}
+                  className="bg-black/40 border border-white/10 rounded-xl px-2.5 py-1 text-text-primary font-mono focus:outline-none"
+                >
+                  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <span className="font-extrabold text-text-secondary">Local Currency Display</span>
+                <button
+                  onClick={() => settings.updateSetting('preferLocalCurrency', !settings.preferLocalCurrency)}
+                  className={`px-3 py-1 rounded-lg font-mono font-bold transition-colors ${
+                    settings.preferLocalCurrency ? 'bg-usdt-green/20 text-usdt-green border border-usdt-green/30' : 'bg-white/5 border border-white/10 text-text-secondary'
+                  }`}
+                >
+                  {settings.preferLocalCurrency ? 'Prefer UGX/Local' : 'Prefer USDT'}
+                </button>
+              </div>
+
+              <button
+                onClick={handleSaveAccountProfile}
+                className="w-full py-2 bg-gold text-app-bg font-extrabold rounded-xl mt-3 shadow-md press-feedback"
+              >
+                Save Details
+              </button>
             </div>
-            <div className="p-3 flex items-center justify-between">
-              <span className="font-extrabold text-text-primary">Local Currency Display</span>
-              <span className="text-usdt-green font-mono">Auto-Detected</span>
+          </div>
+
+          {/* Group 2: Notifications Preferences */}
+          <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
+            <h3 className="text-xs font-black uppercase text-gold font-mono flex items-center gap-1.5 border-b border-white/5 pb-2">
+              <Bell size={13} /> Alerts & Notifications
+            </h3>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Notify on Deposits</span>
+                <input
+                  type="checkbox"
+                  checked={settings.notifyDeposits}
+                  onChange={(e) => settings.updateSetting('notifyDeposits', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Notify on Withdrawals</span>
+                <input
+                  type="checkbox"
+                  checked={settings.notifyWithdrawals}
+                  onChange={(e) => settings.updateSetting('notifyWithdrawals', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Reward Claims Ready</span>
+                <input
+                  type="checkbox"
+                  checked={settings.notifyRewardReady}
+                  onChange={(e) => settings.updateSetting('notifyRewardReady', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Referrals Joined</span>
+                <input
+                  type="checkbox"
+                  checked={settings.notifyReferralJoined}
+                  onChange={(e) => settings.updateSetting('notifyReferralJoined', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Machine Offline alerts</span>
+                <input
+                  type="checkbox"
+                  checked={settings.notifyMachineStopped}
+                  onChange={(e) => settings.updateSetting('notifyMachineStopped', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5 pt-2 border-t border-white/5">
+                <span className="font-extrabold text-text-secondary">Notification Delivery Channel</span>
+                <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
+                  {(['push', 'telegram', 'whatsapp'] as const).map((ch) => (
+                    <button
+                      key={ch}
+                      onClick={() => settings.updateSetting('notifyChannel', ch)}
+                      className={`py-1.5 rounded-lg text-[10px] font-black uppercase font-mono transition-all ${
+                        settings.notifyChannel === ch ? 'bg-gold text-app-bg' : 'text-text-secondary hover:text-text-primary'
+                      }`}
+                    >
+                      {ch}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className="p-3 flex items-center justify-between">
-              <span className="font-extrabold text-text-primary">Notifications</span>
-              <span className="text-usdt-green font-mono">Enabled</span>
+          </div>
+
+          {/* Group 3: Privacy Control */}
+          <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
+            <h3 className="text-xs font-black uppercase text-gold font-mono flex items-center gap-1.5 border-b border-white/5 pb-2">
+              <ShieldCheck size={13} /> Privacy & Visibility
+            </h3>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Show profile to referral network</span>
+                <input
+                  type="checkbox"
+                  checked={settings.showProfileToReferrals}
+                  onChange={(e) => settings.updateSetting('showProfileToReferrals', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Participate in global leaderboards</span>
+                <input
+                  type="checkbox"
+                  checked={settings.showLeaderboard}
+                  onChange={(e) => settings.updateSetting('showLeaderboard', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Hide live hash rate earnings</span>
+                <input
+                  type="checkbox"
+                  checked={settings.hideEarnings}
+                  onChange={(e) => settings.updateSetting('hideEarnings', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Share statistics with affiliates</span>
+                <input
+                  type="checkbox"
+                  checked={settings.shareReferralStats}
+                  onChange={(e) => settings.updateSetting('shareReferralStats', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Group 4: Machine Preferences */}
+          <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
+            <h3 className="text-xs font-black uppercase text-gold font-mono flex items-center gap-1.5 border-b border-white/5 pb-2">
+              <Sliders size={13} /> Machine Node Preferences
+            </h3>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Auto-open Titan Hub on launch</span>
+                <input
+                  type="checkbox"
+                  checked={settings.autoOpenHub}
+                  onChange={(e) => settings.updateSetting('autoOpenHub', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Haptic Feedback</span>
+                <input
+                  type="checkbox"
+                  checked={settings.hapticFeedback}
+                  onChange={(e) => settings.updateSetting('hapticFeedback', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Telemetry display mode</span>
+                <select
+                  value={settings.telemetryMode}
+                  onChange={(e) => settings.updateSetting('telemetryMode', e.target.value as any)}
+                  className="bg-black/40 border border-white/10 rounded-xl px-2 py-1 text-text-primary font-mono focus:outline-none"
+                >
+                  <option value="standard">Standard</option>
+                  <option value="compact">Compact</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Reduced animations</span>
+                <input
+                  type="checkbox"
+                  checked={settings.reducedAnimations}
+                  onChange={(e) => settings.updateSetting('reducedAnimations', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Group 5: Appearance settings */}
+          <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
+            <h3 className="text-xs font-black uppercase text-gold font-mono flex items-center gap-1.5 border-b border-white/5 pb-2">
+              <Palette size={13} /> Theme Aesthetics
+            </h3>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-text-secondary">Active UI Accent Color</span>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { key: 'green', color: 'bg-usdt-green border-usdt-green/40' },
+                    { key: 'cyan', color: 'bg-cyan-500 border-cyan-500/40' },
+                    { key: 'gold', color: 'bg-gold border-gold/40' },
+                    { key: 'purple', color: 'bg-purple-500 border-purple-500/40' }
+                  ].map((item) => (
+                    <button
+                      key={item.key}
+                      onClick={() => settings.updateSetting('accentColor', item.key as any)}
+                      className={`h-8 rounded-xl border flex items-center justify-center relative transition-all press-feedback ${item.color} ${
+                        settings.accentColor === item.key ? 'scale-105 ring-2 ring-white/30' : 'opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      {settings.accentColor === item.key && (
+                        <Check size={14} className="text-app-bg font-black" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-text-secondary">Compact dashboard layout</span>
+                <input
+                  type="checkbox"
+                  checked={settings.compactMode}
+                  onChange={(e) => settings.updateSetting('compactMode', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Large text sizing</span>
+                <input
+                  type="checkbox"
+                  checked={settings.largeText}
+                  onChange={(e) => settings.updateSetting('largeText', e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Group 6: Security, Sessions & Support */}
+          <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
+            <h3 className="text-xs font-black uppercase text-gold font-mono flex items-center gap-1.5 border-b border-white/5 pb-2">
+              <Key size={13} /> Security Ledger
+            </h3>
+
+            <div className="space-y-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Connected Telegram ID</span>
+                <span className="font-mono text-text-primary">{telegramUserId}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-text-secondary">Two-Factor Authentication</span>
+                <button
+                  onClick={() => settings.updateSetting('twoFactorEnabled', !settings.twoFactorEnabled)}
+                  className={`px-2.5 py-0.5 rounded-lg font-mono font-bold text-[10px] uppercase transition-colors border ${
+                    settings.twoFactorEnabled ? 'bg-usdt-green/20 border-usdt-green/30 text-usdt-green' : 'bg-white/5 border-white/10 text-text-secondary'
+                  }`}
+                >
+                  {settings.twoFactorEnabled ? 'Active' : 'Inactive'}
+                </button>
+              </div>
+
+              {/* Session list */}
+              <div className="p-3 bg-white/5 border border-white/10 rounded-2xl space-y-2">
+                <span className="text-[10px] font-black uppercase text-text-tertiary">Active Sessions (1)</span>
+                <div className="flex justify-between items-center text-[10px]">
+                  <div className="flex flex-col">
+                    <span className="font-bold text-text-primary flex items-center gap-1">
+                      <Smartphone size={10} className="text-usdt-green" /> Client Session (Active now)
+                    </span>
+                    <span className="text-text-tertiary mt-0.5 font-mono">Kampala, Uganda · 127.0.0.1</span>
+                  </div>
+                  <span className="text-usdt-green font-mono">ONLINE</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  onClick={handleExportData}
+                  className="py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-text-secondary hover:text-text-primary font-extrabold flex items-center justify-center gap-1.5 transition-colors press-feedback"
+                >
+                  <Download size={14} />
+                  <span>Export Data</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    hapticFeedback.impactOccurred('medium');
+                    showToast('Revoked all other devices successfully.', 'success');
+                  }}
+                  className="py-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 text-text-secondary hover:text-text-primary font-extrabold flex items-center justify-center transition-colors press-feedback"
+                >
+                  <span>Revoke Others</span>
+                </button>
+              </div>
+
+              <div className="pt-2 border-t border-white/5">
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/15 border border-red-500/30 text-red-400 font-extrabold rounded-xl flex items-center justify-center gap-1.5 transition-colors press-feedback animate-pulse"
+                >
+                  <Trash2 size={14} />
+                  <span>Terminate & Delete Account</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -240,10 +688,64 @@ export const ProfileScreen: React.FC = () => {
             className="w-full py-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 font-extrabold text-xs flex items-center justify-center gap-2 hover:bg-red-500/20 transition-colors press-feedback"
           >
             <LogOut size={16} />
-            <span>Sign Out of Account</span>
+            <span>Sign Out of Session</span>
           </button>
         </div>
       )}
+
+      {/* Account Deletion Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="web3-card max-w-[340px] w-full rounded-3xl p-5 border border-red-500/50 bg-[#090b10] flex flex-col items-center text-center space-y-4"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center">
+                <Trash2 size={24} />
+              </div>
+
+              <div>
+                <h3 className="text-sm font-black text-text-primary uppercase tracking-wide">Danger Zone</h3>
+                <p className="text-xs text-text-secondary leading-relaxed mt-1">
+                  This will permanently terminate your operator profile, clear your USDT wallet, and remove your hardware fleet. This cannot be undone.
+                </p>
+              </div>
+
+              <div className="w-full text-left space-y-1.5 text-xs">
+                <span className="text-text-tertiary">Type <strong className="text-red-400 font-bold font-mono select-all">DELETE MY ACCOUNT</strong> to confirm:</span>
+                <input
+                  type="text"
+                  value={deleteConfirmationText}
+                  onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                  placeholder="Type phrase..."
+                  className="w-full bg-black/40 border border-red-500/30 rounded-xl px-3 py-2 text-text-primary focus:outline-none focus:border-red-500 font-mono text-center"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 w-full pt-1">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmationText('');
+                  }}
+                  className="py-2 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-text-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  className="py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-extrabold"
+                >
+                  Confirm Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

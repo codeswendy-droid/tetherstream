@@ -242,27 +242,34 @@ export const TitanHubScreen: React.FC = () => {
         </motion.div>
       )}
 
-      {/* DYNAMIC PRIORITY: Paused Machine Alert Elevates Machine Controls */}
-      {activeRecord?.status === 'PAUSED' && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-between"
-        >
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={18} />
-            <span className="text-xs font-black">
-              {activeRecord.nickname} is currently PAUSED. Resume to generate yield.
-            </span>
-          </div>
-          <button
-            onClick={() => useMachineOwnershipStore.getState().setMachineStatus(selectedTierCode, 'RUNNING')}
-            className="py-1 px-3 rounded-xl bg-amber-500 text-app-bg font-black text-xs press-feedback"
-          >
-            Resume
-          </button>
-        </motion.div>
-      )}
+      {/* SECTION: TAP PROGRESS BAR (Belongs beneath daily claim, always visible) */}
+      <div className="web3-card rounded-2xl p-4 border border-white/10 relative overflow-hidden">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-400 font-mono">
+            Compute Tap Capacity
+          </span>
+          <span className="text-xs font-mono font-bold text-text-primary">
+            {tapsToday} / {dailyTapLimit} Taps
+          </span>
+        </div>
+        <div className="w-full h-3 bg-control-bg rounded-full overflow-hidden p-0.5 border border-white/5 relative">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 shadow-[0_0_10px_rgba(6,182,212,0.4)]"
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min(100, Math.max(0, (tapsToday / (dailyTapLimit || 1)) * 100))}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          />
+        </div>
+        <div className="flex justify-between items-center mt-2 text-[9px] font-mono text-text-tertiary">
+          <span>0%</span>
+          {tapsToday >= dailyTapLimit ? (
+            <span className="text-red-400 font-bold">Daily Tap Limit Reached</span>
+          ) : (
+            <span>{((tapsToday / (dailyTapLimit || 1)) * 100).toFixed(0)}% Capacity Used</span>
+          )}
+          <span>100%</span>
+        </div>
+      </div>
 
       {/* OPERATIONAL HUD TELEMETRY */}
       <motion.div
@@ -311,6 +318,28 @@ export const TitanHubScreen: React.FC = () => {
         onSelectTier={(tier) => setSelectedTierCode(tier)}
         selectedTierCode={selectedTierCode}
       />
+
+      {/* DYNAMIC PRIORITY: Paused Machine Alert Elevates Machine Controls */}
+      {activeRecord?.status === 'PAUSED' && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={18} />
+            <span className="text-xs font-black">
+              {activeRecord.nickname} is currently PAUSED. Resume to generate yield.
+            </span>
+          </div>
+          <button
+            onClick={() => useMachineOwnershipStore.getState().setMachineStatus(selectedTierCode, 'RUNNING')}
+            className="py-1 px-3 rounded-xl bg-amber-500 text-app-bg font-black text-xs press-feedback"
+          >
+            Resume
+          </button>
+        </motion.div>
+      )}
 
       {/* SECTION 3: OPERATIONAL MACHINE CONTROLS */}
       <MachineControlCenter
@@ -583,6 +612,53 @@ export const TitanHubScreen: React.FC = () => {
         transition={{ delay: 0.35 }}
       >
         <CoolerSlider />
+      </motion.div>
+
+      {/* SECTION 8: SYSTEM RECOMMENDATIONS */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="web3-card rounded-2xl p-4 border border-white/10 relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-xs font-extrabold text-text-tertiary uppercase tracking-wider flex items-center gap-2 font-mono">
+              <Sparkles size={14} className="text-cyan-400 animate-pulse" />
+              Ecosystem Recommendation
+            </h3>
+          </div>
+
+          {titanState.upgradeStatus === 'RECOMMENDED' && titanState.recommendedMachine ? (
+            <div className="space-y-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                <span className="font-extrabold block text-white text-[13px] mb-1">
+                  ⭐ Action Advised: {titanState.recommendedMachine} Upgrade
+                </span>
+                <p className="text-[11px] text-text-secondary leading-relaxed">
+                  {titanState.upgradeBenefit || 'Upgrading hardware expands capacity and operational yield multipliers.'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowShopSection(true);
+                  // Smoothly scroll down to catalog catalog Item
+                  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }}
+                className="w-full py-3 rounded-2xl bg-cyan-500 text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 press-feedback"
+              >
+                <ShoppingCart size={14} />
+                <span>Acquire Recommended Hardware</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-3.5 text-xs text-text-secondary">
+              <CheckCircle size={18} className="text-usdt-green shrink-0" />
+              <span>All active infrastructure components operating within optimal specifications. No upgrades recommended at this time.</span>
+            </div>
+          )}
+        </div>
       </motion.div>
 
       {/* MODALS */}

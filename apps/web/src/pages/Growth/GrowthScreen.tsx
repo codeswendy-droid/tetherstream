@@ -57,9 +57,9 @@ export const GrowthScreen: React.FC = () => {
   const { openGames, setActiveTab: setActiveNavTab } = useNavigationStore();
   const { events: communityEvents } = useTreasuryStore();
 
-  const settlementsCount = profile?.completedSettlements || (transactions.filter((t) => t.status === 'COMPLETED').length > 0 ? transactions.filter((t) => t.status === 'COMPLETED').length : (hasPurchasedMachine ? 1 : 0));
-  const ageDays = profile?.accountAgeDays || 1;
-  const volumeUSDT = profile?.totalVolumeUSDT || (hasPurchasedMachine ? 10.99 : 0);
+  const settlementsCount = profile?.completedSettlements ?? 0;
+  const ageDays = profile?.accountAgeDays ?? 0;
+  const volumeUSDT = profile?.totalVolumeUSDT ?? 0;
 
   const categories = [
     'All ours',

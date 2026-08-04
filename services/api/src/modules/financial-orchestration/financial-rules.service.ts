@@ -85,6 +85,28 @@ export class FinancialRulesService {
         await this.validateDailyLimit(params, rule.parameters as { maxAmount?: string }, client);
       }
     }
+
+    // Available balance check for reserves (withdrawals and purchases)
+    if (params.operationType === FinancialOperationType.WITHDRAWAL_RESERVE) {
+      const entries = await client.ledgerEntry.findMany({
+        where: {
+          financialAccountId: params.financialAccountId,
+          assetCode: params.assetCode,
+          ledgerAccount: { code: 'USER_ASSET_LIABILITY' },
+        },
+        select: { amount: true, entryType: true },
+      });
+
+      const available = entries.reduce((total, entry) => {
+        return entry.entryType === 'CREDIT'
+          ? total.plus(entry.amount)
+          : total.minus(entry.amount);
+      }, new Prisma.Decimal(0));
+
+      if (available.lt(new Prisma.Decimal(params.amount))) {
+        throw new BadRequestException('RULE_INSUFFICIENT_BALANCE');
+      }
+    }
   }
 
   private async validateDailyLimit(params: { financialAccountId: string; assetCode: string; amount: string }, config: { maxAmount?: string }, client: DbClient = this.prisma) {

@@ -20,8 +20,8 @@ export const FlipPassportCard: React.FC<FlipPassportCardProps> = ({
   trustScore,
   totalMachines,
   level,
-  serialNumber = 'SN-TT-PASS-0482',
-  commissionDate = '2026-08-01',
+  serialNumber = 'SN-TT-PASS-PENDING',
+  commissionDate = 'N/A',
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const { hapticFeedback } = useTelegram();

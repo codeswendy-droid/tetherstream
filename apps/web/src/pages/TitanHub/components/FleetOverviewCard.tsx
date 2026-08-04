@@ -22,6 +22,23 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
   const totalMachinesCount = Math.max(1, ownedTierCodes.length);
   const activeCount = Object.values(ownerships).filter((r) => r.status === 'RUNNING').length;
 
+  const machines = Object.values(ownerships);
+  const healthSum = machines.reduce((sum, machine) => {
+    switch (machine.status) {
+      case 'RUNNING':
+      case 'PAUSED':
+        return sum + 100;
+      case 'OVERHEATED':
+        return sum + 50;
+      case 'MAINTENANCE':
+        return sum + 30;
+      case 'OFFLINE':
+      default:
+        return sum + 0;
+    }
+  }, 0);
+  const fleetHealth = machines.length > 0 ? (healthSum / machines.length).toFixed(1) : '100.0';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -50,7 +67,7 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
         <div className="bg-control-bg/60 rounded-xl p-2.5 border border-white/5">
           <div className="text-[9px] font-bold text-text-tertiary uppercase">Fleet Health</div>
           <div className="text-sm font-black text-usdt-green font-mono mt-1">
-            98.5%
+            {fleetHealth}%
           </div>
         </div>
 
