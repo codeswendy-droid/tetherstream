@@ -40,6 +40,48 @@ const DEFAULT_TEMPLATES: NotificationTemplateDefinition[] = [
     titleTemplate: '🛡️ Security Notification',
     bodyTemplate: 'Security activity detected on your TitanStream account: {details}.',
   },
+  {
+    code: 'GAME_DAILY_LOGIN',
+    name: 'Game Daily Login',
+    titleTemplate: '💎 Daily Crystals Claimed!',
+    bodyTemplate: '+{amount} 💎 claimed. Day {streak} streak — keep it up!',
+  },
+  {
+    code: 'GAME_USDT_REWARD',
+    name: 'Game USDT Reward',
+    titleTemplate: '🎮 Game Reward Ready!',
+    bodyTemplate: 'You won {amount} USDT in {gameName}! Claim it from your rewards queue.',
+  },
+  {
+    code: 'GAME_PERSONAL_BEST',
+    name: 'Game Personal Best',
+    titleTemplate: '🏅 New Personal Best!',
+    bodyTemplate: 'You scored {score} points in {gameName} — a new personal best. The leaderboard is watching!',
+  },
+  {
+    code: 'GAME_DAILY_CHALLENGE_COMPLETE',
+    name: 'Daily Challenge Complete',
+    titleTemplate: '🎯 Daily Challenge Complete!',
+    bodyTemplate: 'You completed "{challengeTitle}" — +{crystals} 💎 and +{xp} XP. Come back tomorrow for a new challenge!',
+  },
+  {
+    code: 'GAME_ACHIEVEMENT',
+    name: 'Game Achievement Unlocked',
+    titleTemplate: '🏆 Achievement Unlocked!',
+    bodyTemplate: '"{achievementName}" ({tier}) unlocked. Progress in your achievements cabinet.',
+  },
+  {
+    code: 'GAME_LEVEL_UP',
+    name: 'Game Level Up',
+    titleTemplate: '⭐ You reached Level {level}!',
+    bodyTemplate: 'Your gameplay XP leveled you up. Keep playing to unlock bigger rewards.',
+  },
+  {
+    code: 'GAME_EVENT_REWARD',
+    name: 'Game Event Reward',
+    titleTemplate: '🎉 Event Reward Claimed!',
+    bodyTemplate: 'You earned {amount} during {eventName}. Enjoy the bonus!',
+  },
 ];
 
 @Injectable()

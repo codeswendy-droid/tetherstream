@@ -26,6 +26,7 @@ import { AuditPage } from './pages/admin/audit';
 import { HealthPage } from './pages/admin/health';
 import { SettingsPage } from './pages/admin/settings';
 import { AdminSupportPage } from './pages/admin/support';
+import { GamesAdminPage } from './pages/admin/games';
 import { useNavigationStore } from './store/useNavigationStore';
 import { useMissionRunnerStore } from './store/useMissionRunnerStore';
 import { useMiningStore } from './store/useMiningStore';
@@ -57,6 +58,7 @@ function AdminRoutes() {
         <Route path="withdrawals" element={<WithdrawalsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="support" element={<AdminSupportPage />} />
+        <Route path="games" element={<GamesAdminPage />} />
         <Route path="risk" element={<RiskPage />} />
         <Route path="automation" element={<AutomationPage />} />
         <Route path="revenue" element={<RevenuePage />} />
@@ -218,6 +220,7 @@ export function App() {
               <Route path="withdrawals" element={<WithdrawalsPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="support" element={<AdminSupportPage />} />
+              <Route path="games" element={<GamesAdminPage />} />
               <Route path="risk" element={<RiskPage />} />
               <Route path="automation" element={<AutomationPage />} />
               <Route path="revenue" element={<RevenuePage />} />

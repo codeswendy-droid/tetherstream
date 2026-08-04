@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Flame } from 'lucide-react';
-import { useWalletStore } from '../../../store/useWalletStore';
-import { useQuestStore } from '../../../store/useQuestStore';
+import type { GameStartSession, GameEndResult } from '../../../services/gamesService';
+import { gamesService } from '../../../services/gamesService';
 
 interface BasketballGameProps {
+  session: GameStartSession;
   onClose: () => void;
-  showToast: (msg: string, type: 'success' | 'error' | 'info') => void;
+  onComplete: (result: GameEndResult) => void;
 }
 
 interface FireParticle {
@@ -19,15 +20,21 @@ interface FireParticle {
   color: string;
 }
 
-export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { updateBalance } = useWalletStore();
-  const { incrementProgress, incrementCategoryProgress } = useQuestStore();
+const ROUND_SECONDS = 60;
 
+export const BasketballGame: React.FC<BasketballGameProps> = ({ session, onClose, onComplete }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [active, setActive] = useState(true);
+  const [timeLeft, setTimeLeft] = useState(ROUND_SECONDS);
+  const [roundOver, setRoundOver] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const sessionStartMs = useRef(Date.now());
+  const telemetry = useRef<Array<{ action: string; t: number }>>([]);
+  const launchesRef = useRef(0);
+  const bestComboRef = useRef(0);
 
   // Swipe gesture variables
   const dragStart = useRef<{ x: number; y: number } | null>(null);
@@ -55,13 +62,51 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
     time: 0,
   });
 
+  // Round timer
   useEffect(() => {
-    // Load highscore from localStorage
-    const savedHighScore = localStorage.getItem('hoop_masters_high_score');
-    if (savedHighScore) {
-      setHighScore(parseInt(savedHighScore, 10));
+    if (!active || roundOver) return;
+    const startedAt = Date.now();
+    const timer = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      const remaining = Math.max(0, ROUND_SECONDS - elapsed);
+      setTimeLeft(remaining);
+      if (remaining <= 0) {
+        clearInterval(timer);
+        endRound();
+      }
+    }, 250);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, roundOver]);
+
+  const endRound = () => {
+    if (roundOver || submitting) return;
+    setRoundOver(true);
+    setSubmitting(true);
+    setActive(false);
+    void submitResult();
+  };
+
+  const submitResult = async () => {
+    const durationMs = Date.now() - sessionStartMs.current;
+    const makes = score;
+    const launches = launchesRef.current;
+    try {
+      const result = await gamesService.endSession(session.gameId, session.sessionId, {
+        score,
+        durationMs,
+        telemetry: telemetry.current,
+        stats: {
+          combo: bestComboRef.current,
+          accuracy: launches > 0 ? Math.round((makes / launches) * 100) : 0,
+          perfect: launches > 0 && makes === launches,
+        },
+      });
+      onComplete(result);
+    } catch (err: any) {
+      onClose();
     }
-  }, []);
+  };
 
   useEffect(() => {
     if (!active) return;
@@ -143,7 +188,7 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
         .map((p) => ({
           ...p,
           x: p.x + p.vx,
-          y: p.y + p.vy - 0.5, // float upwards slightly
+          y: p.y + p.vy - 0.5,
           size: Math.max(0, p.size - 0.25),
           opacity: Math.max(0, p.opacity - 0.04),
         }))
@@ -181,7 +226,6 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
           state.ball.y + state.ball.radius > bb.y - bb.height / 2 &&
           state.ball.y - state.ball.radius < bb.y + bb.height / 2
         ) {
-          // Bounce off backboard
           state.ball.vx *= -0.65;
           state.ball.vy *= -0.55;
           state.ball.y = bb.y - bb.height / 2 - state.ball.radius;
@@ -202,28 +246,17 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
         ) {
           state.scoredThisLaunch = true;
           state.flashes = 15;
-
-          // Fire Rim Ripple
           rimRipple.current = { active: true, radius: 10, opacity: 1.0 };
           triggerConfetti(state.hoop.x, state.hoop.y);
+
+          telemetry.current.push({ action: 'hoop', t: Date.now() - sessionStartMs.current });
 
           setScore((s) => {
             const nextScore = s + 1;
             setCombo((c) => {
-              const nextCombo = c + 1;
-              const crystalPayout = nextCombo >= 3 ? 2 : 1;
-
-              updateBalance({ crystalsBalance: useWalletStore.getState().crystalsBalance + crystalPayout });
-
-              if (nextScore > highScore) {
-                setHighScore(nextScore);
-                localStorage.setItem('hoop_masters_high_score', nextScore.toString());
-              }
-
-              incrementCategoryProgress('Games', 1);
-              incrementProgress('q21', 1);
-
-              return nextCombo;
+              const next = c + 1;
+              bestComboRef.current = Math.max(bestComboRef.current, next);
+              return next;
             });
             return nextScore;
           });
@@ -250,14 +283,12 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const state = gameState.current;
 
-      // 1. Flash green screen if scored
       if (state.flashes > 0) {
         ctx.fillStyle = `rgba(0, 230, 118, ${state.flashes / 45})`;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         state.flashes--;
       }
 
-      // Draw dynamic floor shadow (scales/fades based on height)
       const floorY = 440;
       const heightAboveFloor = Math.max(0, floorY - state.ball.y);
       const shadowScale = Math.max(0.15, 1 - heightAboveFloor / 280);
@@ -268,7 +299,6 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
       ctx.ellipse(state.ball.x, floorY + 15, state.ball.radius * 1.6 * shadowScale, state.ball.radius * 0.45 * shadowScale, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw confetti particles
       scoreParticles.current.forEach((p) => {
         ctx.fillStyle = p.color;
         ctx.shadowBlur = 6;
@@ -279,7 +309,6 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
       });
       ctx.shadowBlur = 0;
 
-      // Draw fire particles (if combo active)
       fireParticles.current.forEach((p) => {
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.opacity;
@@ -310,7 +339,6 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
       ctx.fill();
       ctx.stroke();
 
-      // Inner square of backboard
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
@@ -324,7 +352,7 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
       const hY = state.hoop.y;
       const hL = state.hoop.x - state.hoop.width / 2;
       const hR = state.hoop.x + state.hoop.width / 2;
-      
+
       ctx.moveTo(hL, hY);
       ctx.lineTo(hL + 6, hY + 22);
       ctx.lineTo(hR - 6, hY + 22);
@@ -391,12 +419,10 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
         state.ball.radius
       );
       if (combo >= 3) {
-        // Glowing Fireball colors
         ballGrad.addColorStop(0, '#ffeb3b');
         ballGrad.addColorStop(0.3, '#ff5722');
         ballGrad.addColorStop(1, '#bf360c');
       } else {
-        // Classic basketball shading
         ballGrad.addColorStop(0, '#ffa726');
         ballGrad.addColorStop(0.4, '#e65100');
         ballGrad.addColorStop(1, '#8e2400');
@@ -413,18 +439,15 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
       // Rib seam lines contoured around sphere
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.lineWidth = 1.2;
-      
-      // vertical curved rib
+
       ctx.beginPath();
       ctx.arc(state.ball.x - state.ball.radius * 0.5, state.ball.y, state.ball.radius * 0.86, -Math.PI * 0.45, Math.PI * 0.45);
       ctx.stroke();
 
-      // vertical curved rib 2
       ctx.beginPath();
       ctx.arc(state.ball.x + state.ball.radius * 0.5, state.ball.y, state.ball.radius * 0.86, Math.PI * 0.55, Math.PI * 1.45);
       ctx.stroke();
 
-      // horizontal straight seam
       ctx.beginPath();
       ctx.moveTo(state.ball.x - state.ball.radius, state.ball.y);
       ctx.lineTo(state.ball.x + state.ball.radius, state.ball.y);
@@ -442,7 +465,7 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [active, score, highScore, combo]);
+  }, [active, score, combo]);
 
   const handleStart = (clientX: number, clientY: number) => {
     if (gameState.current.ball.isLaunched) return;
@@ -480,33 +503,35 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
 
     if (Math.hypot(dx, dy) > 15) {
       const state = gameState.current;
-      // Increased multiplier for better throw power
+      launchesRef.current += 1;
       state.ball.vx = dx * 0.14;
       state.ball.vy = dy * 0.14;
       state.ball.isLaunched = true;
+      telemetry.current.push({ action: 'throw', t: Date.now() - sessionStartMs.current });
     }
 
     dragStart.current = null;
     dragCurrent.current = null;
   };
 
+  const close = () => {
+    setActive(false);
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-[#050608]/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-[420px] relative flex flex-col items-center animate-fade-in">
-        
         {/* Header */}
         <div className="w-full flex items-center justify-between mb-4 px-4">
           <div>
             <h2 className="text-xl font-black text-white tracking-wide flex items-center gap-1.5">
               HOOP MASTERS
             </h2>
-            <p className="text-xs text-text-tertiary">Swipe backward to charge and release</p>
+            <p className="text-xs text-text-tertiary">Swipe backward to charge and release · 60s round</p>
           </div>
           <button
-            onClick={() => {
-              setActive(false);
-              onClose();
-            }}
+            onClick={close}
             className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-text-secondary active:scale-95 transition-transform"
           >
             <X size={20} />
@@ -514,7 +539,7 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
         </div>
 
         {/* Dashboard and Streak indicators */}
-        <div className="w-[90%] grid grid-cols-3 gap-2.5 mb-4">
+        <div className="w-[90%] grid grid-cols-4 gap-2.5 mb-4">
           <div className="bg-white/[0.03] border border-white/5 rounded-2xl py-2 px-3 flex flex-col items-center">
             <span className="text-[9px] font-extrabold uppercase tracking-wide text-text-tertiary">Score</span>
             <span className="font-mono text-base text-usdt-green font-black mt-0.5">{score} 🏀</span>
@@ -533,7 +558,13 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
           </div>
           <div className="bg-white/[0.03] border border-white/5 rounded-2xl py-2 px-3 flex flex-col items-center">
             <span className="text-[9px] font-extrabold uppercase tracking-wide text-text-tertiary">Best</span>
-            <span className="font-mono text-base text-gold font-black mt-0.5">{highScore} 🏆</span>
+            <span className="font-mono text-base text-gold font-black mt-0.5">🏆</span>
+          </div>
+          <div className={`bg-white/[0.03] border rounded-2xl py-2 px-3 flex flex-col items-center ${timeLeft <= 10 ? 'border-error-red/40' : 'border-white/5'}`}>
+            <span className="text-[9px] font-extrabold uppercase tracking-wide text-text-tertiary">Time</span>
+            <span className={`font-mono text-base font-black mt-0.5 ${timeLeft <= 10 ? 'text-error-red animate-pulse' : 'text-[#a7ffeb]'}`}>
+              {timeLeft}s
+            </span>
           </div>
         </div>
 
@@ -559,6 +590,14 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
               <Flame size={12} className="animate-bounce" /> FIRE MODE 2X PAYOUT!
             </div>
           )}
+
+          {/* Round over overlay */}
+          {roundOver && (
+            <div className="absolute inset-0 z-30 bg-[#050608]/80 backdrop-blur-sm flex flex-col items-center justify-center">
+              <p className="text-lg font-black text-white uppercase tracking-widest animate-pulse">Round Over</p>
+              <p className="text-xs text-text-secondary mt-2">Validating score server-side...</p>
+            </div>
+          )}
         </div>
 
         {/* Sub-label explaining combos */}
@@ -568,7 +607,7 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ onClose }) => {
             <span>Score baskets to earn Crystals 💎</span>
           </div>
           <p className="text-[10px] text-text-tertiary">
-            Get a streak of 3 or more to activate Fire Mode! Fire mode doubles your rewards per basket. Bouncing the ball resets the streak.
+            Get a streak of 3 or more to activate Fire Mode! Scores are validated by the anti-cheat engine before rewards are issued.
           </p>
         </div>
       </div>

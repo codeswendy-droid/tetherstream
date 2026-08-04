@@ -14,6 +14,7 @@ export enum AdminPermission {
   SUPPORT_MANAGE = 'support.manage',
   METRICS_VIEW = 'metrics.view',
   TREASURY_MANAGE = 'treasury.manage',
+  GAME_MANAGE = 'game.manage',
 }
 
 export const ROLE_PERMISSIONS_MAP: Record<AdminRole, AdminPermission[]> = {
@@ -27,6 +28,7 @@ export const ROLE_PERMISSIONS_MAP: Record<AdminRole, AdminPermission[]> = {
     AdminPermission.MERCHANT_SUSPEND,
     AdminPermission.USER_VIEW,
     AdminPermission.SUPPORT_MANAGE,
+    AdminPermission.GAME_MANAGE,
   ],
   [AdminRole.FINANCE_ADMIN]: [
     AdminPermission.FINANCIAL_VIEW,
