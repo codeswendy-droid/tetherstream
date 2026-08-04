@@ -10,7 +10,7 @@ import { useWalletStore } from '../../store/useWalletStore';
 import { useTreasuryStore } from '../../store/useTreasuryStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useMachineOwnershipStore } from '../../store/useMachineOwnershipStore';
-import { useTitanState, useTitanContext, useTitanActions } from '../../store/useTitanStateEngine';
+import { useTitanState, useTitanContext, useTitanStateEngine } from '../../store/useTitanStateEngine';
 import { MACHINE_CATALOG } from '../../data/machines';
 import { Cpu, Zap, TrendingUp, Activity, Calendar, Sparkles, ArrowRight, Play, ShoppingCart, HelpCircle, AlertTriangle, ShieldCheck, Flame, CheckCircle, RefreshCw } from 'lucide-react';
 import { MachineEducationModal } from '../../components/MachineEducationModal';
@@ -30,7 +30,11 @@ export const TitanHubScreen: React.FC = () => {
   
   const titanState = useTitanState();
   const titanContext = useTitanContext();
-  const { updateMachineStatus, updateRewardStatus, updateSyncStatus, refreshState } = useTitanActions();
+  
+  const updateMachineStatus = useTitanStateEngine((state) => state.updateMachineStatus);
+  const updateRewardStatus = useTitanStateEngine((state) => state.updateRewardStatus);
+  const updateSyncStatus = useTitanStateEngine((state) => state.updateSyncStatus);
+  const refreshState = useTitanStateEngine((state) => state.refreshState);
   
   const [syncStep, setSyncStep] = useState(0);
   const [isSyncing, setIsSyncing] = useState(true);
@@ -48,6 +52,7 @@ export const TitanHubScreen: React.FC = () => {
     'Ready.'
   ];
 
+  // 1. Initial boot-up synchronization (runs only on mount)
   useEffect(() => {
     initializeDefaultCore();
 
@@ -60,25 +65,15 @@ export const TitanHubScreen: React.FC = () => {
       }
       
       // Parallel backend state hydration
-      await Promise.all([
-        fetchMiningState(),
-        fetchBalanceFromEngine(),
-        fetchUserMachines(),
-      ]);
-      
-      // Update Titan State Engine
-      updateMachineStatus(
-        isOverheated ? 'OVERHEATED' : 'RUNNING',
-        baseSpeedGhs * 10,
-        coolerMultiplier,
-        isOverheated ? 85 : 45
-      );
-      
-      updateRewardStatus(
-        unclaimedBalance > 0 ? 'READY' : 'PENDING',
-        unclaimedBalance,
-        0
-      );
+      try {
+        await Promise.all([
+          fetchMiningState(),
+          fetchBalanceFromEngine(),
+          fetchUserMachines(),
+        ]);
+      } catch (err) {
+        console.warn('[SYNC] Hydration failed:', err);
+      }
       
       updateSyncStatus('COMPLETE');
       
@@ -88,11 +83,35 @@ export const TitanHubScreen: React.FC = () => {
       }
       
       setIsSyncing(false);
-      refreshState();
     };
 
     syncSequence();
-  }, [fetchMiningState, fetchBalanceFromEngine, fetchUserMachines, isOverheated, baseSpeedGhs, coolerMultiplier, unclaimedBalance, updateMachineStatus, updateRewardStatus, updateSyncStatus, refreshState, initializeDefaultCore]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 2. Synchronize machine status changes to the Titan State Engine
+  useEffect(() => {
+    updateMachineStatus(
+      isOverheated ? 'OVERHEATED' : 'RUNNING',
+      baseSpeedGhs * 10,
+      coolerMultiplier,
+      isOverheated ? 85 : 45
+    );
+  }, [isOverheated, baseSpeedGhs, coolerMultiplier, updateMachineStatus]);
+
+  // 3. Synchronize reward status changes to the Titan State Engine
+  useEffect(() => {
+    updateRewardStatus(
+      unclaimedBalance > 0 ? 'READY' : 'PENDING',
+      unclaimedBalance,
+      0
+    );
+  }, [unclaimedBalance, updateRewardStatus]);
+
+  // 4. Compute initial context on mount
+  useEffect(() => {
+    refreshState();
+  }, [refreshState]);
 
   // Set default selected tier code once owned codes loaded
   useEffect(() => {
