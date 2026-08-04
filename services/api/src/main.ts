@@ -43,7 +43,28 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      if (!isProduction() || !origin) {
+        callback(null, true);
+        return;
+      }
+      const allowedOrigins = [
+        process.env.TELEGRAM_WEBAPP_URL,
+        'https://titanstream.app',
+        'https://tetherstream.app',
+      ].filter((o): o is string => !!o).map(o => o.replace(/\/$/, ''));
+
+      const cleanOrigin = origin.replace(/\/$/, '');
+      if (
+        allowedOrigins.includes(cleanOrigin) ||
+        cleanOrigin.endsWith('.tetherstream.app') ||
+        cleanOrigin.endsWith('.titanstream.app')
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Telegram-Init-Data', 'crypto-pay-api-signature'],
