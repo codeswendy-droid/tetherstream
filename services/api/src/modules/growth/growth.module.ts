@@ -8,6 +8,8 @@ import { ReferralGraphService } from './referral-graph.service';
 import { ReferralQualificationService } from './referral-qualification.service';
 import { DiscountEligibilityService } from './discount-eligibility.service';
 import { RewardService } from './reward.service';
+import { AchievementService } from './achievement.service';
+import { ProgressService } from './progress.service';
 import { TrustProfileService } from './trust-profile.service';
 import { UserLevelService } from './user-level.service';
 import { GrowthNotificationService } from './growth-notification.service';
@@ -29,6 +31,8 @@ import { FraudModule } from '../fraud/fraud.module';
     ReferralQualificationService,
     DiscountEligibilityService,
     RewardService,
+    AchievementService,
+    ProgressService,
     TrustProfileService,
     UserLevelService,
     GrowthNotificationService,
@@ -41,6 +45,8 @@ import { FraudModule } from '../fraud/fraud.module';
     ReferralQualificationService,
     DiscountEligibilityService,
     RewardService,
+    AchievementService,
+    ProgressService,
     TrustProfileService,
     UserLevelService,
     GrowthNotificationService,

@@ -27,9 +27,13 @@ import { HealthPage } from './pages/admin/health';
 import { SettingsPage } from './pages/admin/settings';
 import { AdminSupportPage } from './pages/admin/support';
 import { useNavigationStore } from './store/useNavigationStore';
+import { useMissionRunnerStore } from './store/useMissionRunnerStore';
 import { useMiningStore } from './store/useMiningStore';
 import { useWalletStore } from './store/useWalletStore';
 import { useTreasuryStore } from './store/useTreasuryStore';
+import { MissionRunner } from './components/rewards/MissionRunner';
+import { ClaimSuccessModal } from './components/rewards/ClaimSuccessModal';
+import type { MissionItem } from './services/growthService';
 import { useAuthStore, detectUserCountry } from './store/useAuthStore';
 import { useCountryStore, SUPPORTED_COUNTRIES } from './store/useCountryStore';
 import { useSettingsStore } from './store/useSettingsStore';
@@ -69,6 +73,8 @@ function AdminRoutes() {
 
 function MainApp() {
   const { activeTab } = useNavigationStore();
+  const { runningMission, closeRunner } = useMissionRunnerStore();
+  const [runnerClaimed, setRunnerClaimed] = useState<MissionItem | null>(null);
 
   // Single unified mining state synchronizer. The mining engine owns all
   // earnings; this loop only renders what the backend publishes.
@@ -121,6 +127,19 @@ function MainApp() {
           {renderTabContent()}
         </motion.div>
       </AnimatePresence>
+
+      {/* Mission Runner — floats above all tabs while escorting the user */}
+      <MissionRunner
+        mission={runningMission}
+        isOpen={!!runningMission}
+        onClose={closeRunner}
+        onClaimed={(reward) => setRunnerClaimed(reward)}
+      />
+      <ClaimSuccessModal
+        reward={runnerClaimed}
+        isOpen={!!runnerClaimed}
+        onClose={() => setRunnerClaimed(null)}
+      />
     </MainLayout>
   );
 }

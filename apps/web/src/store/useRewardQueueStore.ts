@@ -1,5 +1,12 @@
 import { create } from 'zustand';
-import { growthService, type RewardQueueItem, type RewardHistoryItem, type ClaimResult } from '../services/growthService';
+import {
+  growthService,
+  type MissionItem,
+  type RewardHistoryItem,
+  type ClaimResult,
+  type ProgressOverview,
+  type AchievementItem,
+} from '../services/growthService';
 
 export const REWARD_ERROR_MESSAGES: Record<string, string> = {
   REWARD_NOT_FOUND: 'This reward no longer exists.',
@@ -15,24 +22,38 @@ export const REWARD_ERROR_MESSAGES: Record<string, string> = {
 };
 
 interface RewardQueueState {
-  queue: RewardQueueItem[];
+  queue: MissionItem[];
+  missions: MissionItem[];
   history: RewardHistoryItem[];
+  progress: ProgressOverview | null;
+  achievements: AchievementItem[];
+  totalAchievementsUnlocked: number;
+  totalAchievements: number;
   isLoading: boolean;
   isClaiming: boolean;
   claimingId: string | null;
   error: string | null;
 
   fetchQueue: () => Promise<void>;
+  fetchMissions: () => Promise<void>;
   fetchHistory: () => Promise<void>;
+  fetchProgress: () => Promise<void>;
+  fetchAchievements: () => Promise<void>;
   fetchAll: () => Promise<void>;
   claimReward: (id: string) => Promise<{ success: boolean; error?: string; reward?: ClaimResult['reward'] }>;
-  refreshAfterClaim: (claimedId: string) => void;
+  autoClaim: (id: string) => Promise<{ success: boolean; error?: string; reward?: ClaimResult['reward'] }>;
+  refreshAfterClaim: (claimedId: string) => Promise<void>;
   reset: () => void;
 }
 
 export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
   queue: [],
+  missions: [],
   history: [],
+  progress: null,
+  achievements: [],
+  totalAchievementsUnlocked: 0,
+  totalAchievements: 0,
   isLoading: false,
   isClaiming: false,
   claimingId: null,
@@ -49,6 +70,15 @@ export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
     }
   },
 
+  fetchMissions: async () => {
+    try {
+      const missions = await growthService.getMissions();
+      set({ missions });
+    } catch (err: any) {
+      console.warn('Failed to load mission queue:', err?.message);
+    }
+  },
+
   fetchHistory: async () => {
     try {
       const history = await growthService.getRewardHistory();
@@ -58,8 +88,31 @@ export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
     }
   },
 
+  fetchProgress: async () => {
+    try {
+      const progress = await growthService.getProgressOverview();
+      set({ progress });
+    } catch (err: any) {
+      console.warn('Failed to load progress overview:', err?.message);
+    }
+  },
+
+  fetchAchievements: async () => {
+    try {
+      const { achievements, totalUnlocked, total } = await growthService.getAchievements();
+      set({ achievements, totalAchievementsUnlocked: totalUnlocked, totalAchievements: total });
+    } catch (err: any) {
+      console.warn('Failed to load achievements:', err?.message);
+    }
+  },
+
   fetchAll: async () => {
-    await Promise.all([get().fetchQueue(), get().fetchHistory()]);
+    await Promise.all([
+      get().fetchMissions(),
+      get().fetchHistory(),
+      get().fetchProgress(),
+      get().fetchAchievements(),
+    ]);
   },
 
   claimReward: async (id) => {
@@ -77,13 +130,34 @@ export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
     }
   },
 
+  autoClaim: async (id) => {
+    const result = await get().claimReward(id);
+    if (result.success) {
+      await get().refreshAfterClaim(id);
+    }
+    return result;
+  },
+
   refreshAfterClaim: async (claimedId) => {
     set((state) => ({
       queue: state.queue.filter((r) => r.id !== claimedId),
       history: [],
     }));
-    await Promise.all([get().fetchQueue(), get().fetchHistory()]);
+    await Promise.all([get().fetchMissions(), get().fetchHistory(), get().fetchProgress(), get().fetchAchievements()]);
   },
 
-  reset: () => set({ queue: [], history: [], isLoading: false, isClaiming: false, claimingId: null, error: null }),
+  reset: () =>
+    set({
+      queue: [],
+      missions: [],
+      history: [],
+      progress: null,
+      achievements: [],
+      totalAchievementsUnlocked: 0,
+      totalAchievements: 0,
+      isLoading: false,
+      isClaiming: false,
+      claimingId: null,
+      error: null,
+    }),
 }));

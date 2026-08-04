@@ -48,6 +48,7 @@ if [ "$HAS_USERS_TABLE" = "false" ]; then
   npx prisma migrate resolve --applied 20260728130000_financial_orchestration || true
   npx prisma migrate resolve --applied 20260728150000_merchant_settlement_engine || true
   npx prisma migrate resolve --applied 20260801160000_add_interactive_promotional_output || true
+  npx prisma migrate resolve --applied 20260804000300_achievement_model || true
   echo "Database bootstrap and migration resolution completed successfully."
 else
   echo "Database already contains schema. Deploying migrations and syncing latest tables..."

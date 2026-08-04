@@ -1,171 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Vault,
-  ShieldCheck,
-  Calendar,
-  Info
-} from 'lucide-react';
+import React, { useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Calendar, Info, History } from 'lucide-react';
 import { useTreasuryStore } from '../../store/useTreasuryStore';
-import type { MissionItem } from '../../store/useTreasuryStore';
-import { useNavigationStore } from '../../store/useNavigationStore';
-import { useMiningStore } from '../../store/useMiningStore';
-import { useWalletStore } from '../../store/useWalletStore';
 import { useGrowthStore } from '../../store/useGrowthStore';
-import { showToast } from '../../components/Toast';
 import { CapacityEngine } from './components/CapacityEngine';
-
+import { HeroProgress } from '../../components/rewards/HeroProgress';
+import { AchievementsCabinet } from '../../components/rewards/AchievementsCabinet';
+import { RewardHistorySection } from '../../components/rewards/RewardHistorySection';
 export const TreasuryScreen: React.FC = () => {
-  const { fetchDashboardData, dashboardData } = useGrowthStore();
+  const { fetchDashboardData } = useGrowthStore();
   const {
-    dailyBoostActive,
-    powerEarnedToday,
-    reputationPower,
-    trustScore,
-    reputationRank,
-    operatorVolume,
     seasonNumber,
     seasonTitle,
     daysRemaining,
     seasonTargetPower,
     seasonProgressPower,
-    events,
-    fetchTreasuryState,
     resetSeason,
   } = useTreasuryStore();
 
-  const { setActiveTab } = useNavigationStore();
-  const { baseSpeedGhs } = useMiningStore();
-
-  // Modals state
-  const [showDepositModal, setShowDepositModal] = useState(false);
-  const [depositAmount, setDepositAmount] = useState('100');
-
-  // Fetch real treasury state & dynamic Growth Engine dashboard from backend on mount
   useEffect(() => {
-    fetchTreasuryState();
+    useTreasuryStore.getState().fetchTreasuryState();
     fetchDashboardData();
-  }, [fetchTreasuryState, fetchDashboardData]);
-
-  const handleDepositSubmit = () => {
-    const depVal = parseFloat(depositAmount);
-    if (!depositAmount || depVal <= 0) {
-      showToast('Please enter a valid amount', 'error');
-      return;
-    }
-    useTreasuryStore.getState().incrementMissionProgress('DEPOSIT', 1);
-
-    // Credit user wallet balance
-    const wallet = useWalletStore.getState();
-    useWalletStore.getState().updateBalance({ usdtBalance: wallet.usdtBalance + depVal });
-
-    // Update global treasury pool statistics
-    useTreasuryStore.getState().adjustTreasuryStats('DEPOSIT', depVal);
-
-    // Boost trust score by +3 for deposit
-    useTreasuryStore.getState().adjustTrustScore(3);
-
-    setShowDepositModal(false);
-    showToast(`Added ${(Number(depVal) || 0).toFixed(2)} USDT! 1.5× Earning Speed Boost active.`, 'success');
-  };
+  }, [fetchDashboardData]);
 
   return (
     <div className="p-4 flex flex-col gap-5 select-none relative pb-10">
-      
-      {/* 1. REPUTATION HEADER */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="web3-card rounded-2xl p-4 relative overflow-hidden"
-      >
-        <div className="absolute top-0 right-0 w-24 h-24 bg-usdt-green/5 rounded-full blur-xl pointer-events-none" />
-        
-        <div className="flex items-center justify-between pb-3 border-b border-white/5">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-usdt-green/10 border border-usdt-green/30 flex items-center justify-center text-usdt-green">
-              <Vault size={20} className="animate-pulse" />
-            </div>
-            <div>
-              <div className="text-[10px] text-text-tertiary uppercase font-extrabold tracking-widest leading-none">YOUR TITAN STATUS</div>
-              <div className="text-base font-black text-text-primary mt-0.5 flex items-center gap-1.5">
-                {reputationRank}
-                <span className="text-xs font-mono font-bold text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-2 py-0.5 rounded-full">
-                  Lvl {reputationRank === 'Builder' ? 1 : reputationRank === 'Guardian' ? 2 : reputationRank === 'Architect' ? 3 : 4}
-                </span>
-                {dailyBoostActive && (
-                  <span className="text-[9px] font-bold text-usdt-green bg-usdt-green/15 border border-usdt-green/30 px-2 py-0.5 rounded-full flex items-center gap-0.5 animate-pulse">
-                    ⚡ 1.5x Multiplier
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="text-right">
-            <div className="text-[10px] text-text-tertiary uppercase font-extrabold tracking-widest leading-none">TRUST SCORE</div>
-            <div className="text-base font-black text-usdt-green font-mono mt-0.5 flex items-center gap-1 justify-end">
-              <ShieldCheck size={16} />
-              {trustScore}%
-            </div>
-          </div>
-        </div>
+      {/* 1. HERO PROGRESS — level, streak, totals, next best action */}
+      <HeroProgress />
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-2 mt-3 pt-1 text-center">
-          <div className="bg-control-bg/40 p-2 rounded-xl border border-white/5">
-            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Reward Velocity</div>
-            <div className="text-sm font-black text-text-primary font-mono mt-0.5">
-              {((Number(baseSpeedGhs || 0) * (dailyBoostActive ? 1.5 : 1.0)) * 10).toFixed(0)} Rate
-            </div>
-          </div>
-          <div className="bg-control-bg/40 p-2 rounded-xl border border-white/5">
-            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Community Impact</div>
-            <div className="text-sm font-black text-text-primary font-mono mt-0.5">{reputationPower}</div>
-            <div className="text-[8px] text-usdt-green font-mono font-bold">+{powerEarnedToday} Today</div>
-          </div>
-          <div className="bg-control-bg/40 p-2 rounded-xl border border-white/5">
-            <div className="text-[9px] text-text-secondary uppercase font-extrabold">Trust Level</div>
-            <div className="text-xs font-black mt-1 uppercase text-usdt-green flex items-center justify-center gap-0.5">
-              <ShieldCheck size={10} /> {trustScore}%
-            </div>
-          </div>
-        </div>
-
-        {/* Trust Score Breakdown */}
-        <div className="mt-3 pt-3 border-t border-white/5 bg-control-bg/25 rounded-xl p-2.5 space-y-1.5 text-[11px]">
-          <div className="flex items-center justify-between text-text-tertiary text-[10px] font-extrabold uppercase tracking-wider mb-1">
-            <span>Trust Level Requirements</span>
-            <span className="text-usdt-green font-mono">{dashboardData?.communityRank || '#12,482'}</span>
-          </div>
-          <div className="grid grid-cols-2 gap-1.5 text-[10px] font-semibold">
-            {(dashboardData?.trustChecklist || [
-              { id: 't1', label: 'Verified account', completed: true },
-              { id: 't2', label: 'First payment completed', completed: true },
-              { id: 't3', label: 'Invite trusted users', completed: false },
-              { id: 't4', label: 'Complete transactions', completed: false },
-            ]).map((item: any) => (
-              <div
-                key={item.id}
-                className={`flex items-center gap-1.5 ${
-                  item.completed ? 'text-usdt-green' : 'text-text-tertiary'
-                }`}
-              >
-                <span
-                  className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                    item.completed ? 'bg-usdt-green/15' : 'bg-white/10'
-                  }`}
-                >
-                  {item.completed ? '✓' : '○'}
-                </span>
-                <span>{item.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </motion.div>
-
-      {/* 2. DAILY CAPACITY ENGINE */}
+      {/* 2. DAILY CAPACITY ENGINE (hosts the mission queue) */}
       <CapacityEngine />
+
+      {/* 3. ACHIEVEMENTS CABINET */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <AchievementsCabinet />
+      </motion.div>
 
       {/* 4. SEASONS PROGRESS */}
       <motion.div
@@ -204,7 +77,7 @@ export const TreasuryScreen: React.FC = () => {
           <div className="w-full h-2.5 bg-control-bg rounded-full overflow-hidden p-0.5 border border-white/5">
             <div
               className="h-full bg-gradient-to-r from-gold to-gold-bright rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(255,179,0,0.4)]"
-              style={{ width: `${(seasonProgressPower / seasonTargetPower) * 100}%` }}
+              style={{ width: `${seasonTargetPower > 0 ? (seasonProgressPower / seasonTargetPower) * 100 : 0}%` }}
             />
           </div>
 
@@ -233,7 +106,7 @@ export const TreasuryScreen: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* 5. COMMUNITY EVENTS LIST */}
+      {/* 5. COMPLETED REWARDS — real claim history */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -241,126 +114,12 @@ export const TreasuryScreen: React.FC = () => {
         className="flex flex-col gap-3"
       >
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-xs font-black uppercase text-text-secondary tracking-widest">LIVE COMMUNITY MISSIONS</h2>
-          <span className="text-[10px] text-text-tertiary font-mono">
-            {events.length} Active
-          </span>
+          <h2 className="text-xs font-black uppercase text-text-secondary tracking-widest flex items-center gap-1.5">
+            <History size={13} className="text-usdt-green" /> Completed Rewards
+          </h2>
         </div>
-
-        <div className="flex flex-col gap-3">
-          {[
-            {
-              id: 'cm_1',
-              title: 'Complete Verified Payments',
-              description: 'Earn contribution points and build trust rating with every completed payment.',
-              badge: '+50 Growth Points',
-              status: 'ACTIVE'
-            },
-            {
-              id: 'cm_2',
-              title: 'Invite Active Members',
-              description: 'Unlock permanent referral rewards and rank up in the community network.',
-              badge: '+100 Growth Points',
-              status: 'ACTIVE'
-            },
-            {
-              id: 'cm_3',
-              title: 'Support Liquidity Growth',
-              description: 'Increase community rank by participating in network treasury expansion.',
-              badge: '+200 Growth Points',
-              status: 'ACTIVE'
-            }
-          ].map((event) => (
-            <div
-              key={event.id}
-              className={`
-                web3-card rounded-2xl p-4 flex items-center justify-between shadow-md relative overflow-hidden
-                ${event.status === 'ACTIVE' ? 'border-usdt-green/20' : 'opacity-70'}
-              `}
-            >
-              <div className="flex flex-col gap-1 max-w-[70%]">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-extrabold text-text-primary">{event.title}</h3>
-                  {event.badge && (
-                    <span className="text-[9px] font-bold bg-usdt-green/10 border border-usdt-green/20 text-usdt-green px-2 py-0.5 rounded-full uppercase">
-                      {event.badge}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-text-secondary leading-normal">{event.description}</p>
-              </div>
-
-              <span className={`text-[10px] font-bold px-3 py-1 rounded-full border ${
-                event.status === 'ACTIVE' 
-                  ? 'text-usdt-green bg-usdt-green/10 border-usdt-green/20 animate-pulse'
-                  : 'text-text-tertiary bg-control-bg/40 border-white/5'
-              }`}>
-                {event.status === 'ACTIVE' ? 'Active' : event.status}
-              </span>
-            </div>
-          ))}
-        </div>
+        <RewardHistorySection />
       </motion.div>
-
-      {/* Deposit Simulator Modal */}
-      <AnimatePresence>
-        {showDepositModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowDepositModal(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            />
-
-            {/* Content */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative w-full max-w-[360px] glass-panel border border-white/15 p-5 rounded-3xl shadow-2xl bg-[#0d0e15] z-10"
-            >
-              <h3 className="text-base font-extrabold text-text-primary flex items-center gap-1.5">
-                📥 Add Money
-              </h3>
-              <p className="text-xs text-text-secondary mt-1">
-                Add money to get +200 daily power and a 1.5× speed boost!
-              </p>
-
-              <div className="flex flex-col gap-1.5 mt-4">
-                <label className="text-[10px] font-bold text-text-tertiary uppercase">USDT Amount</label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-3 text-sm font-mono text-text-tertiary">₮</span>
-                  <input
-                    type="number"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                    className="w-full bg-control-bg text-text-primary text-sm font-mono font-bold rounded-xl pl-7 pr-3 py-3 border border-white/10 focus:border-usdt-green focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-5">
-                <button
-                  onClick={() => setShowDepositModal(false)}
-                  className="flex-1 py-3 rounded-xl border border-white/10 text-text-secondary text-xs font-bold hover:text-text-primary bg-control-bg/40 press-feedback"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDepositSubmit}
-                  className="flex-1 py-3 rounded-xl bg-usdt-green text-app-bg text-xs font-extrabold hover:brightness-110 press-feedback shadow-lg shadow-usdt-green/20"
-                >
-                  Confirm Payment
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
     </div>
   );
 };

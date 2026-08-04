@@ -4,6 +4,7 @@ import { FinancialOrchestratorService } from '../financial-orchestration/financi
 import { GrowthEventService } from './growth-event.service';
 import { ReferralService } from './referral.service';
 import { RewardService } from './reward.service';
+import { AchievementService } from './achievement.service';
 import { TrustProfileService } from './trust-profile.service';
 import { UserLevelService } from './user-level.service';
 import { GrowthNotificationService } from './growth-notification.service';
@@ -120,6 +121,11 @@ describe('Stage 9 — Growth Engine Unit & Integration Tests', () => {
     requestOperation: jest.fn().mockResolvedValue({ id: 'op_financial_123', status: 'COMPLETED' }),
   };
 
+  const mockAchievementService = {
+    reconcileAchievements: jest.fn().mockResolvedValue([]),
+    getClaimStreakInfo: jest.fn().mockResolvedValue({ current: 0, best: 0 }),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -133,6 +139,7 @@ describe('Stage 9 — Growth Engine Unit & Integration Tests', () => {
         GrowthNotificationService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: FinancialOrchestratorService, useValue: mockFinancialOrchestrator },
+        { provide: AchievementService, useValue: mockAchievementService },
       ],
     }).compile();
 

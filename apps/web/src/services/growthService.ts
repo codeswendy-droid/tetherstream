@@ -111,6 +111,96 @@ export interface RewardQueueItem {
   eligible: boolean;
 }
 
+export interface MissionItem {
+  id: string;
+  ruleCode?: string | null;
+  rewardType: string;
+  amount: string;
+  assetCode: string;
+  status: string;
+  reference?: string;
+  createdAt?: string;
+  ruleName?: string;
+  description?: string;
+  requirement: RewardRequirement | null;
+  reason?: string;
+  eligible: boolean;
+  category?: string;
+  difficulty?: string;
+  progressPercent?: number;
+  estimatedRemaining?: string;
+}
+
+export interface AchievementItem {
+  code: string;
+  name: string;
+  description: string;
+  tier: string;
+  icon?: string | null;
+  progress: number;
+  target: number;
+  achieved: boolean;
+  achievedAt?: string | null;
+}
+
+export interface NextBestAction {
+  type: string;
+  missionId?: string;
+  rewardId?: string;
+  ruleCode?: string;
+  title: string;
+  message: string;
+  tab: string;
+}
+
+export interface ProgressCriteria {
+  key: string;
+  label: string;
+  current: number;
+  required: number;
+  met: boolean;
+}
+
+export interface ProgressOverview {
+  level: {
+    currentLevel: string;
+    levelName: string;
+    benefits: string[];
+    upgradedAt?: string | null;
+    nextLevel?: {
+      level: string;
+      name: string;
+      minAccountAgeDays: number;
+      minSuccessfulSettlements: number;
+      minTrustScore: number;
+      benefits: string[];
+    } | null;
+    progressPercent: number;
+    criteria: ProgressCriteria[];
+  };
+  streak: { days: number; best: number };
+  totals: {
+    totalClaimed: number;
+    totalEarned: number;
+    availableCount: number;
+    estimatedRemaining: number;
+  };
+  recentAchievements: AchievementItem[];
+  justUnlocked: Array<{ code: string; name: string; tier: string }>;
+  nextBestAction: NextBestAction;
+  upcomingUnlock: {
+    missionId: string;
+    ruleCode?: string;
+    name: string;
+    amount: string;
+    assetCode: string;
+    progressPercent: number;
+    requirement: RewardRequirement | null;
+    estimatedRemaining: string;
+    actionTab: string;
+  } | null;
+}
+
 export interface RewardHistoryItem {
   id: string;
   rewardType: string;
@@ -162,6 +252,26 @@ export const growthService = {
   async getAvailableRewards(): Promise<RewardQueueItem[]> {
     const res = await api.get('/growth/rewards/available');
     return res.data.data.queue;
+  },
+
+  async getMissions(): Promise<MissionItem[]> {
+    const res = await api.get('/growth/rewards/missions');
+    return res.data.data.missions;
+  },
+
+  async getProgressOverview(): Promise<ProgressOverview> {
+    const res = await api.get('/growth/progress');
+    return res.data.data;
+  },
+
+  async getAchievements(): Promise<{
+    achievements: AchievementItem[];
+    totalUnlocked: number;
+    total: number;
+    justUnlocked: Array<{ code: string; name: string; tier: string }>;
+  }> {
+    const res = await api.get('/growth/achievements');
+    return res.data.data;
   },
 
   async getRewardDetail(id: string): Promise<RewardQueueItem> {

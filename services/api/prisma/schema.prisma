@@ -273,62 +273,63 @@ enum SettlementProviderHealthStatus {
 }
 
 model User {
-  telegramUserId     BigInt      @id @map("telegram_user_id")
-  telegramUsername   String?     @map("telegram_username")
-  firstName          String      @map("first_name")
-  lastName           String?     @map("last_name")
-  photoUrl           String?     @map("photo_url")
-  languageCode       String      @default("en") @map("language_code")
-  state              UserState   @default(NEW) @map("state")
+  telegramUserId   BigInt    @id @map("telegram_user_id")
+  telegramUsername String?   @map("telegram_username")
+  firstName        String    @map("first_name")
+  lastName         String?   @map("last_name")
+  photoUrl         String?   @map("photo_url")
+  languageCode     String    @default("en") @map("language_code")
+  state            UserState @default(NEW) @map("state")
 
-  loginCount         Int         @default(0) @map("login_count")
-  lastActiveAt       DateTime?   @map("last_active_at")
-  lastLoginAt        DateTime?   @map("last_login_at")
-  lastActiveIp       String?     @map("last_active_ip")
+  loginCount   Int       @default(0) @map("login_count")
+  lastActiveAt DateTime? @map("last_active_at")
+  lastLoginAt  DateTime? @map("last_login_at")
+  lastActiveIp String?   @map("last_active_ip")
 
-  educationScore     Int         @default(0) @map("education_score")
-  readinessScore     Int         @default(0) @map("readiness_score")
-  isReady            Boolean     @default(false) @map("is_ready")
-  qualifiedReferrals Int         @default(0) @map("qualified_referrals")
-  payingReferrals    Int         @default(0) @map("paying_referrals")
+  educationScore     Int     @default(0) @map("education_score")
+  readinessScore     Int     @default(0) @map("readiness_score")
+  isReady            Boolean @default(false) @map("is_ready")
+  qualifiedReferrals Int     @default(0) @map("qualified_referrals")
+  payingReferrals    Int     @default(0) @map("paying_referrals")
 
-  channelVerified    Boolean     @default(false) @map("channel_verified")
-  channelVerifiedAt  DateTime?   @map("channel_verified_at")
+  channelVerified   Boolean   @default(false) @map("channel_verified")
+  channelVerifiedAt DateTime? @map("channel_verified_at")
 
-  createdAt          DateTime    @default(now()) @map("created_at")
-  updatedAt          DateTime    @updatedAt @map("updated_at")
-  deletedAt          DateTime?   @map("deleted_at")
-  anonymizedAt       DateTime?   @map("anonymized_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+  anonymizedAt DateTime? @map("anonymized_at")
 
-  onboardingProgress    OnboardingProgress?
-  educationCompletions  EducationCompletion[]
-  userConsents          UserConsent[]
-  auditEvents           AuditEvent[]
-  readinessScores       ReadinessScore[]
-  readinessHistory      ReadinessHistory[]
-  stateTransitions      UserStateTransition[]
-  financialAccount      FinancialAccount?
-  financialOperations   FinancialOperation[]
-  settlementSessions    SettlementSession[]
-  referralCode          ReferralCode?
-  referralAsReferrer    ReferralRelationship[]  @relation("ReferrerRelation")
-  referralAsReferee     ReferralRelationship?   @relation("RefereeRelation")
-  rewards               Reward[]
-  trustProfile          UserTrustProfile?
-  userLevel             UserLevelRecord?
-  userBenefits          UserBenefit[]
-  notifications         NotificationRecord[]
-  notificationPreference NotificationPreference?
-  growthEvents          GrowthEvent[]
-  qualificationHistory   ReferralQualificationHistory[]
-  paymentInvoices       PaymentInvoice[]
+  onboardingProgress        OnboardingProgress?
+  educationCompletions      EducationCompletion[]
+  userConsents              UserConsent[]
+  auditEvents               AuditEvent[]
+  readinessScores           ReadinessScore[]
+  readinessHistory          ReadinessHistory[]
+  stateTransitions          UserStateTransition[]
+  financialAccount          FinancialAccount?
+  financialOperations       FinancialOperation[]
+  settlementSessions        SettlementSession[]
+  referralCode              ReferralCode?
+  referralAsReferrer        ReferralRelationship[]         @relation("ReferrerRelation")
+  referralAsReferee         ReferralRelationship?          @relation("RefereeRelation")
+  rewards                   Reward[]
+  trustProfile              UserTrustProfile?
+  userLevel                 UserLevelRecord?
+  userBenefits              UserBenefit[]
+  notifications             NotificationRecord[]
+  notificationPreference    NotificationPreference?
+  growthEvents              GrowthEvent[]
+  qualificationHistory      ReferralQualificationHistory[]
+  paymentInvoices           PaymentInvoice[]
   channelVerificationEvents ChannelVerificationEvent[]
-  miningState           UserMiningState?
-  productSubscriptions  ProductSubscription[]
-  identityId            String?            @map("identity_id")
-  identity              UniversalIdentity? @relation(fields: [identityId], references: [id], onDelete: SetNull)
-  userPreferences       UserPreferences?
-  userMachines          UserMachine[]
+  miningState               UserMiningState?
+  productSubscriptions      ProductSubscription[]
+  identityId                String?                        @map("identity_id")
+  identity                  UniversalIdentity?             @relation(fields: [identityId], references: [id], onDelete: SetNull)
+  userPreferences           UserPreferences?
+  userMachines              UserMachine[]
+  achievements              Achievement[]
 
   @@index([state])
   @@index([createdAt])
@@ -338,13 +339,13 @@ model User {
 }
 
 model Asset {
-  assetCode   String   @id @map("asset_code")
-  name        String   @map("name")
-  symbol      String   @map("symbol")
-  decimals    Int      @map("decimals")
-  enabled     Boolean  @default(true) @map("enabled")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  assetCode String   @id @map("asset_code")
+  name      String   @map("name")
+  symbol    String   @map("symbol")
+  decimals  Int      @map("decimals")
+  enabled   Boolean  @default(true) @map("enabled")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   ledgerEntries LedgerEntry[]
   transactions  FinancialTransaction[]
@@ -354,12 +355,12 @@ model Asset {
 }
 
 model FinancialAccount {
-  id              String                 @id @default(uuid()) @map("financial_account_id")
-  telegramUserId  BigInt                 @unique @map("telegram_user_id")
-  status          FinancialAccountStatus @default(ACTIVE) @map("status")
-  activatedAt     DateTime?              @map("activated_at")
-  createdAt       DateTime               @default(now()) @map("created_at")
-  updatedAt       DateTime               @updatedAt @map("updated_at")
+  id             String                 @id @default(uuid()) @map("financial_account_id")
+  telegramUserId BigInt                 @unique @map("telegram_user_id")
+  status         FinancialAccountStatus @default(ACTIVE) @map("status")
+  activatedAt    DateTime?              @map("activated_at")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
 
   user          User                   @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
   ledgerEntries LedgerEntry[]
@@ -372,15 +373,15 @@ model FinancialAccount {
 }
 
 model LedgerAccount {
-  id             String            @id @default(uuid()) @map("ledger_account_id")
-  code           String            @unique @map("code")
-  name           String            @map("name")
-  type           LedgerAccountType @map("type")
-  description    String?           @map("description")
-  enabled        Boolean           @default(true) @map("enabled")
-  metadata       Json?             @map("metadata")
-  createdAt      DateTime          @default(now()) @map("created_at")
-  updatedAt      DateTime          @updatedAt @map("updated_at")
+  id          String            @id @default(uuid()) @map("ledger_account_id")
+  code        String            @unique @map("code")
+  name        String            @map("name")
+  type        LedgerAccountType @map("type")
+  description String?           @map("description")
+  enabled     Boolean           @default(true) @map("enabled")
+  metadata    Json?             @map("metadata")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
 
   ledgerEntries LedgerEntry[]
 
@@ -390,12 +391,12 @@ model LedgerAccount {
 }
 
 model TransactionGroup {
-  id          String   @id @default(uuid()) @map("transaction_group_id")
-  reference   String   @unique @map("reference")
-  description String?  @map("description")
-  metadata    Json?    @map("metadata")
+  id          String    @id @default(uuid()) @map("transaction_group_id")
+  reference   String    @unique @map("reference")
+  description String?   @map("description")
+  metadata    Json?     @map("metadata")
   finalizedAt DateTime? @map("finalized_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   transactions  FinancialTransaction[]
   ledgerEntries LedgerEntry[]
@@ -405,25 +406,25 @@ model TransactionGroup {
 }
 
 model FinancialTransaction {
-  id                 String                 @id @default(uuid()) @map("transaction_id")
-  financialAccountId String                 @map("financial_account_id")
-  transactionGroupId String?                @map("transaction_group_id")
-  transactionType    TransactionType        @map("transaction_type")
-  status             TransactionStatus      @default(CREATED) @map("status")
-  assetCode          String                 @map("asset_code")
-  amount             Decimal                @db.Decimal(36, 18)
-  reference          String                 @unique @map("reference")
-  metadata           Json?                  @map("metadata")
-  createdAt          DateTime               @default(now()) @map("created_at")
-  updatedAt          DateTime               @updatedAt @map("updated_at")
-  processingAt       DateTime?              @map("processing_at")
-  completedAt        DateTime?              @map("completed_at")
-  failedAt           DateTime?              @map("failed_at")
-  reversedAt         DateTime?              @map("reversed_at")
+  id                 String            @id @default(uuid()) @map("transaction_id")
+  financialAccountId String            @map("financial_account_id")
+  transactionGroupId String?           @map("transaction_group_id")
+  transactionType    TransactionType   @map("transaction_type")
+  status             TransactionStatus @default(CREATED) @map("status")
+  assetCode          String            @map("asset_code")
+  amount             Decimal           @db.Decimal(36, 18)
+  reference          String            @unique @map("reference")
+  metadata           Json?             @map("metadata")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+  processingAt       DateTime?         @map("processing_at")
+  completedAt        DateTime?         @map("completed_at")
+  failedAt           DateTime?         @map("failed_at")
+  reversedAt         DateTime?         @map("reversed_at")
 
-  financialAccount FinancialAccount @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
-  transactionGroup TransactionGroup? @relation(fields: [transactionGroupId], references: [id], onDelete: Restrict)
-  asset            Asset            @relation(fields: [assetCode], references: [assetCode], onDelete: Restrict)
+  financialAccount FinancialAccount     @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
+  transactionGroup TransactionGroup?    @relation(fields: [transactionGroupId], references: [id], onDelete: Restrict)
+  asset            Asset                @relation(fields: [assetCode], references: [assetCode], onDelete: Restrict)
   operations       FinancialOperation[]
 
   @@index([financialAccountId])
@@ -453,9 +454,9 @@ model FinancialOperation {
   updatedAt          DateTime                 @updatedAt @map("updated_at")
   completedAt        DateTime?                @map("completed_at")
 
-  user             User                  @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
-  financialAccount FinancialAccount      @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
-  transaction      FinancialTransaction? @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  user             User                    @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
+  financialAccount FinancialAccount        @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
+  transaction      FinancialTransaction?   @relation(fields: [transactionId], references: [id], onDelete: Restrict)
   workflowSteps    FinancialWorkflowStep[]
   domainEvents     FinancialDomainEvent[]
 
@@ -470,16 +471,16 @@ model FinancialOperation {
 }
 
 model FinancialRule {
-  id            String            @id @default(uuid()) @map("financial_rule_id")
-  code          String            @unique @map("code")
-  ruleType      FinancialRuleType @map("rule_type")
-  enabled       Boolean           @default(true) @map("enabled")
-  assetCode     String?           @map("asset_code")
+  id            String                  @id @default(uuid()) @map("financial_rule_id")
+  code          String                  @unique @map("code")
+  ruleType      FinancialRuleType       @map("rule_type")
+  enabled       Boolean                 @default(true) @map("enabled")
+  assetCode     String?                 @map("asset_code")
   operationType FinancialOperationType? @map("operation_type")
-  parameters    Json              @default("{}") @map("parameters")
-  description   String?           @map("description")
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
+  parameters    Json                    @default("{}") @map("parameters")
+  description   String?                 @map("description")
+  createdAt     DateTime                @default(now()) @map("created_at")
+  updatedAt     DateTime                @updatedAt @map("updated_at")
 
   @@index([enabled])
   @@index([ruleType])
@@ -506,13 +507,13 @@ model FinancialIdempotencyRecord {
 }
 
 model FinancialWorkflowStep {
-  id            String                   @id @default(uuid()) @map("workflow_step_id")
-  operationId   String                   @map("operation_id")
+  id             String                    @id @default(uuid()) @map("workflow_step_id")
+  operationId    String                    @map("operation_id")
   previousStatus FinancialOperationStatus? @map("previous_status")
-  newStatus     FinancialOperationStatus @map("new_status")
-  trigger       String                   @map("trigger")
-  metadata      Json?                    @map("metadata")
-  createdAt     DateTime                 @default(now()) @map("created_at")
+  newStatus      FinancialOperationStatus  @map("new_status")
+  trigger        String                    @map("trigger")
+  metadata       Json?                     @map("metadata")
+  createdAt      DateTime                  @default(now()) @map("created_at")
 
   operation FinancialOperation @relation(fields: [operationId], references: [id], onDelete: Restrict)
 
@@ -545,15 +546,15 @@ model FinancialDomainEvent {
 }
 
 model ReconciliationRun {
-  id           String                  @id @default(uuid()) @map("reconciliation_run_id")
-  source       String                  @map("source")
-  status       ReconciliationRunStatus @default(CREATED) @map("status")
-  startedAt    DateTime?               @map("started_at")
-  completedAt  DateTime?               @map("completed_at")
-  summary      Json?                   @map("summary")
-  failureReason String?                @map("failure_reason")
-  createdAt    DateTime                @default(now()) @map("created_at")
-  updatedAt    DateTime                @updatedAt @map("updated_at")
+  id            String                  @id @default(uuid()) @map("reconciliation_run_id")
+  source        String                  @map("source")
+  status        ReconciliationRunStatus @default(CREATED) @map("status")
+  startedAt     DateTime?               @map("started_at")
+  completedAt   DateTime?               @map("completed_at")
+  summary       Json?                   @map("summary")
+  failureReason String?                 @map("failure_reason")
+  createdAt     DateTime                @default(now()) @map("created_at")
+  updatedAt     DateTime                @updatedAt @map("updated_at")
 
   checkpoints ReconciliationCheckpoint[]
 
@@ -582,24 +583,24 @@ model ReconciliationCheckpoint {
 }
 
 model Operator {
-  id                            String                 @id @default(uuid()) @map("operator_id")
-  displayName                   String                 @map("display_name")
-  whatsappNumber                String                 @map("whatsapp_number")
-  telegramUsername              String?                @map("telegram_username")
-  country                       String                 @map("country")
-  supportedCurrencies           Json                   @default("[]") @map("supported_currencies")
-  supportedMobileMoneyNetworks  Json                   @default("[]") @map("supported_mobile_money_networks")
-  mobileMoneyNumber             String                 @map("mobile_money_number")
-  status                        OperatorStatus         @default(ACTIVE) @map("status")
-  availability                  OperatorAvailability   @default(OFFLINE) @map("availability")
-  capacity                      Int                    @default(5) @map("capacity")
-  currentLoad                   Int                    @default(0) @map("current_load")
-  trustScore                    Int                    @default(50) @map("trust_score")
-  averageCompletionTimeSeconds  Int                    @default(900) @map("average_completion_time_seconds")
-  dailyLimit                    Decimal                @db.Decimal(36, 18) @map("daily_limit")
-  authTokenHash                 String?                @map("auth_token_hash")
-  createdAt                     DateTime               @default(now()) @map("created_at")
-  updatedAt                     DateTime               @updatedAt @map("updated_at")
+  id                           String               @id @default(uuid()) @map("operator_id")
+  displayName                  String               @map("display_name")
+  whatsappNumber               String               @map("whatsapp_number")
+  telegramUsername             String?              @map("telegram_username")
+  country                      String               @map("country")
+  supportedCurrencies          Json                 @default("[]") @map("supported_currencies")
+  supportedMobileMoneyNetworks Json                 @default("[]") @map("supported_mobile_money_networks")
+  mobileMoneyNumber            String               @map("mobile_money_number")
+  status                       OperatorStatus       @default(ACTIVE) @map("status")
+  availability                 OperatorAvailability @default(OFFLINE) @map("availability")
+  capacity                     Int                  @default(5) @map("capacity")
+  currentLoad                  Int                  @default(0) @map("current_load")
+  trustScore                   Int                  @default(50) @map("trust_score")
+  averageCompletionTimeSeconds Int                  @default(900) @map("average_completion_time_seconds")
+  dailyLimit                   Decimal              @map("daily_limit") @db.Decimal(36, 18)
+  authTokenHash                String?              @map("auth_token_hash")
+  createdAt                    DateTime             @default(now()) @map("created_at")
+  updatedAt                    DateTime             @updatedAt @map("updated_at")
 
   sessions          SettlementSession[]
   operatorSessions  OperatorSession[]
@@ -613,12 +614,12 @@ model Operator {
 }
 
 model OperatorSession {
-  id          String    @id @default(uuid()) @map("operator_session_id")
-  operatorId  String    @map("operator_id")
-  tokenHash   String    @map("token_hash")
-  expiresAt   DateTime  @map("expires_at")
-  revokedAt   DateTime? @map("revoked_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id         String    @id @default(uuid()) @map("operator_session_id")
+  operatorId String    @map("operator_id")
+  tokenHash  String    @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
   operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
 
@@ -628,15 +629,15 @@ model OperatorSession {
 }
 
 model OperatorCapacity {
-  id              String   @id @default(uuid()) @map("operator_capacity_id")
-  operatorId      String   @map("operator_id")
-  businessDate    DateTime @map("business_date")
-  acceptedCount   Int      @default(0) @map("accepted_count")
-  completedCount  Int      @default(0) @map("completed_count")
-  rejectedCount   Int      @default(0) @map("rejected_count")
-  settledAmount   Decimal  @default(0) @db.Decimal(36, 18) @map("settled_amount")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(uuid()) @map("operator_capacity_id")
+  operatorId     String   @map("operator_id")
+  businessDate   DateTime @map("business_date")
+  acceptedCount  Int      @default(0) @map("accepted_count")
+  completedCount Int      @default(0) @map("completed_count")
+  rejectedCount  Int      @default(0) @map("rejected_count")
+  settledAmount  Decimal  @default(0) @map("settled_amount") @db.Decimal(36, 18)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
 
@@ -646,31 +647,31 @@ model OperatorCapacity {
 }
 
 model SettlementSession {
-  id                   String           @id @default(uuid()) @map("settlement_id")
-  telegramUserId       BigInt           @map("telegram_user_id")
-  operatorId           String?          @map("operator_id")
-  provider             SettlementProviderId @default(INTERNAL_OPERATIONS) @map("provider")
-  sessionType          SettlementType   @default(DEPOSIT) @map("session_type")
-  asset                String           @map("asset")
-  requestedAmount      Decimal          @db.Decimal(36, 18) @map("requested_amount")
-  expectedCryptoAmount Decimal          @db.Decimal(36, 18) @map("expected_crypto_amount")
-  exchangeRate         Decimal          @db.Decimal(36, 18) @map("exchange_rate")
-  country              String           @map("country")
-  mobileMoneyNetwork   String           @map("mobile_money_network")
-  referenceCode        String           @unique @map("reference_code")
-  status               SettlementStatus @default(CREATED) @map("status")
-  expiresAt            DateTime         @map("expires_at")
-  merchantAssignedAt   DateTime?        @map("merchant_assigned_at")
-  paymentReceivedAt    DateTime?        @map("payment_received_at")
-  usdtSentAt           DateTime?        @map("usdt_sent_at")
-  completedAt          DateTime?        @map("completed_at")
-  orchestratorReference String?         @map("orchestrator_reference")
-  providerMetadata      Json            @default("{}") @map("provider_metadata")
-  createdAt            DateTime         @default(now()) @map("created_at")
-  updatedAt            DateTime         @updatedAt @map("updated_at")
+  id                    String               @id @default(uuid()) @map("settlement_id")
+  telegramUserId        BigInt               @map("telegram_user_id")
+  operatorId            String?              @map("operator_id")
+  provider              SettlementProviderId @default(INTERNAL_OPERATIONS) @map("provider")
+  sessionType           SettlementType       @default(DEPOSIT) @map("session_type")
+  asset                 String               @map("asset")
+  requestedAmount       Decimal              @map("requested_amount") @db.Decimal(36, 18)
+  expectedCryptoAmount  Decimal              @map("expected_crypto_amount") @db.Decimal(36, 18)
+  exchangeRate          Decimal              @map("exchange_rate") @db.Decimal(36, 18)
+  country               String               @map("country")
+  mobileMoneyNetwork    String               @map("mobile_money_network")
+  referenceCode         String               @unique @map("reference_code")
+  status                SettlementStatus     @default(CREATED) @map("status")
+  expiresAt             DateTime             @map("expires_at")
+  merchantAssignedAt    DateTime?            @map("merchant_assigned_at")
+  paymentReceivedAt     DateTime?            @map("payment_received_at")
+  usdtSentAt            DateTime?            @map("usdt_sent_at")
+  completedAt           DateTime?            @map("completed_at")
+  orchestratorReference String?              @map("orchestrator_reference")
+  providerMetadata      Json                 @default("{}") @map("provider_metadata")
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @updatedAt @map("updated_at")
 
-  user     User      @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
-  operator Operator? @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  user     User              @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
+  operator Operator?         @relation(fields: [operatorId], references: [id], onDelete: Restrict)
   events   SettlementEvent[]
   notes    SettlementNote[]
 
@@ -700,16 +701,16 @@ model SettlementEvent {
 }
 
 model OperatorMetric {
-  id                          String   @id @default(uuid()) @map("operator_metric_id")
-  operatorId                  String   @map("operator_id")
-  windowStart                 DateTime @map("window_start")
-  windowEnd                   DateTime @map("window_end")
-  assignedCount               Int      @default(0) @map("assigned_count")
-  acceptedCount               Int      @default(0) @map("accepted_count")
-  completedCount              Int      @default(0) @map("completed_count")
-  rejectedCount               Int      @default(0) @map("rejected_count")
-  averageCompletionTimeSeconds Int     @default(0) @map("average_completion_time_seconds")
-  createdAt                   DateTime @default(now()) @map("created_at")
+  id                           String   @id @default(uuid()) @map("operator_metric_id")
+  operatorId                   String   @map("operator_id")
+  windowStart                  DateTime @map("window_start")
+  windowEnd                    DateTime @map("window_end")
+  assignedCount                Int      @default(0) @map("assigned_count")
+  acceptedCount                Int      @default(0) @map("accepted_count")
+  completedCount               Int      @default(0) @map("completed_count")
+  rejectedCount                Int      @default(0) @map("rejected_count")
+  averageCompletionTimeSeconds Int      @default(0) @map("average_completion_time_seconds")
+  createdAt                    DateTime @default(now()) @map("created_at")
 
   operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
 
@@ -726,7 +727,7 @@ model SettlementNote {
   createdAt    DateTime @default(now()) @map("created_at")
 
   settlement SettlementSession @relation(fields: [settlementId], references: [id], onDelete: Cascade)
-  operator   Operator?          @relation(fields: [operatorId], references: [id], onDelete: SetNull)
+  operator   Operator?         @relation(fields: [operatorId], references: [id], onDelete: SetNull)
 
   @@index([settlementId])
   @@index([operatorId])
@@ -767,11 +768,11 @@ model SettlementProvider {
 }
 
 model SettlementProviderConfig {
-  id          String               @id @default(uuid()) @map("settlement_provider_config_id")
-  providerId  SettlementProviderId  @unique @map("provider_id")
-  configuration Json                @default("{}") @map("configuration")
-  createdAt   DateTime             @default(now()) @map("created_at")
-  updatedAt   DateTime             @updatedAt @map("updated_at")
+  id            String               @id @default(uuid()) @map("settlement_provider_config_id")
+  providerId    SettlementProviderId @unique @map("provider_id")
+  configuration Json                 @default("{}") @map("configuration")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
 
   provider SettlementProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
@@ -779,11 +780,11 @@ model SettlementProviderConfig {
 }
 
 model SettlementProviderHealth {
-  id          String                         @id @default(uuid()) @map("settlement_provider_health_id")
-  providerId  SettlementProviderId           @unique @map("provider_id")
+  id           String                         @id @default(uuid()) @map("settlement_provider_health_id")
+  providerId   SettlementProviderId           @unique @map("provider_id")
   healthStatus SettlementProviderHealthStatus @default(HEALTHY) @map("health_status")
-  checkedAt   DateTime                       @default(now()) @map("checked_at")
-  details     Json                           @default("{}") @map("details")
+  checkedAt    DateTime                       @default(now()) @map("checked_at")
+  details      Json                           @default("{}") @map("details")
 
   provider SettlementProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
@@ -793,9 +794,9 @@ model SettlementProviderHealth {
 
 model ProviderEvent {
   id           String               @id @default(uuid()) @map("provider_event_id")
-  providerId   SettlementProviderId  @map("provider_id")
+  providerId   SettlementProviderId @map("provider_id")
   settlementId String?              @map("settlement_id")
-  eventType    SettlementEventType   @map("event_type")
+  eventType    SettlementEventType  @map("event_type")
   payload      Json                 @default("{}") @map("payload")
   createdAt    DateTime             @default(now()) @map("created_at")
 
@@ -832,15 +833,15 @@ model LedgerEntry {
 }
 
 model OnboardingProgress {
-  id                String    @id @default(uuid()) @map("id")
-  telegramUserId    BigInt    @unique @map("telegram_user_id")
-  currentStep       String    @default("welcome") @map("current_step")
-  currentModuleId   String?   @map("current_module_id")
-  stepsCompleted    Json      @default("[]") @map("steps_completed")
-  isCompleted       Boolean   @default(false) @map("is_completed")
-  completedAt       DateTime? @map("completed_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  id              String    @id @default(uuid()) @map("id")
+  telegramUserId  BigInt    @unique @map("telegram_user_id")
+  currentStep     String    @default("welcome") @map("current_step")
+  currentModuleId String?   @map("current_module_id")
+  stepsCompleted  Json      @default("[]") @map("steps_completed")
+  isCompleted     Boolean   @default(false) @map("is_completed")
+  completedAt     DateTime? @map("completed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
 
@@ -848,19 +849,19 @@ model OnboardingProgress {
 }
 
 model EducationModule {
-  id                EducationModuleId @id @map("id")
-  title             String            @map("title")
-  description       String            @map("description")
-  content           Json              @map("content")
-  mandatory         Boolean           @default(true) @map("mandatory")
-  estimatedSeconds  Int               @map("estimated_seconds")
-  orderIndex        Int               @map("order_index")
-  completionType    String            @default("view_all") @map("completion_type")
-  passThreshold     Int?              @map("pass_threshold")
-  version           Int               @default(1) @map("version")
-  isActive          Boolean           @default(true) @map("is_active")
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
+  id               EducationModuleId @id @map("id")
+  title            String            @map("title")
+  description      String            @map("description")
+  content          Json              @map("content")
+  mandatory        Boolean           @default(true) @map("mandatory")
+  estimatedSeconds Int               @map("estimated_seconds")
+  orderIndex       Int               @map("order_index")
+  completionType   String            @default("view_all") @map("completion_type")
+  passThreshold    Int?              @map("pass_threshold")
+  version          Int               @default(1) @map("version")
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
 
   completions EducationCompletion[]
 
@@ -897,19 +898,19 @@ model EducationCompletion {
 }
 
 model UserConsent {
-  id                String      @id @default(uuid()) @map("id")
-  telegramUserId    BigInt      @map("telegram_user_id")
-  consentType       ConsentType @map("consent_type")
-  version           Int         @default(1) @map("version")
-  documentHash      String?     @map("document_hash")
-  documentUrl       String?     @map("document_url")
-  ipAddress         String?     @map("ip_address")
-  userAgent         String?     @map("user_agent")
-  sessionId         String?     @map("session_id")
-  metadata          Json?       @map("metadata")
-  isActive          Boolean     @default(true) @map("is_active")
-  createdAt         DateTime    @default(now()) @map("created_at")
-  expiresAt         DateTime?   @map("expires_at")
+  id             String      @id @default(uuid()) @map("id")
+  telegramUserId BigInt      @map("telegram_user_id")
+  consentType    ConsentType @map("consent_type")
+  version        Int         @default(1) @map("version")
+  documentHash   String?     @map("document_hash")
+  documentUrl    String?     @map("document_url")
+  ipAddress      String?     @map("ip_address")
+  userAgent      String?     @map("user_agent")
+  sessionId      String?     @map("session_id")
+  metadata       Json?       @map("metadata")
+  isActive       Boolean     @default(true) @map("is_active")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  expiresAt      DateTime?   @map("expires_at")
 
   user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
 
@@ -920,18 +921,18 @@ model UserConsent {
 }
 
 model AuditEvent {
-  id              String         @id @default(uuid()) @map("id")
-  telegramUserId  BigInt?        @map("telegram_user_id")
-  eventType       AuditEventType @map("event_type")
-  description     String?        @map("description")
-  metadata        Json?          @map("metadata")
-  ipAddress       String?        @map("ip_address")
-  userAgent       String?        @map("user_agent")
-  sessionId       String?        @map("session_id")
-  correlationId   String?        @map("correlation_id")
-  severity        String         @default("INFO") @map("severity")
-  source          String?        @map("source")
-  createdAt       DateTime       @default(now()) @map("created_at")
+  id             String         @id @default(uuid()) @map("id")
+  telegramUserId BigInt?        @map("telegram_user_id")
+  eventType      AuditEventType @map("event_type")
+  description    String?        @map("description")
+  metadata       Json?          @map("metadata")
+  ipAddress      String?        @map("ip_address")
+  userAgent      String?        @map("user_agent")
+  sessionId      String?        @map("session_id")
+  correlationId  String?        @map("correlation_id")
+  severity       String         @default("INFO") @map("severity")
+  source         String?        @map("source")
+  createdAt      DateTime       @default(now()) @map("created_at")
 
   user User? @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: SetNull)
 
@@ -985,14 +986,14 @@ model ReadinessHistory {
 }
 
 model UserStateTransition {
-  id              String   @id @default(uuid()) @map("id")
-  telegramUserId  BigInt   @map("telegram_user_id")
-  fromState       UserState @map("from_state")
-  toState         UserState @map("to_state")
-  reason          String?  @map("reason")
-  triggerEvent    String?  @map("trigger_event")
-  metadata        Json?    @map("metadata")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id             String    @id @default(uuid()) @map("id")
+  telegramUserId BigInt    @map("telegram_user_id")
+  fromState      UserState @map("from_state")
+  toState        UserState @map("to_state")
+  reason         String?   @map("reason")
+  triggerEvent   String?   @map("trigger_event")
+  metadata       Json?     @map("metadata")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
 
@@ -1056,16 +1057,16 @@ enum SupportStatus {
 }
 
 model AdminUser {
-  id           String     @id @default(uuid()) @map("admin_user_id")
-  username     String     @unique @map("username")
-  email        String     @unique @map("email")
-  passwordHash String     @map("password_hash")
-  role         AdminRole  @default(SUPPORT_AGENT) @map("role")
-  isActive     Boolean    @default(true) @map("is_active")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  id           String    @id @default(uuid()) @map("admin_user_id")
+  username     String    @unique @map("username")
+  email        String    @unique @map("email")
+  passwordHash String    @map("password_hash")
+  role         AdminRole @default(SUPPORT_AGENT) @map("role")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  sessions     AdminSession[]
+  sessions AdminSession[]
 
   @@map("admin_users")
 }
@@ -1078,7 +1079,7 @@ model AdminSession {
   revokedAt   DateTime? @map("revoked_at")
   createdAt   DateTime  @default(now()) @map("created_at")
 
-  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
 
   @@index([adminUserId])
   @@index([tokenHash])
@@ -1095,7 +1096,7 @@ model MerchantProfile {
   whatsappContact              String         @map("whatsapp_contact")
   supportedNetworks            Json           @default("[]") @map("supported_networks")
   supportedAssets              Json           @default("[]") @map("supported_assets")
-  dailyLimit                   Decimal        @default(5000) @db.Decimal(36, 18) @map("daily_limit")
+  dailyLimit                   Decimal        @default(5000) @map("daily_limit") @db.Decimal(36, 18)
   status                       MerchantStatus @default(PENDING) @map("status")
   trustScore                   Float          @default(100.0) @map("trust_score")
   completionRate               Float          @default(100.0) @map("completion_rate")
@@ -1111,17 +1112,17 @@ model MerchantProfile {
 }
 
 model MerchantMetric {
-  id                   String   @id @default(uuid()) @map("metric_id")
-  merchantId           String   @map("merchant_id")
-  completedSettlements Int      @default(0) @map("completed_settlements")
-  failedSettlements    Int      @default(0) @map("failed_settlements")
-  rejectedSettlements  Int      @default(0) @map("rejected_settlements")
-  averageCompletionTime Int     @default(0) @map("average_completion_time")
-  disputeRate          Float    @default(0.0) @map("dispute_rate")
-  dailyVolume          Decimal  @default(0) @db.Decimal(36, 18) @map("daily_volume")
-  weeklyVolume         Decimal  @default(0) @db.Decimal(36, 18) @map("weekly_volume")
-  monthlyVolume        Decimal  @default(0) @db.Decimal(36, 18) @map("monthly_volume")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  id                    String   @id @default(uuid()) @map("metric_id")
+  merchantId            String   @map("merchant_id")
+  completedSettlements  Int      @default(0) @map("completed_settlements")
+  failedSettlements     Int      @default(0) @map("failed_settlements")
+  rejectedSettlements   Int      @default(0) @map("rejected_settlements")
+  averageCompletionTime Int      @default(0) @map("average_completion_time")
+  disputeRate           Float    @default(0.0) @map("dispute_rate")
+  dailyVolume           Decimal  @default(0) @map("daily_volume") @db.Decimal(36, 18)
+  weeklyVolume          Decimal  @default(0) @map("weekly_volume") @db.Decimal(36, 18)
+  monthlyVolume         Decimal  @default(0) @map("monthly_volume") @db.Decimal(36, 18)
+  updatedAt             DateTime @updatedAt @map("updated_at")
 
   merchant MerchantProfile @relation(fields: [merchantId], references: [id], onDelete: Cascade)
 
@@ -1391,6 +1392,27 @@ model Reward {
   @@map("rewards")
 }
 
+model Achievement {
+  id             String    @id @default(uuid()) @map("achievement_id")
+  telegramUserId BigInt    @map("telegram_user_id")
+  code           String    @map("code")
+  name           String    @map("name")
+  description    String    @map("description")
+  tier           String    @default("SILVER") @map("tier")
+  icon           String?   @map("icon")
+  progress       Int       @default(0) @map("progress")
+  target         Int       @default(1) @map("target")
+  achievedAt     DateTime? @map("achieved_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+
+  @@unique([telegramUserId, code])
+  @@index([telegramUserId, achievedAt])
+  @@map("achievements")
+}
+
 model UserTrustProfile {
   id                   String   @id @default(uuid()) @map("id")
   telegramUserId       BigInt   @unique @map("telegram_user_id")
@@ -1429,16 +1451,16 @@ model TrustEvent {
 }
 
 model UserLevelConfig {
-  id                        String        @id @default(uuid()) @map("id")
-  level                     UserLevelTier @unique @map("level")
-  name                      String        @map("name")
-  minAccountAgeDays         Int           @default(0) @map("min_account_age_days")
+  id                       String        @id @default(uuid()) @map("id")
+  level                    UserLevelTier @unique @map("level")
+  name                     String        @map("name")
+  minAccountAgeDays        Int           @default(0) @map("min_account_age_days")
   minSuccessfulSettlements Int           @default(0) @map("min_successful_settlements")
-  minTrustScore             Int           @default(0) @map("min_trust_score")
-  benefits                  Json          @default("[]") @map("benefits")
-  orderIndex                Int           @map("order_index")
-  createdAt                 DateTime      @default(now()) @map("created_at")
-  updatedAt                 DateTime      @updatedAt @map("updated_at")
+  minTrustScore            Int           @default(0) @map("min_trust_score")
+  benefits                 Json          @default("[]") @map("benefits")
+  orderIndex               Int           @map("order_index")
+  createdAt                DateTime      @default(now()) @map("created_at")
+  updatedAt                DateTime      @updatedAt @map("updated_at")
 
   @@index([orderIndex])
   @@map("user_level_configs")
@@ -1477,11 +1499,11 @@ model BenefitRule {
 }
 
 model UserBenefit {
-  id             String   @id @default(uuid()) @map("id")
-  telegramUserId BigInt   @map("telegram_user_id")
-  benefitRuleId  String   @map("benefit_rule_id")
-  status         String   @default("ACTIVE") @map("status")
-  grantedAt      DateTime @default(now()) @map("granted_at")
+  id             String    @id @default(uuid()) @map("id")
+  telegramUserId BigInt    @map("telegram_user_id")
+  benefitRuleId  String    @map("benefit_rule_id")
+  status         String    @default("ACTIVE") @map("status")
+  grantedAt      DateTime  @default(now()) @map("granted_at")
   expiresAt      DateTime? @map("expires_at")
 
   user User        @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
@@ -1539,7 +1561,7 @@ model NotificationRecord {
 model NotificationPreference {
   id               String   @id @default(uuid()) @map("id")
   telegramUserId   BigInt   @unique @map("telegram_user_id")
-  telegramEnabled Boolean  @default(true) @map("telegram_enabled")
+  telegramEnabled  Boolean  @default(true) @map("telegram_enabled")
   inAppEnabled     Boolean  @default(true) @map("in_app_enabled")
   marketingEnabled Boolean  @default(false) @map("marketing_enabled")
   eventPreferences Json     @default("{}") @map("event_preferences")
@@ -1552,17 +1574,17 @@ model NotificationPreference {
 }
 
 model BotBroadcast {
-  id           String    @id @default(uuid()) @map("id")
-  title        String    @map("title")
-  message      String    @map("message")
-  target       String    @default("ALL") @map("target")
-  sentCount    Int       @default(0) @map("sent_count")
-  failedCount  Int       @default(0) @map("failed_count")
-  status       String    @default("PENDING") @map("status")
-  createdById  String?   @map("created_by_id")
-  metadata     Json?     @map("metadata")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  completedAt  DateTime? @map("completed_at")
+  id          String    @id @default(uuid()) @map("id")
+  title       String    @map("title")
+  message     String    @map("message")
+  target      String    @default("ALL") @map("target")
+  sentCount   Int       @default(0) @map("sent_count")
+  failedCount Int       @default(0) @map("failed_count")
+  status      String    @default("PENDING") @map("status")
+  createdById String?   @map("created_by_id")
+  metadata    Json?     @map("metadata")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
 
   @@index([status])
   @@index([createdAt])
@@ -1584,7 +1606,7 @@ model PaymentInvoice {
   provider          SettlementProviderId @default(CRYPTOBOT) @map("provider")
   externalInvoiceId String               @unique @map("external_invoice_id")
   asset             String               @map("asset")
-  amount            Decimal              @db.Decimal(36, 18) @map("amount")
+  amount            Decimal              @map("amount") @db.Decimal(36, 18)
   currency          String               @map("currency")
   payUrl            String               @map("pay_url")
   status            PaymentInvoiceStatus @default(CREATED) @map("status")
@@ -1649,16 +1671,16 @@ model ProductSubscription {
 }
 
 model UserMiningState {
-  telegramUserId            BigInt    @id @map("telegram_user_id")
-  activeCurrency            String    @default("USDT") @map("active_currency")
-  baseSpeedGhs              Decimal   @default(1.0) @map("base_speed_ghs")
-  coolerMultiplier          Decimal   @default(1.0) @map("cooler_multiplier")
-  unclaimedBalance          Decimal   @default(0.0) @map("unclaimed_balance")
-  lastTappedAt              DateTime? @map("last_tapped_at")
-  lastUpdatedAt             DateTime? @map("last_updated_at")
-  machineMode               String    @default("PROMOTIONAL") @map("machine_mode")
-  lifetimePromotionalOutput Decimal   @default(0.0) @map("lifetime_promotional_output")
-  interactivePromotionalOutput Decimal @default(0.0) @map("interactive_promotional_output")
+  telegramUserId               BigInt    @id @map("telegram_user_id")
+  activeCurrency               String    @default("USDT") @map("active_currency")
+  baseSpeedGhs                 Decimal   @default(1.0) @map("base_speed_ghs")
+  coolerMultiplier             Decimal   @default(1.0) @map("cooler_multiplier")
+  unclaimedBalance             Decimal   @default(0.0) @map("unclaimed_balance")
+  lastTappedAt                 DateTime? @map("last_tapped_at")
+  lastUpdatedAt                DateTime? @map("last_updated_at")
+  machineMode                  String    @default("PROMOTIONAL") @map("machine_mode")
+  lifetimePromotionalOutput    Decimal   @default(0.0) @map("lifetime_promotional_output")
+  interactivePromotionalOutput Decimal   @default(0.0) @map("interactive_promotional_output")
 
   user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
 
@@ -1670,11 +1692,11 @@ model UserMachine {
   telegramUserId   BigInt   @map("telegram_user_id")
   tierCode         String   @map("tier_code")
   name             String   @map("name")
-  purchasePrice    Decimal  @db.Decimal(36, 18) @map("purchase_price")
+  purchasePrice    Decimal  @map("purchase_price") @db.Decimal(36, 18)
   currency         String   @default("USDT") @map("currency")
   status           String   @default("ACTIVE") @map("status")
-  capacityGhs      Decimal  @db.Decimal(36, 18) @map("capacity_ghs")
-  lifetimeEarnings Decimal  @default(0.0) @db.Decimal(36, 18) @map("lifetime_earnings")
+  capacityGhs      Decimal  @map("capacity_ghs") @db.Decimal(36, 18)
+  lifetimeEarnings Decimal  @default(0.0) @map("lifetime_earnings") @db.Decimal(36, 18)
   purchasedAt      DateTime @default(now()) @map("purchased_at")
   activatedAt      DateTime @default(now()) @map("activated_at")
 
@@ -1726,15 +1748,15 @@ model UniversalIdentity {
 }
 
 model ChannelIdentity {
-  id           String           @id @default(uuid()) @map("channel_identity_id")
-  identityId   String           @map("identity_id")
-  provider     IdentityProvider @map("provider")
-  identifier   String           @map("identifier")
-  phone        String?          @map("phone")
-  telegramId   String?          @map("telegram_id")
-  verified     Boolean          @default(true) @map("verified")
-  metadata     Json             @default("{}") @map("metadata")
-  createdAt    DateTime         @default(now()) @map("created_at")
+  id         String           @id @default(uuid()) @map("channel_identity_id")
+  identityId String           @map("identity_id")
+  provider   IdentityProvider @map("provider")
+  identifier String           @map("identifier")
+  phone      String?          @map("phone")
+  telegramId String?          @map("telegram_id")
+  verified   Boolean          @default(true) @map("verified")
+  metadata   Json             @default("{}") @map("metadata")
+  createdAt  DateTime         @default(now()) @map("created_at")
 
   identity UniversalIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
 
@@ -1792,16 +1814,16 @@ model ReferralAnalytics {
 }
 
 model AdminDevice {
-  id             String    @id @default(uuid()) @map("admin_device_id")
-  adminUserId    String    @map("admin_user_id")
-  fingerprint    String    @map("fingerprint")
-  deviceModel    String?   @map("device_model")
-  os             String?   @map("os")
-  browser        String?   @map("browser")
-  lastIp         String    @map("last_ip")
-  isTrusted      Boolean   @default(true) @map("is_trusted")
-  lastSeenAt     DateTime  @default(now()) @map("last_seen_at")
-  createdAt      DateTime  @default(now()) @map("created_at")
+  id          String   @id @default(uuid()) @map("admin_device_id")
+  adminUserId String   @map("admin_user_id")
+  fingerprint String   @map("fingerprint")
+  deviceModel String?  @map("device_model")
+  os          String?  @map("os")
+  browser     String?  @map("browser")
+  lastIp      String   @map("last_ip")
+  isTrusted   Boolean  @default(true) @map("is_trusted")
+  lastSeenAt  DateTime @default(now()) @map("last_seen_at")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   @@unique([adminUserId, fingerprint])
   @@index([adminUserId])
@@ -1809,15 +1831,15 @@ model AdminDevice {
 }
 
 model TelegramConfirmationToken {
-  id             String    @id @default(uuid()) @map("token_id")
-  token          String    @unique @map("token")
-  adminUserId    String    @map("admin_user_id")
-  actionType     String    @map("action_type")
-  actionPayload  Json      @map("action_payload")
-  status         String    @default("PENDING") @map("status")
-  expiresAt      DateTime  @map("expires_at")
-  confirmedAt    DateTime? @map("confirmed_at")
-  createdAt      DateTime  @default(now()) @map("created_at")
+  id            String    @id @default(uuid()) @map("token_id")
+  token         String    @unique @map("token")
+  adminUserId   String    @map("admin_user_id")
+  actionType    String    @map("action_type")
+  actionPayload Json      @map("action_payload")
+  status        String    @default("PENDING") @map("status")
+  expiresAt     DateTime  @map("expires_at")
+  confirmedAt   DateTime? @map("confirmed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
 
   @@index([token])
   @@index([adminUserId])
@@ -1826,15 +1848,15 @@ model TelegramConfirmationToken {
 }
 
 model AdminNote {
-  id          String   @id @default(uuid()) @map("note_id")
-  authorId    String   @map("author_id")
-  targetType  String   @map("target_type")
-  targetId    String   @map("target_id")
-  content     String   @map("content")
-  metadata    Json?    @map("metadata")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id         String   @id @default(uuid()) @map("note_id")
+  authorId   String   @map("author_id")
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id")
+  content    String   @map("content")
+  metadata   Json?    @map("metadata")
+  createdAt  DateTime @default(now()) @map("created_at")
 
-  identity    UniversalIdentity? @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  identity UniversalIdentity? @relation(fields: [targetId], references: [id], onDelete: Cascade)
 
   @@index([targetType, targetId])
   @@index([authorId])
@@ -1858,16 +1880,16 @@ model FeatureFlag {
 }
 
 model SystemAchievement {
-  id          String   @id @default(uuid()) @map("achievement_id")
-  code        String   @unique @map("code")
-  title       String   @map("title")
-  description String   @map("description")
-  category    String   @default("MILESTONE") @map("category")
-  icon        String   @default("🏆") @map("icon")
-  rewardAmount Decimal @default(0.0) @db.Decimal(36, 18) @map("reward_amount")
-  rewardAsset String   @default("USDT") @map("reward_asset")
-  orderIndex  Int      @default(0) @map("order_index")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id           String   @id @default(uuid()) @map("achievement_id")
+  code         String   @unique @map("code")
+  title        String   @map("title")
+  description  String   @map("description")
+  category     String   @default("MILESTONE") @map("category")
+  icon         String   @default("🏆") @map("icon")
+  rewardAmount Decimal  @default(0.0) @map("reward_amount") @db.Decimal(36, 18)
+  rewardAsset  String   @default("USDT") @map("reward_asset")
+  orderIndex   Int      @default(0) @map("order_index")
+  createdAt    DateTime @default(now()) @map("created_at")
 
   userAchievements UserAchievement[]
 
@@ -1878,7 +1900,7 @@ model SystemAchievement {
 model UserAchievement {
   id             String    @id @default(uuid()) @map("id")
   telegramUserId BigInt    @map("telegram_user_id")
-  achievementId String    @map("achievement_id")
+  achievementId  String    @map("achievement_id")
   unlockedAt     DateTime  @default(now()) @map("unlocked_at")
   sharedAt       DateTime? @map("shared_at")
 
@@ -1890,16 +1912,16 @@ model UserAchievement {
 }
 
 model SupportTicket {
-  id            String             @id @default(uuid()) @map("ticket_id")
-  identityId    String?            @map("identity_id")
-  channel       IdentityProvider   @default(TELEGRAM) @map("channel")
-  channelUserId String             @map("channel_user_id")
-  subject       String             @map("subject")
-  status        String             @default("OPEN") @map("status")
-  priority      String             @default("MEDIUM") @map("priority")
-  assignedAdmin String?            @map("assigned_admin")
-  createdAt     DateTime           @default(now()) @map("created_at")
-  updatedAt     DateTime           @updatedAt @map("updated_at")
+  id            String           @id @default(uuid()) @map("ticket_id")
+  identityId    String?          @map("identity_id")
+  channel       IdentityProvider @default(TELEGRAM) @map("channel")
+  channelUserId String           @map("channel_user_id")
+  subject       String           @map("subject")
+  status        String           @default("OPEN") @map("status")
+  priority      String           @default("MEDIUM") @map("priority")
+  assignedAdmin String?          @map("assigned_admin")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
 
   identity UniversalIdentity? @relation(fields: [identityId], references: [id], onDelete: SetNull)
   messages SupportMessage[]
@@ -1910,20 +1932,16 @@ model SupportTicket {
 }
 
 model SupportMessage {
-  id         String   @id @default(uuid()) @map("message_id")
-  ticketId   String   @map("ticket_id")
-  senderType String   @map("sender_type")
-  senderId   String   @map("sender_id")
-  content    String   @map("content")
-  attachments Json    @default("[]") @map("attachments")
-  createdAt  DateTime @default(now()) @map("created_at")
+  id          String   @id @default(uuid()) @map("message_id")
+  ticketId    String   @map("ticket_id")
+  senderType  String   @map("sender_type")
+  senderId    String   @map("sender_id")
+  content     String   @map("content")
+  attachments Json     @default("[]") @map("attachments")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
   @@map("support_messages")
 }
-
-
-
-

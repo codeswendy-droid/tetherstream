@@ -2,6 +2,8 @@ import { Injectable, BadRequestException, NotFoundException, ForbiddenException,
 import { PrismaService } from '../../database/prisma.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
 import { GrowthEventService } from './growth-event.service';
+import { GrowthNotificationService } from './growth-notification.service';
+import { AchievementService } from './achievement.service';
 import { ReferralService } from './referral.service';
 import {
   RewardStatus,
@@ -43,6 +45,8 @@ export class RewardService {
     private readonly prisma: PrismaService,
     private readonly orchestrator: FinancialOrchestratorService,
     private readonly growthEventService: GrowthEventService,
+    private readonly notificationService: GrowthNotificationService,
+    private readonly achievementService: AchievementService,
     private readonly referralService: ReferralService,
   ) {}
 
@@ -389,6 +393,17 @@ export class RewardService {
    * not expired and not already claimed — with progress attached.
    */
   async getAvailableRewards(telegramUserId: bigint) {
+    const missions = await this.getMissionQueue(telegramUserId);
+    return missions.filter((m) => m.eligible);
+  }
+
+  /**
+   * The mission queue backing the Progress Center: every claimable reward
+   * PLUS rules the user is actively working toward (progress > 0), each
+   * annotated with category, difficulty, progress and estimated remaining.
+   * Claimable missions are always sorted first.
+   */
+  async getMissionQueue(telegramUserId: bigint) {
     await this.expireOverdueRewards(telegramUserId);
     await this.reconcileReferralRewards(telegramUserId);
     await this.reconcileRuleRewards(telegramUserId);
@@ -406,24 +421,103 @@ export class RewardService {
     for (const rw of rewards) {
       const eligibility = await this.evaluateRewardEligibility(telegramUserId, rw);
       if (!eligibility.eligible) continue;
+      queue.push(this.toMissionCard(rw, eligibility));
+    }
+
+    // In-progress missions: enabled non-referral rules with progress but no
+    // reward row yet — show them so the runner can guide completion.
+    const rules = await this.prisma.rewardRule.findMany({ where: { enabled: true } });
+    for (const rule of rules) {
+      if (rule.rewardType === RewardType.REFERRAL) continue;
+      const existing = await this.prisma.reward.findFirst({
+        where: {
+          telegramUserId,
+          ruleId: rule.id,
+          status: { in: [RewardStatus.AVAILABLE, RewardStatus.IN_PROGRESS, RewardStatus.CLAIM_PENDING, RewardStatus.CLAIMED] },
+        },
+      });
+      if (existing) continue;
+
+      const eligibility = await this.evaluateRuleEligibility(telegramUserId, rule);
+      if (eligibility.eligible) continue;
+      if ((eligibility.requirement?.current || 0) <= 0) continue;
+
       queue.push({
-        id: rw.id,
-        rewardType: rw.rewardType,
-        amount: rw.amount.toString(),
-        assetCode: rw.assetCode,
-        status: rw.status,
-        reference: rw.reference,
-        createdAt: rw.createdAt,
-        ruleName: rw.rule?.name || this.defaultRewardName(rw.rewardType),
-        description:
-          (rw.rule?.parameters as any)?.description ||
-          this.defaultRewardName(rw.rewardType),
+        id: `rule:${rule.id}`,
+        ruleCode: rule.code,
+        rewardType: rule.rewardType,
+        amount: rule.amount.toString(),
+        assetCode: 'USDT',
+        status: 'IN_PROGRESS',
+        ruleName: rule.name,
+        description: (rule.parameters as any)?.description || rule.name,
         requirement: eligibility.requirement,
         reason: eligibility.reason,
-        eligible: true,
+        eligible: false,
+        ...this.missionMeta(eligibility.requirement, rule),
       });
     }
-    return queue;
+
+    return queue.sort((a, b) => {
+      if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
+      return (b.progressPercent || 0) - (a.progressPercent || 0);
+    });
+  }
+
+  /**
+   * Category / difficulty / progress / estimated-remaining annotations.
+   */
+  private missionMeta(
+    requirement: RequirementSnapshot | null,
+    rule?: { rewardType?: RewardType; parameters?: Prisma.JsonValue },
+  ) {
+    const params = (rule?.parameters as Record<string, any>) || {};
+    const key = requirement?.key || '';
+    const required = requirement?.required || 1;
+    const current = requirement?.current || 0;
+    const progressPercent = required > 0 ? Math.min(100, Math.floor((current / required) * 100)) : 0;
+    const remaining = Math.max(0, required - current);
+
+    let category: string;
+    if (key.startsWith('REFERRAL')) category = 'referral';
+    else if (key === 'SETTLEMENT_COUNT') category = 'settlement';
+    else if (key === 'MACHINE_CAPACITY') category = 'machine';
+    else if (key === 'USER_LEVEL') category = 'profile';
+    else category = params.category || 'campaign';
+
+    const difficulty = params.difficulty || (required <= 1 ? 'EASY' : required <= 3 ? 'MEDIUM' : 'HARD');
+
+    const estimatedRemaining = current >= required
+      ? 'Claim now'
+      : `${remaining} more ${requirement?.unit || 'step(s)'} needed`;
+
+    return {
+      category,
+      difficulty,
+      progressPercent,
+      estimatedRemaining,
+    };
+  }
+
+  private toMissionCard(rw: any, eligibility: RewardEligibility) {
+    return {
+      id: rw.id,
+      ruleCode: rw.rule?.code || null,
+      rewardType: rw.rewardType,
+      amount: rw.amount.toString(),
+      assetCode: rw.assetCode,
+      status: rw.status,
+      reference: rw.reference,
+      createdAt: rw.createdAt,
+      ruleName: rw.rule?.name || this.defaultRewardName(rw.rewardType),
+      description:
+        (rw.rule?.parameters as any)?.description ||
+        this.defaultRewardName(rw.rewardType),
+      requirement: eligibility.requirement,
+      reason: eligibility.reason,
+      eligible: true,
+      ...this.missionMeta(eligibility.requirement, rw.rule),
+    };
   }
 
   /**
@@ -609,6 +703,25 @@ export class RewardService {
           operationId: operationResult?.id,
         },
       });
+
+      // Notify preferred channels + reconcile achievement cabinet.
+      try {
+        await this.notificationService.sendNotification({
+          telegramUserId: reward.telegramUserId,
+          templateCode: 'REWARD_EARNED',
+          variables: {
+            amount: reward.amount.toString(),
+            asset: reward.assetCode,
+          },
+        });
+      } catch (err: any) {
+        this.logger.warn(`[RewardService] Notification failed after claim ${reward.id}: ${err.message}`);
+      }
+      try {
+        await this.achievementService.reconcileAchievements(reward.telegramUserId);
+      } catch (err: any) {
+        this.logger.warn(`[RewardService] Achievement reconcile failed after claim ${reward.id}: ${err.message}`);
+      }
 
       this.logger.log(`[RewardService] Reward ${reward.id} CLAIMED & disbursed via Orchestrator`);
       return {

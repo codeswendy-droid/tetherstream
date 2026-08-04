@@ -6,6 +6,8 @@ import { ReferralGraphService } from './referral-graph.service';
 import { ReferralQualificationService } from './referral-qualification.service';
 import { DiscountEligibilityService } from './discount-eligibility.service';
 import { RewardService } from './reward.service';
+import { AchievementService } from './achievement.service';
+import { ProgressService } from './progress.service';
 import { TrustProfileService } from './trust-profile.service';
 import { UserLevelService } from './user-level.service';
 import { GrowthNotificationService } from './growth-notification.service';
@@ -20,6 +22,8 @@ export class GrowthController {
     private readonly qualificationService: ReferralQualificationService,
     private readonly discountService: DiscountEligibilityService,
     private readonly rewardService: RewardService,
+    private readonly achievementService: AchievementService,
+    private readonly progressService: ProgressService,
     private readonly trustProfileService: TrustProfileService,
     private readonly userLevelService: UserLevelService,
     private readonly notificationService: GrowthNotificationService,
@@ -221,6 +225,17 @@ export class GrowthController {
   }
 
   /**
+   * GET /growth/rewards/missions
+   * Full mission queue: claimable rewards + in-progress missions with
+   * category, difficulty, progress and estimated remaining.
+   */
+  @Get('rewards/missions')
+  async getMissionQueue(@TelegramUserId() telegramUserId: bigint) {
+    const missions = await this.rewardService.getMissionQueue(telegramUserId);
+    return { missions };
+  }
+
+  /**
    * GET /growth/rewards/history
    * Claimed / expired rewards with transaction references.
    */
@@ -253,6 +268,25 @@ export class GrowthController {
   ) {
     const reward = await this.rewardService.claimReward(telegramUserId, rewardId);
     return { reward };
+  }
+
+  /**
+   * GET /growth/progress
+   * Progress Center overview: hero stats, streak, level progress, totals,
+   * recent achievements, next best action and upcoming unlock.
+   */
+  @Get('progress')
+  async getProgressOverview(@TelegramUserId() telegramUserId: bigint) {
+    return this.progressService.getProgressOverview(telegramUserId);
+  }
+
+  /**
+   * GET /growth/achievements
+   * Achievement cabinet (all rows reconciled against real counters).
+   */
+  @Get('achievements')
+  async getAchievements(@TelegramUserId() telegramUserId: bigint) {
+    return this.achievementService.getUserAchievements(telegramUserId);
   }
 
   /**
