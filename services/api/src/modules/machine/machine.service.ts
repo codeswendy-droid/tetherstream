@@ -77,7 +77,7 @@ export class MachineService {
       promoOutputCap: 5.0,
       spinnerSpeedMultiplier: 0.1,
       promoSpinnerSpeedMultiplier: 0.5,
-      maxMultiplier: 20.2,
+      maxMultiplier: 10.1,
       multiplierDecayPerSec: 0.5,
       interactiveBaseRate: 0.0005,
       interactiveBonusCap: 0.10,

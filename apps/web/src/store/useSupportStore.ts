@@ -134,7 +134,7 @@ export const useSupportStore = create<SupportState>((set, get) => ({
       id: 'kb-2',
       category: 'Machine',
       title: 'Spinner Overheat & Cool Down Protection',
-      content: 'If the cooler bar reaches 100% capacity (20.2x multiplier), the spinner overheats and enters a 15-second cool down period to ensure fair distribution.',
+      content: 'If the cooler bar reaches 100% capacity (10.1x multiplier), the spinner overheats and enters a 15-second cool down period to ensure fair distribution.',
     },
   ],
   macros: [

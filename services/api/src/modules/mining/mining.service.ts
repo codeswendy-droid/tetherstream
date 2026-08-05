@@ -22,7 +22,7 @@ export interface UserMiningState {
   tapYieldPerTap: number;
 }
 
-const MAX_MULTIPLIER = 20.2;
+const MAX_MULTIPLIER = 10.1;
 const MULTIPLIER_DECAY_PER_SEC = 0.5;
 const OVERHEAT_MS = 15 * 1000;
 
