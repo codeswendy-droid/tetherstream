@@ -184,44 +184,21 @@ export const TitanHubScreen: React.FC = () => {
     }
   };
 
+  // Relogin / Session welcome popup toast
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const welcomed = sessionStorage.getItem('welcome_toast_shown');
+      if (!welcomed) {
+        import('../../components/Toast').then(({ showToast }) => {
+          showToast('🟢 WELCOME BACK: Titan Core Prime online • Systems operational', 'info');
+        });
+        sessionStorage.setItem('welcome_toast_shown', 'true');
+      }
+    }
+  }, []);
+
   return (
     <div className="flex flex-col min-h-full animate-fade-in pb-28 px-4 pt-2 gap-4 select-none">
-      {/* SECTION 0: TITAN COMMAND BAR */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`web3-card rounded-2xl p-3.5 border relative overflow-hidden ${
-          titanContext.attentionRequired ? 'border-red-500/50 shadow-red-500/20' : 'border-white/10'
-        }`}
-      >
-        <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${getMoodColor(titanContext.titanMood)} rounded-full blur-3xl opacity-20`} />
-        
-        <div className="relative flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getMoodColor(titanContext.titanMood)} border flex items-center justify-center text-white shadow-lg shrink-0`}>
-            {getMoodIcon(titanContext.titanMood)}
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="text-[9px] font-extrabold uppercase tracking-wider text-usdt-green mb-0.5 font-mono flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-usdt-green animate-pulse" />
-              Welcome Back
-            </div>
-            <div className="text-xs font-black text-text-primary leading-tight truncate">
-              {activeRecord?.nickname ? `${activeRecord.nickname} online • ${titanContext.titanMessage}` : titanContext.titanMessage}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div className={`w-2 h-2 rounded-full ${
-              titanState.syncStatus === 'COMPLETE' ? 'bg-usdt-green' : 'bg-amber-400 animate-pulse'
-            }`} />
-            <span className="text-[10px] font-mono text-text-tertiary uppercase">
-              {titanState.syncStatus}
-            </span>
-          </div>
-        </div>
-      </motion.div>
-
       {/* SECTION 1: HERO - Centered Signature Spinner */}
       <div className="flex flex-col gap-3">
         <MiningModeToggle />
