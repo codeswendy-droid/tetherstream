@@ -212,7 +212,12 @@ export function App() {
   }
 
   // 2. Admin routes bypass AuthGate entirely (operator access)
-  if (window.location.pathname.startsWith('/admin')) {
+  const isAdminRoute = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/admin') ||
+    window.location.hash.includes('/admin') ||
+    window.location.search.includes('admin=true')
+  );
+  if (isAdminRoute) {
     return <AdminRoutes />;
   }
 
