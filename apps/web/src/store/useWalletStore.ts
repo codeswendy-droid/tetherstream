@@ -113,7 +113,9 @@ export const useWalletStore = create<WalletState>((set, get) => ({
    * Fetch derived balances strictly from the Balance Engine (GET /financial/balance)
    */
   fetchBalanceFromEngine: async () => {
-    set({ isLoadingBalance: true, error: null });
+    if (get().usdtBalance === 0) {
+      set({ isLoadingBalance: true, error: null });
+    }
     try {
       const data = await financialService.getBalance();
       
@@ -201,7 +203,9 @@ export const useWalletStore = create<WalletState>((set, get) => ({
    * Fetch settlement history from Universal Settlement Provider API (GET /settlement/history)
    */
   fetchSettlementHistory: async () => {
-    set({ isLoadingSettlements: true, error: null });
+    if (get().settlementHistory.length === 0) {
+      set({ isLoadingSettlements: true, error: null });
+    }
     try {
       const history = await settlementService.getHistory();
       const pending = history.filter((item) => ACTIVE_STATUS_SET.has(item.status));
@@ -219,14 +223,15 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   /**
    * Fetch transactions from Ledger / Transaction Service (GET /financial/transactions)
    */
-  fetchTransactions: async (limit = 50, offset = 0) => {
-    set({ isLoadingTransactions: true, error: null });
+  fetchTransactions: async (limit = 20, offset = 0) => {
+    if (get().transactions.length === 0) {
+      set({ isLoadingTransactions: true, error: null });
+    }
     try {
       const res = await financialService.getTransactions(limit, offset);
       set({
         transactions: res.items || [],
         isLoadingTransactions: false,
-      });
     } catch (err: any) {
       console.warn('Transaction history fetch notice:', err?.message);
       set({ isLoadingTransactions: false });
