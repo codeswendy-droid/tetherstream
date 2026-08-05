@@ -408,22 +408,20 @@ export const MiningSpinner = React.memo(() => {
       showToast("Trust Score increased! Thank you for maintaining active compute operations. 🛡️", "info");
     }
 
-    if (graphicsQuality !== 'low' && !reducedMotion) {
-      const newParticle: Particle = {
-        id: Date.now() + Math.random(),
-        x: x + (Math.random() * 20 - 10),
-        y: y - 10,
-        vx: (Math.random() - 0.5) * 4,
-        vy: -Math.random() * 5 - 4,
-        rotation: Math.random() * 360,
-        rotSpeed: (Math.random() - 0.5) * 12,
-        text: isUsdt && showLocal && selectedCountry
-          ? `+${selectedCountry.currencySymbol}${(tapYield * (Number(selectedCountry.exchangeRate) || 1)).toLocaleString(undefined, selectedCountry.numberFormat || { maximumFractionDigits: 2 })}`
-          : `+${(Number(tapYield) || 0).toFixed(4)} ${activeCurrency}`,
-      };
+    const newParticle: Particle = {
+      id: Date.now() + Math.random(),
+      x: x + (Math.random() * 20 - 10),
+      y: y - 10,
+      vx: (Math.random() - 0.5) * 4,
+      vy: -Math.random() * 5 - 4,
+      rotation: Math.random() * 360,
+      rotSpeed: (Math.random() - 0.5) * 12,
+      text: isUsdt && showLocal && selectedCountry
+        ? `+${selectedCountry.currencySymbol}${(tapYield * (Number(selectedCountry.exchangeRate) || 1)).toLocaleString(undefined, selectedCountry.numberFormat || { maximumFractionDigits: 2 })}`
+        : `+${(Number(tapYield) || 0).toFixed(4)} ${activeCurrency}`,
+    };
 
-      setParticles((prev) => [...prev.slice(-12), newParticle]);
-    }
+    setParticles((prev) => [...prev.slice(-12), newParticle]);
   };
 
   const temperature = Math.min(99.9, 30 + (coolerMultiplier - 1.0) * 3.2);
