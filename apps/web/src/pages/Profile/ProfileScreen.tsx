@@ -40,7 +40,12 @@ import { showToast } from '../../components/Toast';
 import { MachineOwnersManualModal } from '../TitanHub/components/MachineOwnersManualModal';
 import { MachineCertificateModal } from '../TitanHub/components/MachineCertificateModal';
 
-export const ProfileScreen: React.FC = () => {
+interface ProfileScreenProps {
+  isDrawer?: boolean;
+  onClose?: () => void;
+}
+
+export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, onClose }) => {
   const { profile, isLoading, fetchGrowthProfile } = useGrowthStore();
   const { trustScore } = useTreasuryStore();
   const { session, clearSession, user: authUser } = useAuthStore();
@@ -154,8 +159,21 @@ export const ProfileScreen: React.FC = () => {
           <h1 className="text-2xl font-black text-text-primary tracking-tight">My Profile</h1>
         </div>
 
-        <div className="w-10 h-10 rounded-2xl bg-gold/15 border border-gold/30 text-gold flex items-center justify-center font-bold">
-          <User size={22} />
+        <div className="flex items-center gap-2">
+          {isDrawer && (
+            <button
+              onClick={onClose}
+              className="w-9 h-9 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-text-primary hover:bg-white/20 press-feedback"
+              title="Close Profile"
+            >
+              <X size={18} />
+            </button>
+          )}
+          {!isDrawer && (
+            <div className="w-10 h-10 rounded-2xl bg-gold/15 border border-gold/30 text-gold flex items-center justify-center font-bold">
+              <User size={22} />
+            </div>
+          )}
         </div>
       </div>
 
