@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Smartphone, Bot, Wallet, ArrowDownToLine, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useWalletStore } from '../../store/useWalletStore';
 import { useTelegram } from '../../context/TelegramContext';
+import { useCountryStore } from '../../store/useCountryStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import { withdrawalService } from '../../services/withdrawalService';
 import { showToast } from '../Toast';
 import { CurrencyDisplay } from '../DualCurrencyDisplay';
@@ -17,6 +19,8 @@ type WithdrawMethod = 'MOBILE_MONEY' | 'MPESA' | 'CRYPTOBOT' | 'USDT_ADDRESS';
 export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose }) => {
   const { usdtBalance, fetchBalanceFromEngine } = useWalletStore();
   const { hapticFeedback } = useTelegram();
+  const { selectedCountry, getLocalAmount, getLocalAmountRaw } = useCountryStore();
+  const { preferLocalCurrency } = useSettingsStore();
   
   const [selectedMethod, setSelectedMethod] = useState<WithdrawMethod | null>(null);
   const [withdrawAmount, setWithdrawAmount] = useState('');
@@ -24,6 +28,10 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const isLocalPreferred = preferLocalCurrency && !!selectedCountry && selectedCountry.code !== 'US';
+  const currencySymbol = isLocalPreferred ? selectedCountry?.currencySymbol || '₮' : '₮';
+  const currencyLabel = isLocalPreferred ? selectedCountry?.currencyCode || 'USDT' : 'USDT';
 
   const withdrawMethods = [
     {
@@ -67,7 +75,12 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
       return;
     }
 
-    if (amountVal > usdtBalance) {
+    // Convert local currency to USDT if needed
+    const usdtAmount = isLocalPreferred 
+      ? amountVal / (selectedCountry?.exchangeRate || 1) 
+      : amountVal;
+
+    if (usdtAmount > usdtBalance) {
       setErrorMsg('Insufficient balance.');
       return;
     }
@@ -101,7 +114,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
     try {
       await withdrawalService.createWithdrawal({
         asset: 'USDT',
-        amount: withdrawAmount,
+        amount: usdtAmount.toString(),
         destination,
         destinationType,
       });
@@ -235,15 +248,15 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
               <div className="space-y-4">
                 {/* Amount Input */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-text-tertiary uppercase">Amount (USDT)</label>
+                  <label className="text-[10px] font-bold text-text-tertiary uppercase">Amount ({currencyLabel})</label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-3 text-sm font-mono text-text-tertiary">₮</span>
+                    <span className="absolute left-3 text-sm font-mono text-text-tertiary">{currencySymbol}</span>
                     <input
                       type="number"
                       value={withdrawAmount}
                       onChange={(e) => setWithdrawAmount(e.target.value)}
                       placeholder="0.00"
-                      max={usdtBalance}
+                      max={isLocalPreferred ? getLocalAmountRaw(usdtBalance) : usdtBalance}
                       className="w-full bg-control-bg text-text-primary text-sm font-mono font-bold rounded-xl pl-7 pr-3 py-3 border border-white/10 focus:border-usdt-green focus:outline-none"
                     />
                   </div>
@@ -252,7 +265,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                       Available: <CurrencyDisplay amount={Number(usdtBalance) || 0} size="sm" />
                     </span>
                     <button
-                      onClick={() => setWithdrawAmount(usdtBalance.toString())}
+                      onClick={() => setWithdrawAmount((isLocalPreferred ? getLocalAmountRaw(usdtBalance) : usdtBalance).toString())}
                       className="text-usdt-green font-bold hover:underline"
                     >
                       Max
@@ -302,13 +315,15 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
                 {/* Fee Information */}
                 <div className="bg-control-bg/30 border border-white/5 rounded-xl p-3 flex items-center justify-between">
                   <span className="text-[10px] text-text-secondary">Fee</span>
-                  <span className="text-[10px] font-mono font-bold text-usdt-green">₮0.00</span>
+                  <span className="text-[10px] font-mono font-bold text-usdt-green">
+                    {currencySymbol}0.00
+                  </span>
                 </div>
 
                 {/* Submit Button */}
                 <button
                   onClick={handleWithdraw}
-                  disabled={isProcessing || !withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > usdtBalance}
+                  disabled={isProcessing || !withdrawAmount || parseFloat(withdrawAmount) <= 0 || (isLocalPreferred ? parseFloat(withdrawAmount) > getLocalAmountRaw(usdtBalance) : parseFloat(withdrawAmount) > usdtBalance)}
                   className="press-feedback bg-gradient-to-r from-usdt-green to-[#00c853] text-app-bg font-extrabold text-xs py-3 rounded-xl shadow-lg w-full flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(0,230,118,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isProcessing ? (

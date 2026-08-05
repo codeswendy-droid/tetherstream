@@ -202,50 +202,25 @@ export const HeroProgress: React.FC<HeroProgressProps> = ({ onRunMission }) => {
         </button>
       )}
 
-      {/* Upcoming unlock + recent achievements */}
-      {(upcomingUnlock || recentAchievements.length > 0) && (
-        <div className="mt-2.5 grid grid-cols-2 gap-2">
-          {upcomingUnlock && (
-            <div className="bg-control-bg/30 border border-white/5 rounded-xl p-2.5">
-              <div className="text-[9px] text-text-tertiary uppercase font-extrabold tracking-wider flex items-center gap-1">
-                <Target size={9} className="text-sky-400" /> Almost there
-              </div>
-              <div className="text-[10px] font-black text-text-primary mt-1 truncate">{upcomingUnlock.name}</div>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <div className="flex-1 h-1 bg-control-bg rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-sky-400 rounded-full"
-                    style={{ width: `${Math.min(100, upcomingUnlock.progressPercent)}%` }}
-                  />
-                </div>
-                <span className="text-[8px] font-mono text-sky-400 font-bold">{upcomingUnlock.progressPercent}%</span>
-              </div>
-              <div className="text-[8px] text-text-tertiary font-mono mt-1 truncate">
-                {upcomingUnlock.estimatedRemaining}
-              </div>
+      {/* Upcoming unlock */}
+      {upcomingUnlock && (
+        <div className="mt-2.5 bg-control-bg/30 border border-white/5 rounded-xl p-2.5">
+          <div className="text-[9px] text-text-tertiary uppercase font-extrabold tracking-wider flex items-center gap-1">
+            <Target size={9} className="text-sky-400" /> Almost there
+          </div>
+          <div className="text-[10px] font-black text-text-primary mt-1 truncate">{upcomingUnlock.name}</div>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <div className="flex-1 h-1 bg-control-bg rounded-full overflow-hidden">
+              <div
+                className="h-full bg-sky-400 rounded-full"
+                style={{ width: `${Math.min(100, upcomingUnlock.progressPercent)}%` }}
+              />
             </div>
-          )}
-          {recentAchievements.length > 0 && (
-            <div className="bg-control-bg/30 border border-white/5 rounded-xl p-2.5">
-              <div className="text-[9px] text-text-tertiary uppercase font-extrabold tracking-wider flex items-center gap-1">
-                <TrendingUp size={9} className="text-gold" /> Recent awards
-              </div>
-              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                {recentAchievements.map((a) => (
-                  <span
-                    key={a.code}
-                    title={a.name}
-                    className="w-6 h-6 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center text-xs"
-                  >
-                    {a.icon || '🏅'}
-                  </span>
-                ))}
-              </div>
-              <div className="text-[8px] text-text-tertiary mt-1 truncate">
-                {recentAchievements.map((a) => a.name).join(' · ')}
-              </div>
-            </div>
-          )}
+            <span className="text-[8px] font-mono text-sky-400 font-bold">{upcomingUnlock.progressPercent}%</span>
+          </div>
+          <div className="text-[8px] text-text-tertiary font-mono mt-1 truncate">
+            {upcomingUnlock.estimatedRemaining}
+          </div>
         </div>
       )}
 

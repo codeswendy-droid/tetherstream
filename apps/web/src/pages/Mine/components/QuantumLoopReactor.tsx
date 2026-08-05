@@ -231,9 +231,54 @@ class ReactorAudioSynth {
       // Audio autoplay policy fallback
     }
   }
+
+  public playOverheatSound() {
+    if (this.isMuted) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+
+      const now = this.ctx.currentTime;
+      
+      // Create a descending "stop" sound with multiple elements
+      const osc1 = this.ctx.createOscillator();
+      const osc2 = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      // Main descending tone - feels like something stopping
+      osc1.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(400, now);
+      osc1.frequency.exponentialRampToValueAtTime(80, now + 0.3);
+
+      // Secondary lower tone for impact
+      osc2.type = 'square';
+      osc2.frequency.setValueAtTime(200, now);
+      osc2.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.35);
+      osc2.stop(now + 0.35);
+    } catch {
+      // Audio autoplay policy fallback
+    }
+  }
 }
 
 const audioSynth = new ReactorAudioSynth();
+
+// Export the audio synth for use in other components
+export { audioSynth };
 
 export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopReactorProps>(
   ({ coolerMultiplier = 1.0, isOverheated = false, isLocked = false, onClick, onDiscoveryEvent, tierCode, tierIndex }, ref) => {

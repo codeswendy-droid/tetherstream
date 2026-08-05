@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Bot, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
 import { settlementService, type SettlementSessionView } from '../../services/settlementService';
 import { useWalletStore } from '../../store/useWalletStore';
+import { useCountryStore } from '../../store/useCountryStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
+import { useOnboardingStore } from '../../store/useOnboardingStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { SettlementTracker } from './SettlementTracker';
 
@@ -23,6 +26,13 @@ export const CryptoBotFunding: React.FC<CryptoBotFundingProps> = ({
 
   const { setActiveSession, fetchSettlementHistory } = useWalletStore();
   const { hapticFeedback } = useTelegram();
+  const { selectedCountry, getLocalAmount, getLocalAmountRaw } = useCountryStore();
+  const { preferLocalCurrency } = useSettingsStore();
+  const { completeFirstDeposit } = useOnboardingStore();
+
+  const isLocalPreferred = preferLocalCurrency && !!selectedCountry && selectedCountry.code !== 'US';
+  const currencySymbol = isLocalPreferred ? selectedCountry?.currencySymbol || '₮' : '₮';
+  const currencyLabel = isLocalPreferred ? selectedCountry?.currencyCode || 'USDT' : 'USDT';
 
   const numericAmount = parseFloat(usdtAmount) || 0;
 
@@ -33,8 +43,14 @@ export const CryptoBotFunding: React.FC<CryptoBotFundingProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (numericAmount < 1) {
-      setErrorMessage('Minimum funding amount is 1 USDT');
+    
+    // Convert local currency to USDT if needed
+    const usdtAmountToSubmit = isLocalPreferred 
+      ? numericAmount / (selectedCountry?.exchangeRate || 1) 
+      : numericAmount;
+    
+    if (usdtAmountToSubmit < 1) {
+      setErrorMessage(`Minimum funding amount is ${isLocalPreferred ? getLocalAmount(1) : '1 USDT'}`);
       return;
     }
 
@@ -46,14 +62,18 @@ export const CryptoBotFunding: React.FC<CryptoBotFundingProps> = ({
       const session = await settlementService.createSession({
         provider: providerId || 'CRYPTOBOT',
         asset: 'USDT',
-        requestedAmount: usdtAmount,
-        expectedCryptoAmount: usdtAmount,
+        requestedAmount: usdtAmountToSubmit.toString(),
+        expectedCryptoAmount: usdtAmountToSubmit.toString(),
         exchangeRate: '1.0',
       });
 
       setActiveSessionState(session);
       setActiveSession(session);
       fetchSettlementHistory();
+      
+      // Mark first deposit as complete for onboarding
+      completeFirstDeposit();
+      
       if (onSuccess) onSuccess(session);
     } catch (err: any) {
       const message = err?.response?.data?.message || err?.message || 'Failed to create CryptoBot payment request';
@@ -90,15 +110,15 @@ export const CryptoBotFunding: React.FC<CryptoBotFundingProps> = ({
       {/* Amount Input */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-bold uppercase tracking-wider text-text-tertiary">USDT Amount</label>
-          <span className="text-[11px] font-semibold text-text-tertiary">Min: 1 USDT</span>
+          <label className="text-xs font-bold uppercase tracking-wider text-text-tertiary">{currencyLabel} Amount</label>
+          <span className="text-[11px] font-semibold text-text-tertiary">Min: {isLocalPreferred ? getLocalAmount(1) : '1 USDT'}</span>
         </div>
 
         <div className="relative flex items-center">
           <input
             type="number"
-            min="1"
-            max="10000"
+            min={isLocalPreferred ? getLocalAmountRaw(1) : 1}
+            max={isLocalPreferred ? getLocalAmountRaw(10000) : 10000}
             step="any"
             value={usdtAmount}
             onChange={(e) => setUsdtAmount(e.target.value)}
@@ -106,7 +126,7 @@ export const CryptoBotFunding: React.FC<CryptoBotFundingProps> = ({
             className="w-full h-12 pl-4 pr-16 bg-control-bg border border-white/10 rounded-xl text-lg font-mono font-extrabold text-text-primary focus:outline-none focus:border-sky-400 transition-colors"
           />
           <span className="absolute right-4 font-mono font-bold text-xs text-sky-400 bg-sky-400/10 px-2 py-1 rounded">
-            USDT
+            {currencyLabel}
           </span>
         </div>
 
@@ -116,10 +136,10 @@ export const CryptoBotFunding: React.FC<CryptoBotFundingProps> = ({
             <button
               key={val}
               type="button"
-              onClick={() => handleQuickSelect(val)}
+              onClick={() => handleQuickSelect(isLocalPreferred ? getLocalAmountRaw(val) : val)}
               className="press-feedback flex-1 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-mono font-bold text-text-secondary hover:text-text-primary"
             >
-              ${val}
+              {currencySymbol}{isLocalPreferred ? Math.round(getLocalAmountRaw(val)).toLocaleString() : val}
             </button>
           ))}
         </div>
