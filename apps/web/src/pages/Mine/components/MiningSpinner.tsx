@@ -1006,11 +1006,11 @@ export const MiningSpinner = React.memo(() => {
             }
             style={{ borderColor: dynamicColor }}
           >
-            <span className="text-[10px] font-black text-white/95 leading-none font-mono tracking-tight">
-              {(Number(temperature) || 30).toFixed(1)}°
+            <span className="text-[12px] font-black text-white tracking-widest leading-none font-mono">
+              TAP
             </span>
-            <span className="text-[8px] font-extrabold text-text-tertiary uppercase tracking-wider leading-none mt-0.5 flex items-center gap-0.5">
-              <Thermometer size={8} style={{ color: dynamicColor }} /> Temp
+            <span className="text-[7px] font-extrabold uppercase tracking-widest leading-none mt-1 flex items-center gap-0.5" style={{ color: dynamicColor }}>
+              <Zap size={7} /> BOOST
             </span>
           </div>
 
