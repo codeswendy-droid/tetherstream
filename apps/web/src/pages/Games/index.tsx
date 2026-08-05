@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
@@ -172,7 +171,7 @@ export const GamesScreen: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40 bg-app-bg text-text-primary flex flex-col p-4 overflow-y-auto animate-fade-in">
+    <div className="fixed inset-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40 bg-app-bg text-text-primary flex flex-col p-4 overflow-y-auto">
       {/* Header bar */}
       <div className="flex items-center justify-between mb-4 pt-2">
         <div className="flex items-center gap-3">
@@ -471,184 +470,178 @@ export const GamesScreen: React.FC = () => {
         )}
       </div>
 
-      {/* Portals to document.body for popups/modals to guarantee perfect screen centering */}
-      {typeof document !== 'undefined' && createPortal(
-        <>
-          {/* Entry dialog */}
-          <AnimatePresence>
-            {pendingEntry && (
-              <EntryDialog
-                game={pendingEntry}
-                balance={store.balance ?? wallet.crystalsBalance}
-                loading={starting}
-                error={entryError}
-                onClose={() => {
-                  setPendingEntry(null);
-                  setEntryError(null);
+      {/* Entry dialog */}
+      <AnimatePresence>
+        {pendingEntry && (
+          <EntryDialog
+            game={pendingEntry}
+            balance={store.balance ?? wallet.crystalsBalance}
+            loading={starting}
+            error={entryError}
+            onClose={() => {
+              setPendingEntry(null);
+              setEntryError(null);
+            }}
+            onConfirm={() => handleConfirmEntry(pendingEntry)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Active game overlay */}
+      {activeGame && session && (
+        <div className="fixed inset-0 z-[60] left-1/2 -translate-x-1/2 w-full max-w-[480px] h-full bg-black">
+          {gameComponent(activeGame)}
+        </div>
+      )}
+
+      {/* Result modal */}
+      <AnimatePresence>
+        {result && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-[#050608]/95 backdrop-blur-xl flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="w-full max-w-[340px] bg-gradient-to-b from-[#1c1d29] to-[#0d0e15] border border-white/15 rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl max-h-[88vh] overflow-y-auto no-scrollbar"
+            >
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4 border relative"
+                style={{
+                  background: `${result.verdict.ok ? '#00e676' : '#f44336'}1a`,
+                  borderColor: `${result.verdict.ok ? '#00e676' : '#f44336'}44`,
                 }}
-                onConfirm={() => handleConfirmEntry(pendingEntry)}
-              />
-            )}
-          </AnimatePresence>
-
-          {/* Active game overlay */}
-          {activeGame && session && (
-            <div className="fixed inset-0 z-[60] left-1/2 -translate-x-1/2 w-full max-w-[480px] h-full bg-black">
-              {gameComponent(activeGame)}
-            </div>
-          )}
-
-          {/* Result modal */}
-          <AnimatePresence>
-            {result && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[70] bg-[#050608]/95 backdrop-blur-xl flex items-center justify-center p-6"
               >
-                <motion.div
-                  initial={{ scale: 0.85, y: 20 }}
-                  animate={{ scale: 1, y: 0 }}
-                  className="w-full max-w-[340px] bg-gradient-to-b from-[#1c1d29] to-[#0d0e15] border border-white/15 rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl max-h-[88vh] overflow-y-auto no-scrollbar"
-                >
-                  <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4 border relative"
-                    style={{
-                      background: `${result.verdict.ok ? '#00e676' : '#f44336'}1a`,
-                      borderColor: `${result.verdict.ok ? '#00e676' : '#f44336'}44`,
-                    }}
+                {result.verdict.ok ? '🎉' : '🛡️'}
+                {result.isNewPersonalBest && result.verdict.ok && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
+                    className="absolute -top-2 -right-3 text-lg"
                   >
-                    {result.verdict.ok ? '🎉' : '🛡️'}
-                    {result.isNewPersonalBest && result.verdict.ok && (
-                      <motion.span
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.5, type: 'spring', stiffness: 300 }}
-                        className="absolute -top-2 -right-3 text-lg"
-                      >
-                        🏆
-                      </motion.span>
+                    🏆
+                  </motion.span>
+                )}
+              </div>
+
+              <h3 className="text-xl font-black text-white uppercase tracking-wide">
+                {result.verdict.ok ? (result.isNewPersonalBest ? 'NEW PERSONAL BEST!' : 'REWARD EARNED') : 'VOIDED'}
+              </h3>
+              <p className="text-xs text-text-secondary mt-1 mb-4">{result.message}</p>
+
+              {result.verdict.ok && (
+                <>
+                  {/* Score + crystals animated */}
+                  <div className="w-full bg-white/[0.04] border border-white/10 rounded-2xl px-5 py-4 mb-4 flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-text-secondary">Final score</span>
+                      <AnimatedCounter value={result.score} suffix=" pts" className="text-sm text-white" />
+                    </div>
+                    {result.crystalsEarned > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-text-secondary">Crystals</span>
+                        <AnimatedCounter value={result.crystalsEarned} prefix="+" suffix=" 💎" className="text-base text-[#a7ffeb]" />
+                      </div>
+                    )}
+                    {result.usdtEarned && parseFloat(result.usdtEarned) > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-text-secondary">USDT</span>
+                        <AnimatedCounter
+                          value={parseFloat(result.usdtEarned)}
+                          prefix="+₮"
+                          suffix=""
+                          duration={1100}
+                          className="text-base text-usdt-green"
+                        />
+                      </div>
+                    )}
+                    {result.xpEarned > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-text-secondary">Experience</span>
+                        <AnimatedCounter value={result.xpEarned} prefix="+⚡" className="text-sm text-gold" />
+                      </div>
+                    )}
+                    {result.levelUp && (
+                      <div className="flex items-center justify-center gap-1.5 bg-gold/10 border border-gold/30 rounded-xl px-3 py-2 text-[11px] font-black text-gold animate-pulse">
+                        <Gauge size={13} /> LEVEL UP — {result.levelUp.from} → {result.levelUp.to}
+                      </div>
+                    )}
+                    {result.grantCount > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-text-secondary">Bonus grants</span>
+                        <span className="text-[11px] font-black text-[#b388ff]">×{result.grantCount} claimed</span>
+                      </div>
                     )}
                   </div>
 
-                  <h3 className="text-xl font-black text-white uppercase tracking-wide">
-                    {result.verdict.ok ? (result.isNewPersonalBest ? 'NEW PERSONAL BEST!' : 'REWARD EARNED') : 'VOIDED'}
-                  </h3>
-                  <p className="text-xs text-text-secondary mt-1 mb-4">{result.message}</p>
-
-                  {result.verdict.ok && (
-                    <>
-                      {/* Score + crystals animated */}
-                      <div className="w-full bg-white/[0.04] border border-white/10 rounded-2xl px-5 py-4 mb-4 flex flex-col gap-2.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-text-secondary">Final score</span>
-                          <AnimatedCounter value={result.score} suffix=" pts" className="text-sm text-white" />
-                        </div>
-                        {result.crystalsEarned > 0 && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-text-secondary">Crystals</span>
-                            <AnimatedCounter value={result.crystalsEarned} prefix="+" suffix=" 💎" className="text-base text-[#a7ffeb]" />
-                          </div>
-                        )}
-                        {result.usdtEarned && parseFloat(result.usdtEarned) > 0 && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-text-secondary">USDT</span>
-                            <AnimatedCounter
-                              value={parseFloat(result.usdtEarned)}
-                              prefix="+₮"
-                              suffix=""
-                              duration={1100}
-                              className="text-base text-usdt-green"
-                            />
-                          </div>
-                        )}
-                        {result.xpEarned > 0 && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-text-secondary">Experience</span>
-                            <AnimatedCounter value={result.xpEarned} prefix="+⚡" className="text-sm text-gold" />
-                          </div>
-                        )}
-                        {result.levelUp && (
-                          <div className="flex items-center justify-center gap-1.5 bg-gold/10 border border-gold/30 rounded-xl px-3 py-2 text-[11px] font-black text-gold animate-pulse">
-                            <Gauge size={13} /> LEVEL UP — {result.levelUp.from} → {result.levelUp.to}
-                          </div>
-                        )}
-                        {result.grantCount > 0 && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-text-secondary">Bonus grants</span>
-                            <span className="text-[11px] font-black text-[#b388ff]">×{result.grantCount} claimed</span>
-                          </div>
-                        )}
+                  {/* Daily challenge completion */}
+                  {result.challenge?.completed && (
+                    <div className="w-full mb-3 bg-gradient-to-r from-[#d4af37]/15 to-[#ff9100]/10 border border-[#d4af37]/35 rounded-2xl px-4 py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Target size={15} className="text-gold" />
+                        <span className="text-[11px] font-bold text-gold">Daily Challenge cleared!</span>
                       </div>
-
-                      {/* Daily challenge completion */}
-                      {result.challenge?.completed && (
-                        <div className="w-full mb-3 bg-gradient-to-r from-[#d4af37]/15 to-[#ff9100]/10 border border-[#d4af37]/35 rounded-2xl px-4 py-3 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Target size={15} className="text-gold" />
-                            <span className="text-[11px] font-bold text-gold">Daily Challenge cleared!</span>
-                          </div>
-                          <span className="font-mono text-[11px] font-black text-gold">
-                            +{result.challenge.rewardCrystals} 💎 +{result.challenge.rewardXp}⚡
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Achievements */}
-                      {result.unlockedAchievements.length > 0 && (
-                        <div className="w-full mb-4 flex flex-col gap-1.5">
-                          {result.unlockedAchievements.map((a) => (
-                            <div key={a.code} className="flex items-center gap-2 bg-[#b388ff]/10 border border-[#b388ff]/30 rounded-xl px-3 py-2">
-                              <Award size={14} className="text-[#b388ff] shrink-0" />
-                              <span className="text-[11px] font-bold text-text-primary flex-1 text-left">
-                                Achievement unlocked: {a.name}
-                              </span>
-                              <span className="text-[9px] font-black uppercase text-[#b388ff]">{a.tier}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {!result.verdict.ok && result.verdict.reasons.length > 0 && (
-                    <div className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
-                      <p className="text-[10px] text-text-tertiary font-mono break-words">
-                        <ShieldCheck size={11} className="inline mr-1 text-error-red" />
-                        {result.verdict.reasons.join(', ')}
-                      </p>
+                      <span className="font-mono text-[11px] font-black text-gold">
+                        +{result.challenge.rewardCrystals} 💎 +{result.challenge.rewardXp}⚡
+                      </span>
                     </div>
                   )}
 
-                  {result.usdtEarned && parseFloat(result.usdtEarned) > 0 && (
-                    <p className="text-[10px] text-text-tertiary mb-4 border-t border-white/5 pt-3 w-full">
-                      Claim from your rewards queue — payouts are validated and posted by the Rewards Engine.
-                    </p>
+                  {/* Achievements */}
+                  {result.unlockedAchievements.length > 0 && (
+                    <div className="w-full mb-4 flex flex-col gap-1.5">
+                      {result.unlockedAchievements.map((a) => (
+                        <div key={a.code} className="flex items-center gap-2 bg-[#b388ff]/10 border border-[#b388ff]/30 rounded-xl px-3 py-2">
+                          <Award size={14} className="text-[#b388ff] shrink-0" />
+                          <span className="text-[11px] font-bold text-text-primary flex-1 text-left">
+                            Achievement unlocked: {a.name}
+                          </span>
+                          <span className="text-[9px] font-black uppercase text-[#b388ff]">{a.tier}</span>
+                        </div>
+                      ))}
+                    </div>
                   )}
+                </>
+              )}
 
-                  <button
-                    onClick={() => setResult(null)}
-                    className="w-full py-4 btn-glossy-primary rounded-xl text-sm font-bold tracking-wider"
-                  >
-                    AWESOME
-                  </button>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              {!result.verdict.ok && result.verdict.reasons.length > 0 && (
+                <div className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                  <p className="text-[10px] text-text-tertiary font-mono break-words">
+                    <ShieldCheck size={11} className="inline mr-1 text-error-red" />
+                    {result.verdict.reasons.join(', ')}
+                  </p>
+                </div>
+              )}
 
-          {/* Close helper for session-less state */}
-          {activeGame && !session && !result && (
-            <button
-              onClick={() => setActiveGame(null)}
-              className="fixed top-4 right-4 z-[70] w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-text-secondary"
-            >
-              <X size={20} />
-            </button>
-          )}
-        </>,
-        document.body
+              {result.usdtEarned && parseFloat(result.usdtEarned) > 0 && (
+                <p className="text-[10px] text-text-tertiary mb-4 border-t border-white/5 pt-3 w-full">
+                  Claim from your rewards queue — payouts are validated and posted by the Rewards Engine.
+                </p>
+              )}
+
+              <button
+                onClick={() => setResult(null)}
+                className="w-full py-4 btn-glossy-primary rounded-xl text-sm font-bold tracking-wider"
+              >
+                AWESOME
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Close helper for session-less state */}
+      {activeGame && !session && !result && (
+        <button
+          onClick={() => setActiveGame(null)}
+          className="fixed top-4 right-4 z-[70] w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-text-secondary"
+        >
+          <X size={20} />
+        </button>
       )}
     </div>
   );
