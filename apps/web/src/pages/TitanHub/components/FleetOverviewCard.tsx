@@ -1,6 +1,6 @@
 import type React from 'react';
 import { motion } from 'framer-motion';
-import { Cpu, Zap, Activity, ShieldCheck, PlusCircle } from 'lucide-react';
+import { Cpu, Zap, Activity, ShieldCheck, PlusCircle, HelpCircle } from 'lucide-react';
 import { useMiningStore } from '../../../store/useMiningStore';
 import { useMachineOwnershipStore } from '../../../store/useMachineOwnershipStore';
 import { MACHINE_CATALOG } from '../../../data/machines';
@@ -9,12 +9,14 @@ interface FleetOverviewCardProps {
   onOpenShop: () => void;
   onSelectTier: (tierCode: string) => void;
   selectedTierCode: string;
+  onOpenHowItWorks?: () => void;
 }
 
 export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
   onOpenShop,
   onSelectTier,
   selectedTierCode,
+  onOpenHowItWorks,
 }) => {
   const { userMachines, ownedTierCodes, baseSpeedGhs } = useMiningStore();
   const { ownerships } = useMachineOwnershipStore();
@@ -51,9 +53,19 @@ export const FleetOverviewCard: React.FC<FleetOverviewCardProps> = ({
           <Cpu size={14} className="text-usdt-green" />
           Your Machines
         </h3>
-        <span className="text-[10px] font-mono text-usdt-green bg-usdt-green/10 px-2 py-0.5 rounded-full border border-usdt-green/20">
-          {activeCount}/{totalMachinesCount} ACTIVE
-        </span>
+        <div className="flex items-center gap-2">
+          {onOpenHowItWorks && (
+            <button
+              onClick={onOpenHowItWorks}
+              className="text-[10px] font-extrabold text-gold bg-gold/10 px-2 py-0.5 rounded-full border border-gold/30 flex items-center gap-1 hover:bg-gold/20 active:scale-95 transition-all"
+            >
+              <HelpCircle size={10} /> How It Works & FAQs
+            </button>
+          )}
+          <span className="text-[10px] font-mono text-usdt-green bg-usdt-green/10 px-2 py-0.5 rounded-full border border-usdt-green/20">
+            {activeCount}/{totalMachinesCount} ACTIVE
+          </span>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-3">
