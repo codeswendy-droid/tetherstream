@@ -205,25 +205,45 @@ export const CapacityEngine: React.FC = () => {
         <div className="bg-control-bg/25 border border-white/5 rounded-2xl p-4">
           {dailyCycleStatus === 'NOT_ACTIVATED' && (
             <div className="text-center py-2">
-              <div className="w-12 h-12 rounded-full bg-usdt-green/10 text-usdt-green flex items-center justify-center mx-auto mb-3">
-                <Zap size={24} />
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 text-purple-400 flex items-center justify-center mx-auto mb-3 animate-pulse">
+                <Award size={24} />
               </div>
-              <h3 className="text-sm font-extrabold text-text-primary">Activate Daily Rewards</h3>
+              <h3 className="text-sm font-extrabold text-text-primary">Daily Mining Challenge</h3>
               <p className="text-xs text-text-secondary mt-1 max-w-[90%] mx-auto">
-                Activate daily rewards to grow your financial reputation!
+                Complete today's mining challenge to earn bonus speed boost!
               </p>
+              <div className="mt-3 bg-control-bg/30 rounded-xl p-3 border border-white/5">
+                <div className="flex items-center justify-between text-[10px] font-bold text-text-secondary mb-1">
+                  <span>Today's Target</span>
+                  <span className="text-purple-400">50 Taps</span>
+                </div>
+                <div className="w-full h-2 bg-control-bg rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" style={{ width: '0%' }} />
+                </div>
+                <div className="mt-2 flex items-center justify-center gap-1 text-[9px] text-purple-400 font-mono">
+                  <Sparkles size={8} /> Reward: +2x Speed Boost for 1 Hour
+                </div>
+              </div>
               <button
                 disabled={isProcessing}
-                onClick={handleActivateCycle}
-                className="press-feedback bg-gradient-to-r from-usdt-green to-[#00c853] text-app-bg font-extrabold text-xs px-6 py-3 rounded-xl shadow-lg mt-4 w-full flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(0,230,118,0.2)]"
+                onClick={() => {
+                  setIsProcessing(true);
+                  setTimeout(() => {
+                    activateDailyCycle();
+                    setIsProcessing(false);
+                    showToast('Daily Challenge started! Go to Mining to complete your taps.', 'success');
+                    setActiveTab('hub');
+                  }, 800);
+                }}
+                className="press-feedback bg-gradient-to-r from-purple-500 to-pink-500 text-app-bg font-extrabold text-xs px-6 py-3 rounded-xl shadow-lg mt-4 w-full flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(168,85,247,0.3)]"
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 size={14} className="animate-spin" /> Activating...
+                    <Loader2 size={14} className="animate-spin" /> Starting...
                   </>
                 ) : (
                   <>
-                    <Sparkles size={14} /> Activate Daily Rewards
+                    <Zap size={14} /> Start Challenge
                   </>
                 )}
               </button>

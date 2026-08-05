@@ -192,7 +192,8 @@ export const GrowScreen: React.FC = () => {
           <div className="web3-card rounded-2xl divide-y divide-white/5 border border-white/10 overflow-hidden">
             {referrals.map((item) => {
               const cfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.REGISTERED;
-              const name = item.firstName ? `${item.firstName}${item.lastName ? ' ' + item.lastName : ''}` : item.username || 'Operator';
+              const name = item.refereeName || 'Operator';
+              const username = item.refereeUsername ? `@${item.refereeUsername}` : null;
               return (
                 <div key={item.id} className="p-3 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-3">
@@ -201,8 +202,13 @@ export const GrowScreen: React.FC = () => {
                     </div>
                     <div>
                       <div className="font-extrabold text-text-primary">{name}</div>
+                      {username && (
+                        <div className="text-[10px] text-cyan-400 font-mono">
+                          {username}
+                        </div>
+                      )}
                       <div className="text-[10px] text-text-tertiary font-mono">
-                        Joined {new Date(item.joinedAt).toLocaleDateString()}
+                        Joined {new Date(item.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                   </div>

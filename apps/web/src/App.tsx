@@ -38,8 +38,10 @@ import { useMissionRunnerStore } from './store/useMissionRunnerStore';
 import { useMiningStore } from './store/useMiningStore';
 import { useWalletStore } from './store/useWalletStore';
 import { useTreasuryStore } from './store/useTreasuryStore';
+import { useOnboardingStore } from './store/useOnboardingStore';
 import { MissionRunner } from './components/rewards/MissionRunner';
 import { ClaimSuccessModal } from './components/rewards/ClaimSuccessModal';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import type { MissionItem } from './services/growthService';
 import { useAuthStore, detectUserCountry } from './store/useAuthStore';
 import { useCountryStore, SUPPORTED_COUNTRIES } from './store/useCountryStore';
@@ -83,6 +85,10 @@ function MainApp() {
   const { activeTab, isProfileDrawerOpen, closeProfileDrawer } = useNavigationStore();
   const { runningMission, closeRunner } = useMissionRunnerStore();
   const [runnerClaimed, setRunnerClaimed] = useState<MissionItem | null>(null);
+  
+  // Onboarding flow
+  const { currentStep, hasMadeFirstDeposit, hasAddedToHomescreen, completeAddToHomescreen } = useOnboardingStore();
+  const [showPWAInstall, setShowPWAInstall] = useState(false);
 
   // Single unified mining state synchronizer. The mining engine owns all
   // earnings; this loop only renders what the backend publishes.
@@ -108,6 +114,22 @@ function MainApp() {
       useMiningStore.getState().stopDisplayTicker();
     };
   }, []);
+
+  // Show PWA install prompt after first deposit
+  useEffect(() => {
+    if (hasMadeFirstDeposit && !hasAddedToHomescreen && currentStep === 'add_to_homescreen') {
+      // Small delay to let the user see their deposit success first
+      const timer = setTimeout(() => {
+        setShowPWAInstall(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [hasMadeFirstDeposit, hasAddedToHomescreen, currentStep]);
+
+  const handlePWAInstallComplete = () => {
+    completeAddToHomescreen();
+    setShowPWAInstall(false);
+  };
 
   return (
     <MainLayout>
@@ -159,6 +181,14 @@ function MainApp() {
         reward={runnerClaimed}
         isOpen={!!runnerClaimed}
         onClose={() => setRunnerClaimed(null)}
+      />
+
+      {/* PWA Install Prompt - 3rd onboarding step after first deposit */}
+      <PWAInstallPrompt
+        isOpen={showPWAInstall}
+        onClose={() => setShowPWAInstall(false)}
+        onInstall={handlePWAInstallComplete}
+        isInstalled={hasAddedToHomescreen}
       />
     </MainLayout>
   );

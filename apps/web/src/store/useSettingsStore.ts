@@ -13,6 +13,7 @@ export interface SettingsState {
   userCurrency: string;
   currencySymbol: string;
   currencyRate: number;
+  selectedCryptoCurrency: 'USDT' | 'TON';
   setCurrencyPreference: (
     preferLocal: boolean,
     country: string,
@@ -20,6 +21,7 @@ export interface SettingsState {
     symbol: string,
     rate: number
   ) => void;
+  setCryptoCurrency: (crypto: 'USDT' | 'TON') => void;
 
   // Admin Payment Receiving Phone Numbers
   adminPhoneNumbers: string[];
@@ -112,6 +114,7 @@ export const useSettingsStore = create<SettingsState>()(
       userCurrency: 'USDT',
       currencySymbol: '₮',
       currencyRate: 1.0,
+      selectedCryptoCurrency: 'USDT',
       setCurrencyPreference: (preferLocal, country, currency, symbol, rate) =>
         set({
           preferLocalCurrency: preferLocal,
@@ -120,6 +123,7 @@ export const useSettingsStore = create<SettingsState>()(
           currencySymbol: symbol,
           currencyRate: rate,
         }),
+      setCryptoCurrency: (crypto) => set({ selectedCryptoCurrency: crypto }),
 
       adminPhoneNumbers: ['0771234567', '0789012345', '0701122334'],
       activeAdminPhone: '0771234567',

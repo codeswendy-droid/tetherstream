@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Smartphone, ArrowRight, ShieldAlert, Zap, AlertCircle, PhoneCall, Copy, Check, Clock } from 'lucide-react';
 import { useWalletStore } from '../../store/useWalletStore';
 import { usePaymentOrderStore } from '../../store/usePaymentOrderStore';
+import { useCountryStore } from '../../store/useCountryStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
+import { useOnboardingStore } from '../../store/useOnboardingStore';
 import { paymentOrderService, type PaymentOrderRecord } from '../../services/paymentOrderService';
 import { useTelegram } from '../../context/TelegramContext';
 
@@ -25,6 +28,13 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
 
   const { fetchBalanceFromEngine, fetchTransactions } = useWalletStore();
   const { hapticFeedback } = useTelegram();
+  const { selectedCountry, getLocalAmount, getLocalAmountRaw } = useCountryStore();
+  const { preferLocalCurrency } = useSettingsStore();
+  const { completeFirstDeposit } = useOnboardingStore();
+
+  const isLocalPreferred = preferLocalCurrency && !!selectedCountry && selectedCountry.code !== 'US';
+  const currencySymbol = isLocalPreferred ? selectedCountry?.currencySymbol || '₮' : '₮';
+  const currencyLabel = isLocalPreferred ? selectedCountry?.currencyCode || 'USDT' : 'USDT';
 
   const numericAmount = parseFloat(usdtAmount) || 0;
 
@@ -42,8 +52,14 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (numericAmount < 1) {
-      setErrorMessage('Minimum deposit amount is 1 USDT');
+    
+    // Convert local currency to USDT if needed
+    const usdtAmountToSubmit = isLocalPreferred 
+      ? numericAmount / (selectedCountry?.exchangeRate || 1) 
+      : numericAmount;
+    
+    if (usdtAmountToSubmit < 1) {
+      setErrorMessage(`Minimum deposit amount is ${isLocalPreferred ? getLocalAmount(1) : '1 USDT'}`);
       return;
     }
 
@@ -54,11 +70,11 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
     try {
       const order = await paymentOrderService.createOrder({
         type: 'DEPOSIT',
-        amount: numericAmount,
+        amount: usdtAmountToSubmit,
         currency: 'USDT',
         paymentMethod: 'MOBILE_MONEY',
         network,
-        country: 'UG',
+        country: selectedCountry?.code || 'UG',
       });
 
       setActiveOrder(order);
@@ -80,6 +96,9 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
       setActiveOrder(updated);
       setVerificationSubmitted(true);
       hapticFeedback.notificationOccurred('success');
+      
+      // Mark first deposit as complete for onboarding
+      completeFirstDeposit();
     } catch (err: any) {
       setErrorMessage(err?.message || 'Failed to submit verification');
     } finally {
@@ -96,7 +115,7 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
             <Clock size={16} /> Order Reference: {activeOrder.reference}
           </div>
           <div className="text-3xl font-extrabold font-mono text-text-primary">
-            ${(Number(activeOrder?.amount) || 0).toFixed(2)} USDT
+            {currencySymbol}{(Number(activeOrder?.amount) || 0).toFixed(2)} {currencyLabel}
           </div>
           <div className="text-xs font-mono font-bold text-text-secondary">
             Payable: <span className="text-usdt-green">{(Number(activeOrder?.localAmount) || 0).toLocaleString()} {activeOrder.currency}</span>
@@ -203,14 +222,14 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold uppercase tracking-wider text-text-tertiary">Amount to Deposit</label>
-          <span className="text-[11px] font-semibold text-text-tertiary">Min: 1 USDT</span>
+          <span className="text-[11px] font-semibold text-text-tertiary">Min: {isLocalPreferred ? getLocalAmount(1) : '1 USDT'}</span>
         </div>
 
         <div className="relative flex items-center">
           <input
             type="number"
-            min="1"
-            max="10000"
+            min={isLocalPreferred ? getLocalAmountRaw(1) : 1}
+            max={isLocalPreferred ? getLocalAmountRaw(10000) : 10000}
             step="any"
             value={usdtAmount}
             onChange={(e) => setUsdtAmount(e.target.value)}
@@ -218,7 +237,7 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
             className="w-full h-12 pl-4 pr-16 bg-control-bg border border-white/10 rounded-xl text-lg font-mono font-extrabold text-text-primary focus:outline-none focus:border-usdt-green transition-colors"
           />
           <span className="absolute right-4 font-mono font-bold text-xs text-usdt-green bg-usdt-green/10 px-2 py-1 rounded">
-            USDT
+            {currencyLabel}
           </span>
         </div>
 
@@ -228,10 +247,10 @@ export const MobileMoneyFunding: React.FC<MobileMoneyFundingProps> = ({
             <button
               key={val}
               type="button"
-              onClick={() => handleQuickSelect(val)}
+              onClick={() => handleQuickSelect(isLocalPreferred ? getLocalAmountRaw(val) : val)}
               className="press-feedback flex-1 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs font-mono font-bold text-text-secondary hover:text-text-primary"
             >
-              ${val}
+              {currencySymbol}{isLocalPreferred ? Math.round(getLocalAmountRaw(val)).toLocaleString() : val}
             </button>
           ))}
         </div>

@@ -48,7 +48,7 @@ export const useNavigationStore = create<NavigationState>((set) => ({
     }
     // Handle redirect from deprecated tab IDs
     const mappedTab = (tab in TAB_REDIRECTS) ? TAB_REDIRECTS[tab as DeprecatedTabId] : tab as TabId;
-    set({ activeTab: mappedTab, showGames: false, showShop: false });
+    set({ activeTab: mappedTab, showGames: false, showShop: false, isProfileDrawerOpen: false });
   },
   openGames: () => set({ showGames: true }),
   closeGames: () => set({ showGames: false }),

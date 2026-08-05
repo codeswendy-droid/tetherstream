@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
@@ -30,5 +30,11 @@ export class UserController {
   @ApiOperation({ summary: 'Get current user trust profile' })
   async getTrustProfile(@TelegramUserId() telegramUserId: bigint) {
     return this.userService.getTrustProfile(telegramUserId);
+  }
+
+  @Delete(['users/me', 'user/delete'])
+  @ApiOperation({ summary: 'Delete user account completely' })
+  async deleteAccount(@TelegramUserId() telegramUserId: bigint) {
+    return this.userService.deleteAccount(telegramUserId);
   }
 }
