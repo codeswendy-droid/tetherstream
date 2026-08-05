@@ -134,13 +134,20 @@ def main():
         
     print(f"✨ Uploaded {upload_count} modified files. Creating new remote tree...")
     
-    # 5. Create new tree with base_tree
-    tree_body = {'tree': tree_updates}
-    if remote_tree_sha:
-        tree_body['base_tree'] = remote_tree_sha
-    new_tree_res = api_request('POST', '/git/trees', tree_body)
-    new_tree_sha = new_tree_res['sha']
-    print(f"🌲 Created Remote Tree SHA: {new_tree_sha}")
+    # 5. Create new tree incrementally in chunks to avoid GitHub API 422 timeouts
+    CHUNK_SIZE = 50
+    current_base_tree = remote_tree_sha
+
+    for i in range(0, len(tree_updates), CHUNK_SIZE):
+        chunk = tree_updates[i:i + CHUNK_SIZE]
+        tree_body = {'tree': chunk}
+        if current_base_tree:
+            tree_body['base_tree'] = current_base_tree
+        new_tree_res = api_request('POST', '/git/trees', tree_body)
+        current_base_tree = new_tree_res['sha']
+        print(f"🌲 Incremental Tree ({i + len(chunk)}/{len(tree_updates)}) SHA: {current_base_tree}")
+
+    new_tree_sha = current_base_tree
     
     # 6. Create commit
     commit_msg = sys.argv[1] if len(sys.argv) > 1 else "refactor: unify Free Trial node into production machine pipeline"
