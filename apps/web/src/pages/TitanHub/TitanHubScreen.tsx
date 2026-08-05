@@ -233,6 +233,7 @@ export const TitanHubScreen: React.FC = () => {
         onOpenShop={() => setShowShopSection(true)}
         onSelectTier={(tier) => setSelectedTierCode(tier)}
         selectedTierCode={selectedTierCode}
+        onOpenHowItWorks={() => setShowEducationModal(true)}
       />
 
       {/* DYNAMIC PRIORITY: Paused Machine Alert Elevates Machine Controls */}
