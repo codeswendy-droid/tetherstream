@@ -46,9 +46,64 @@ interface RewardQueueState {
   reset: () => void;
 }
 
+const DEFAULT_STARTER_MISSIONS: MissionItem[] = [
+  {
+    id: 'starter_welcome',
+    title: 'Activate Mining Core',
+    description: 'Start your first mining cycle on Titan Hub',
+    rewardAmount: '0.50',
+    assetCode: 'USDT',
+    category: 'machine',
+    difficulty: 'EASY',
+    eligible: true,
+    status: 'AVAILABLE',
+    progressPercent: 100,
+    requirement: { key: 'mining_started', label: 'Start Core', required: 1, current: 1, unit: 'core', completed: true },
+  },
+  {
+    id: 'starter_invite',
+    title: 'Invite Your First Friend',
+    description: 'Share your referral link with a friend to boost hash speed',
+    rewardAmount: '5.00',
+    assetCode: 'USDT',
+    category: 'referral',
+    difficulty: 'EASY',
+    eligible: false,
+    status: 'AVAILABLE',
+    progressPercent: 0,
+    requirement: { key: 'friends_invited', label: 'Invite Friend', required: 1, current: 0, unit: 'friend', completed: false },
+  },
+  {
+    id: 'starter_streak',
+    title: '3-Day Operator Streak',
+    description: 'Maintain active core telemetry for 3 consecutive days',
+    rewardAmount: '1.00',
+    assetCode: 'USDT',
+    category: 'settlement',
+    difficulty: 'MEDIUM',
+    eligible: false,
+    status: 'AVAILABLE',
+    progressPercent: 33,
+    requirement: { key: 'active_days', label: 'Consecutive Days', required: 3, current: 1, unit: 'days', completed: false },
+  },
+  {
+    id: 'starter_security',
+    title: 'Account Security Shield',
+    description: 'Verify Telegram session & configure security settings',
+    rewardAmount: '0.25',
+    assetCode: 'USDT',
+    category: 'profile',
+    difficulty: 'EASY',
+    eligible: true,
+    status: 'AVAILABLE',
+    progressPercent: 100,
+    requirement: { key: 'security_config', label: 'Security Verified', required: 1, current: 1, unit: 'shield', completed: true },
+  },
+];
+
 export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
   queue: [],
-  missions: [],
+  missions: DEFAULT_STARTER_MISSIONS,
   history: [],
   progress: null,
   achievements: [],
@@ -73,9 +128,14 @@ export const useRewardQueueStore = create<RewardQueueState>((set, get) => ({
   fetchMissions: async () => {
     try {
       const missions = await growthService.getMissions();
-      set({ missions });
+      if (missions && Array.isArray(missions) && missions.length > 0) {
+        set({ missions });
+      } else {
+        set({ missions: DEFAULT_STARTER_MISSIONS });
+      }
     } catch (err: any) {
       console.warn('Failed to load mission queue:', err?.message);
+      set({ missions: DEFAULT_STARTER_MISSIONS });
     }
   },
 
