@@ -109,7 +109,7 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
     ? Math.min(100, (requirement.current / Math.max(1, requirement.required)) * 100)
     : 100;
   const isEligible = !!liveMission.eligible;
-  const isProcessing = liveMission.status === 'CLAIM_PENDING' || (claimingId === liveMission.id && isClaiming);
+  const isProcessing = isEligible && (liveMission.status === 'CLAIM_PENDING' || (claimingId === liveMission.id && isClaiming));
   const tab = requirement?.actionTab || 'rewards';
   const shareText = `🚀 TITAN MISSION 🚀\nI'm completing the "${liveMission.ruleName}" on Titan Stream — ${liveMission.amount} ${liveMission.assetCode} on the line!\nJoin me: https://t.me/tetherstream_bot`;
 
