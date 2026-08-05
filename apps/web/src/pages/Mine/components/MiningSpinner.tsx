@@ -573,37 +573,6 @@ export const MiningSpinner = React.memo(() => {
             borderColor: `${dynamicColor}35`,
           }}
         >
-          {/* OPTION A: CIRCULAR PROGRESS RING WRAPPED DIRECTLY AROUND SPINNER */}
-          <svg className="absolute -inset-1.5 w-[228px] h-[228px] pointer-events-none z-20 -rotate-90">
-            {/* Background Track Ring */}
-            <circle
-              cx="114"
-              cy="114"
-              r="104"
-              fill="none"
-              stroke="rgba(255, 255, 255, 0.08)"
-              strokeWidth="5"
-            />
-            {/* Dynamic Progress Glow Ring */}
-            <circle
-              cx="114"
-              cy="114"
-              r="104"
-              fill="none"
-              stroke={dynamicColor}
-              strokeWidth="5"
-              strokeDasharray="653.45"
-              strokeDashoffset={
-                653.45 - (653.45 * Math.min(100, Math.max(12, ((Number(coolerMultiplier) || 1) / maxMultiplier) * 100))) / 100
-              }
-              strokeLinecap="round"
-              className="transition-all duration-700 ease-out"
-              style={{
-                filter: `drop-shadow(0 0 6px ${dynamicColor})`,
-              }}
-            />
-          </svg>
-
           {/* Animated steam/smoke particles */}
           <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center overflow-visible">
             {smoke.map((s) => (
