@@ -362,24 +362,21 @@ export const useMiningStore = create<MiningState>((set, get) => {
       localStorage.setItem('ton_unlocked', 'true');
       set({ tonUnlocked: true });
     },
-    isMiningLocked: () => {
+    isMiningLocked: (tierCode?: string) => {
       const s = get();
-      const isUsdt = s.activeCurrency === 'USDT';
-      const spinnerIdx = isUsdt ? s.usdtSpinnerIdx : s.tonSpinnerIdx;
-
       if (s.activeCurrency === 'TON' && !s.tonUnlocked) {
         return true;
       }
 
-      const catalogMachine = MACHINE_CATALOG[spinnerIdx];
-      if (catalogMachine && s.isMachineOwned(catalogMachine.tierCode)) {
+      const isUsdt = s.activeCurrency === 'USDT';
+      const spinnerIdx = isUsdt ? s.usdtSpinnerIdx : s.tonSpinnerIdx;
+      const targetTier = tierCode || MACHINE_CATALOG[spinnerIdx]?.tierCode;
+
+      if (!targetTier || targetTier.toUpperCase() === 'TS_TRIAL') {
         return false;
       }
 
-      const reqSpeed = isUsdt
-        ? MIN_BOOST_USDT[spinnerIdx] || 0
-        : MIN_BOOST_TON[spinnerIdx] || 0;
-      return s.baseSpeedGhs < reqSpeed;
+      return !s.isMachineOwned(targetTier);
     },
 
     startDisplayTicker: () => {
