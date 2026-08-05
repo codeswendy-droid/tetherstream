@@ -255,8 +255,9 @@ export const MiningSpinner = React.memo(() => {
           ? activeSpinner.promoSpinnerSpeedMultiplier
           : activeSpinner.baseSpeedMultiplier;
 
-      const intensity = 0.3 + 0.7 * Math.min(1, (Number(coolerMultiplier) || 1) / maxMultiplier);
-      const revolutionsPerSec = configMultiplier * intensity * 2.2;
+      const intensity = 0.4 + 0.6 * Math.min(1, (Number(coolerMultiplier) || 1) / maxMultiplier);
+      const tapSurgeFactor = 1.0 + Math.max(0, coolerMultiplier - 1.0) * 2.0;
+      const revolutionsPerSec = configMultiplier * intensity * tapSurgeFactor * 2.8;
       
       // Maintain continuous smooth rotation so spinner NEVER freezes or gets stuck
       const speedFactor = isOverheated ? 0.35 : (isLocked ? 0.2 : 1.0);
@@ -733,7 +734,7 @@ export const MiningSpinner = React.memo(() => {
                       {[...Array(3)].map((_, i) => (
                         <div
                           key={i}
-                          className="absolute w-[24px] h-[76px] origin-bottom transition-transform duration-100"
+                          className="absolute w-[24px] h-[76px] origin-bottom"
                           style={{
                             bottom: '50%',
                             transform: `rotate(${i * 120}deg)`,

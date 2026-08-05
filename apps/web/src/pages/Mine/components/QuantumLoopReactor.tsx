@@ -506,9 +506,9 @@ export const QuantumLoopReactor = forwardRef<QuantumLoopReactorRef, QuantumLoopR
         const gyroPitchSpeed = 0.9 * intensity * speedBoost * motionMult;
         const gyroRollSpeed = -1.3 * intensity * speedBoost * motionMult;
         const gyroYawSpeed = 0.6 * intensity * speedBoost * motionMult;
-        const magneticRotorSpeed = 3.0 * intensity * speedBoost * motionMult;
-        const quantumLoop1Speed = 0.5 * intensity * speedBoost * motionMult;
-        const quantumLoop2Speed = -0.7 * intensity * speedBoost * motionMult;
+        const magneticRotorSpeed = 5.2 * intensity * speedBoost * motionMult;
+        const quantumLoop1Speed = 2.5 * intensity * speedBoost * motionMult;
+        const quantumLoop2Speed = -2.8 * intensity * speedBoost * motionMult;
 
         s.compressorAngle += compressorSpeed * dt;
         s.turbineInnerAngle += turbineInnerSpeed * dt;
