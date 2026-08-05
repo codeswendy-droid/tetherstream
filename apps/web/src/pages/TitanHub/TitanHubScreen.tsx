@@ -21,7 +21,6 @@ import { MachineOwnersManualModal } from './components/MachineOwnersManualModal'
 import { MachineActivationModal } from './components/MachineActivationModal';
 import { MachineCertificateModal } from './components/MachineCertificateModal';
 import { FleetOverviewCard } from './components/FleetOverviewCard';
-import { TapProgressBar } from './components/TapProgressBar';
 
 export const TitanHubScreen: React.FC = () => {
   const { fetchMiningState, fetchUserMachines, baseSpeedGhs, unclaimedBalance, isMachineOwned, isOverheated, coolerMultiplier, ownedTierCodes } = useMiningStore();
@@ -258,9 +257,6 @@ export const TitanHubScreen: React.FC = () => {
           </button>
         </motion.div>
       )}
-
-      {/* TAP PROGRESS BAR */}
-      <TapProgressBar />
 
       {/* OPERATIONAL HUD TELEMETRY */}
       <motion.div
