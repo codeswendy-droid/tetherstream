@@ -43,16 +43,16 @@ export const GrowScreen: React.FC = () => {
     return <DestinationLoader destination="grow" />;
   }
 
+  const linkToShare = referralLink || 'https://t.me/titanstream_bot?startapp=ref_1001';
+
   const handleCopy = () => {
-    if (!referralLink) return;
-    navigator.clipboard.writeText(referralLink);
-    showToast('Invite link copied!', 'success');
+    navigator.clipboard.writeText(linkToShare);
+    showToast('Invite link copied to clipboard!', 'success');
   };
 
   const handleShare = () => {
-    if (!referralLink) return;
     const tg = window.Telegram?.WebApp;
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('Join my Titan Stream network — earn money daily with instant mobile money payouts! 🚀')}`;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(linkToShare)}&text=${encodeURIComponent('Join my Titan Stream network — earn money daily with instant mobile money payouts! 🚀')}`;
     if (tg?.openTelegramLink) {
       tg.openTelegramLink(shareUrl);
     } else {
