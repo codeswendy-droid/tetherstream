@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { settingsService } from '../services/settingsService';
 
 export interface SettingsState {
   language: string;
@@ -79,6 +80,8 @@ export interface SettingsState {
 
   // Generic updater action
   updateSetting: <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => void;
+  fetchPreferences: () => Promise<void>;
+  applyStyles: () => void;
 }
 
 const autoDetectGraphics = (): 'low' | 'medium' | 'high' => {
@@ -181,7 +184,60 @@ export const useSettingsStore = create<SettingsState>()(
       connectedTelegram: '',
       connectedWhatsApp: '',
 
-      updateSetting: (key, value) => set({ [key]: value }),
+      updateSetting: async (key, value) => {
+        const previousValue = get()[key];
+        
+        // Optimistic UI updates
+        set({ [key]: value } as any);
+        get().applyStyles();
+
+        try {
+          if (key === 'notifyChannel') {
+            await settingsService.updatePreferences({ notificationChannel: String(value).toUpperCase() });
+          } else {
+            await settingsService.updatePreferences({ settings: { [key]: value } });
+          }
+        } catch (err: any) {
+          console.error('Failed to sync setting to backend:', err);
+          // Rollback
+          set({ [key]: previousValue } as any);
+          get().applyStyles();
+          
+          const { showToast } = await import('../components/Toast');
+          showToast(`Settings sync failed: ${err?.message || 'Connection error'}. Reverted.`, 'error');
+        }
+      },
+
+      fetchPreferences: async () => {
+        try {
+          const data = await settingsService.getPreferences();
+          if (data && data.settings) {
+            set({
+              ...data.settings,
+              notifyChannel: data.notificationChannel ? (data.notificationChannel.toLowerCase() as any) : get().notifyChannel,
+            });
+            get().applyStyles();
+          }
+        } catch (err: any) {
+          console.warn('Failed to load settings preferences from backend:', err);
+        }
+      },
+
+      applyStyles: () => {
+        const { theme, accentColor, compactMode, largeText } = get();
+        if (typeof document !== 'undefined') {
+          const root = document.documentElement;
+          root.classList.remove('theme-dark', 'theme-light', 'theme-system');
+          root.classList.remove('accent-green', 'accent-cyan', 'accent-gold', 'accent-purple');
+          root.classList.remove('mode-compact');
+          root.classList.remove('text-large');
+
+          root.classList.add(`theme-${theme}`);
+          root.classList.add(`accent-${accentColor}`);
+          if (compactMode) root.classList.add('mode-compact');
+          if (largeText) root.classList.add('text-large');
+        }
+      },
     }),
     {
       name: 'titan_settings_v1',

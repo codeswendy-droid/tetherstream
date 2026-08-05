@@ -107,31 +107,25 @@ function MainApp() {
     };
   }, []);
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'wallet': return <WalletScreen />;
-      case 'grow': return <GrowScreen />;
-      case 'hub': return <TitanHubScreen />;
-      case 'rewards': return <RewardsScreen />;
-      case 'profile': return <ProfileScreen />;
-      default: return <TitanHubScreen />;
-    }
-  };
-
   return (
     <MainLayout>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 8, scale: 0.99 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -8, scale: 0.99 }}
-          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full h-full"
-        >
-          {renderTabContent()}
-        </motion.div>
-      </AnimatePresence>
+      <div className="w-full h-full relative">
+        <div className={activeTab === 'wallet' ? 'block' : 'hidden'}>
+          <WalletScreen />
+        </div>
+        <div className={activeTab === 'grow' ? 'block' : 'hidden'}>
+          <GrowScreen />
+        </div>
+        <div className={activeTab === 'hub' ? 'block' : 'hidden'}>
+          <TitanHubScreen />
+        </div>
+        <div className={activeTab === 'rewards' ? 'block' : 'hidden'}>
+          <RewardsScreen />
+        </div>
+        <div className={activeTab === 'profile' ? 'block' : 'hidden'}>
+          <ProfileScreen />
+        </div>
+      </div>
 
       {/* Mission Runner — floats above all tabs while escorting the user */}
       <MissionRunner

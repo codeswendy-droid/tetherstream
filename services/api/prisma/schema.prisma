@@ -1779,6 +1779,7 @@ model UserPreferences {
   notificationChannel   NotificationChannel @default(TELEGRAM) @map("notification_channel")
   preferredShareChannel ShareChannel        @default(TELEGRAM) @map("preferred_share_channel")
   pushToken             String?             @map("push_token")
+  settings              Json?               @default("{}") @map("settings")
   createdAt             DateTime            @default(now()) @map("created_at")
   updatedAt             DateTime            @updatedAt @map("updated_at")
 

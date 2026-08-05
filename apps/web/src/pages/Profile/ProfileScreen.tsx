@@ -37,6 +37,8 @@ import { useSettingsStore } from '../../store/useSettingsStore';
 import { FlipPassportCard } from '../../components/FlipPassportCard';
 import { DestinationLoader } from '../../components/DestinationLoader';
 import { showToast } from '../../components/Toast';
+import { MachineOwnersManualModal } from '../TitanHub/components/MachineOwnersManualModal';
+import { MachineCertificateModal } from '../TitanHub/components/MachineCertificateModal';
 
 export const ProfileScreen: React.FC = () => {
   const { profile, isLoading, fetchGrowthProfile } = useGrowthStore();
@@ -766,6 +768,10 @@ export const ProfileScreen: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* MODALS */}
+      <MachineOwnersManualModal />
+      <MachineCertificateModal />
     </div>
   );
 };
