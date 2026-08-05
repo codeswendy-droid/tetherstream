@@ -258,10 +258,11 @@ export const MiningSpinner = React.memo(() => {
       const intensity = 0.3 + 0.7 * Math.min(1, (Number(coolerMultiplier) || 1) / maxMultiplier);
       const revolutionsPerSec = configMultiplier * intensity * 2.2;
       
-      // Stop spinning if paused, locked, overheated, or reduced motion is enabled
-      const rotationSpeed = (isAnyLimitReached || isOverheated || isLocked || reducedMotion)
+      // Maintain continuous smooth rotation so spinner NEVER freezes or gets stuck
+      const speedFactor = isOverheated ? 0.35 : (isLocked ? 0.2 : 1.0);
+      const rotationSpeed = reducedMotion
         ? 0
-        : ((revolutionsPerSec * 360) / 1000) * delta;
+        : (((revolutionsPerSec * speedFactor * 360) / 1000) * delta);
 
       currentRotation = (currentRotation + rotationSpeed) % 360;
 
@@ -586,6 +587,37 @@ export const MiningSpinner = React.memo(() => {
               />
             ))}
           </div>
+
+          {/* INTERACTIVE TAP & HEAT BOOST PROGRESS RING (RESTORED AROUND SPINNER WHEEL) */}
+          <svg className="absolute -inset-1.5 w-[228px] h-[228px] pointer-events-none z-20 overflow-visible">
+            {/* Background progress track */}
+            <circle
+              cx="114"
+              cy="114"
+              r="108"
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.08)"
+              strokeWidth="5"
+            />
+            {/* Active glowing boost progress arc */}
+            <circle
+              cx="114"
+              cy="114"
+              r="108"
+              fill="none"
+              stroke={dynamicColor}
+              strokeWidth="5"
+              strokeDasharray="678.58"
+              strokeDashoffset={678.58 * (1 - Math.min(1.0, Math.max(0, (coolerMultiplier - 1.0) / Math.max(1, maxMultiplier - 1.0))))}
+              strokeLinecap="round"
+              style={{
+                transformOrigin: '114px 114px',
+                transform: 'rotate(-90deg)',
+                transition: 'stroke-dashoffset 0.25s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.3s ease',
+                filter: `drop-shadow(0 0 6px ${dynamicColor})`,
+              }}
+            />
+          </svg>
 
           {/* Liquid Water cooling pipe loop for legacy mechanical machines */}
           {activeSpinner.id !== 'free-trial' && (

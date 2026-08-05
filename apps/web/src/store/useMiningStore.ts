@@ -249,24 +249,37 @@ export const useMiningStore = create<MiningState>((set, get) => {
      */
     tap: () => {
       const state = get();
-      if (state.isOverheated || state.isMiningLocked()) {
+      if (state.isMiningLocked()) {
+        return -1;
+      }
+      if (state.isOverheated) {
         return -1;
       }
       if (state.tapsToday >= state.dailyTapLimit || state.tapsThisWeek >= state.weeklyTapLimit || state.tapsThisMonth >= state.monthlyTapLimit) {
         return -1;
       }
 
-      const nextMultiplier = Math.min(state.coolerMultiplier + 0.6, state.maxMultiplier);
+      const nextMultiplier = Math.min(state.coolerMultiplier + 0.15, state.maxMultiplier);
       const willOverheat = nextMultiplier >= state.maxMultiplier;
 
       set({
         coolerMultiplier: nextMultiplier,
         isOverheated: willOverheat,
-        cooldownRemaining: willOverheat ? 15 : state.cooldownRemaining,
+        cooldownRemaining: willOverheat ? 5 : state.cooldownRemaining,
         tapsToday: state.tapsToday + 1,
         tapsThisWeek: state.tapsThisWeek + 1,
         tapsThisMonth: state.tapsThisMonth + 1,
       });
+
+      if (willOverheat) {
+        setTimeout(() => {
+          set({
+            isOverheated: false,
+            coolerMultiplier: 1.0,
+            cooldownRemaining: 0,
+          });
+        }, 5000);
+      }
 
       miningService.tapCooler().then((res) => {
         if (res.success && res.data) {
