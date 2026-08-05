@@ -129,12 +129,18 @@ export const TitanHubScreen: React.FC = () => {
     refreshState();
   }, [refreshState]);
 
-  // Set default selected tier code once owned codes loaded
+  // 5. Relogin / Session welcome popup toast
   useEffect(() => {
-    if (ownedTierCodes.length > 0 && !ownedTierCodes.includes(selectedTierCode)) {
-      setSelectedTierCode(ownedTierCodes[0]);
+    if (typeof window !== 'undefined') {
+      const welcomed = sessionStorage.getItem('welcome_toast_shown');
+      if (!welcomed) {
+        import('../../components/Toast').then(({ showToast }) => {
+          showToast('🟢 WELCOME BACK: Titan Core Prime online • Systems operational', 'info');
+        });
+        sessionStorage.setItem('welcome_toast_shown', 'true');
+      }
     }
-  }, [ownedTierCodes, selectedTierCode]);
+  }, []);
 
   if (isSyncing) {
     return (
@@ -183,19 +189,6 @@ export const TitanHubScreen: React.FC = () => {
       case 'RESTING': return <CheckCircle size={20} />;
     }
   };
-
-  // Relogin / Session welcome popup toast
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const welcomed = sessionStorage.getItem('welcome_toast_shown');
-      if (!welcomed) {
-        import('../../components/Toast').then(({ showToast }) => {
-          showToast('🟢 WELCOME BACK: Titan Core Prime online • Systems operational', 'info');
-        });
-        sessionStorage.setItem('welcome_toast_shown', 'true');
-      }
-    }
-  }, []);
 
   return (
     <div className="flex flex-col min-h-full animate-fade-in pb-28 px-4 pt-2 gap-4 select-none">
