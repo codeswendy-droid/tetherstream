@@ -41,8 +41,8 @@ export const AdminLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const token = localStorage.getItem('auth_token');
-    return !!token && (token.startsWith('admin-token:') || token.length > 25);
+    const adminToken = localStorage.getItem('admin_auth_token');
+    return !!adminToken && (adminToken.startsWith('admin-token:') || adminToken.length > 10);
   });
   const location = useLocation();
   const navigate = useNavigate();

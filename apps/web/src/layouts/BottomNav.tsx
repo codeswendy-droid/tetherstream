@@ -1,10 +1,10 @@
-import { Wallet, TrendingUp, Cpu, Gift, User } from 'lucide-react';
+import { Wallet, TrendingUp, Cpu, ShoppingCart, Gift } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigationStore } from '../store/useNavigationStore';
 import { useTreasuryStore } from '../store/useTreasuryStore';
 import { Badge } from '../components/Badge';
 
-type TabId = 'wallet' | 'grow' | 'hub' | 'rewards' | 'profile';
+type TabId = 'wallet' | 'grow' | 'hub' | 'shop' | 'rewards';
 
 interface NavItem {
   id: TabId;
@@ -24,8 +24,8 @@ export const BottomNav: React.FC = () => {
     { id: 'wallet', label: 'Wallet', icon: <Wallet size={18} /> },
     { id: 'grow', label: 'Grow', icon: <TrendingUp size={18} /> },
     { id: 'hub', label: 'Titan Hub', icon: <Cpu size={22} />, isCenter: true },
+    { id: 'shop', label: 'Shop', icon: <ShoppingCart size={18} /> },
     { id: 'rewards', label: 'Rewards', icon: <Gift size={18} />, badge: claimableMissionsCount },
-    { id: 'profile', label: 'Profile', icon: <User size={18} /> },
   ];
 
   return (

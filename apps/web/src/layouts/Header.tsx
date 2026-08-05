@@ -12,7 +12,7 @@ import { formatAdaptiveCounter } from '../utils/format';
 
 export const Header: React.FC = () => {
   const { usdtBalance, crystalsBalance } = useWalletStore();
-  const { openGames, setActiveTab } = useNavigationStore();
+  const { openGames, setActiveTab, openProfileDrawer } = useNavigationStore();
   const { hapticFeedback, logout, user } = useTelegram();
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const { unreadCount, setModalOpen } = useUserNotificationStore();
@@ -156,6 +156,18 @@ export const Header: React.FC = () => {
             </span>
           </button>
         )}
+
+        {/* Avatar Profile Drawer Button */}
+        <button
+          onClick={() => {
+            hapticFeedback.impactOccurred('light');
+            openProfileDrawer();
+          }}
+          className="press-feedback flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-gold/30 to-purple-500/30 border border-gold/40 text-gold font-black text-xs shadow-sm hover:border-gold transition-colors"
+          title="Operator Profile"
+        >
+          {user?.first_name ? user.first_name[0].toUpperCase() : 'T'}
+        </button>
 
         {/* Logout button - only show if user is authenticated */}
         {user && (
