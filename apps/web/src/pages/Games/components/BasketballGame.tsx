@@ -35,6 +35,7 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ session, onClose
   const telemetry = useRef<Array<{ action: string; t: number }>>([]);
   const launchesRef = useRef(0);
   const bestComboRef = useRef(0);
+  const [showInstructions, setShowInstructions] = useState(true);
 
   // Swipe gesture variables
   const dragStart = useRef<{ x: number; y: number } | null>(null);
@@ -481,6 +482,7 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ session, onClose
       dragStart.current = { x, y };
       dragCurrent.current = { x, y };
       isDragging.current = true;
+      if (showInstructions) setShowInstructions(false);
     }
   };
 
@@ -552,7 +554,10 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ session, onClose
               Streak
               {combo >= 3 && <Flame size={10} className="text-[#ff3d00] animate-bounce" />}
             </span>
-            <span className={`font-mono text-base font-black mt-0.5 ${combo >= 3 ? 'text-[#ff3d00] animate-pulse' : 'text-white'}`}>
+            <span
+              className={`font-mono font-black mt-0.5 transition-all duration-200 ${combo >= 3 ? 'text-[#ff3d00] animate-pulse' : 'text-white'}`}
+              style={{ fontSize: `${Math.min(20, 14 + combo * 1.5)}px` }}
+            >
               {combo}
             </span>
           </div>
@@ -596,6 +601,15 @@ export const BasketballGame: React.FC<BasketballGameProps> = ({ session, onClose
             <div className="absolute inset-0 z-30 bg-[#050608]/80 backdrop-blur-sm flex flex-col items-center justify-center">
               <p className="text-lg font-black text-white uppercase tracking-widest animate-pulse">Round Over</p>
               <p className="text-xs text-text-secondary mt-2">Validating score server-side...</p>
+            </div>
+          )}
+
+          {/* Instruction overlay — first time only */}
+          {showInstructions && !roundOver && (
+            <div className="absolute inset-0 z-20 bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center gap-3 pointer-events-none">
+              <div className="text-4xl animate-bounce">👆</div>
+              <p className="text-base font-black text-white uppercase tracking-wider">Swipe Up to Shoot!</p>
+              <p className="text-[11px] text-text-secondary">Drag the ball backward, then release</p>
             </div>
           )}
         </div>
