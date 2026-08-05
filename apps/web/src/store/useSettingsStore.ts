@@ -102,7 +102,7 @@ const autoDetectGraphics = (): 'low' | 'medium' | 'high' => {
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       language: 'en',
       theme: 'dark',
       setLanguage: (language) => set({ language }),
