@@ -39,6 +39,8 @@ export const TitanReactor: React.FC<TitanReactorProps> = ({ session, onClose, on
   const [feedback, setFeedback] = useState<{ id: number; kind: 'fast' | 'hit' | 'miss' } | null>(null);
   const [roundOver, setRoundOver] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [missFlash, setMissFlash] = useState(false);
+  const [difficultyPct, setDifficultyPct] = useState(0);
 
   const sessionStartMs = useRef(Date.now());
   const playStartMs = useRef(0);
@@ -92,6 +94,9 @@ export const TitanReactor: React.FC<TitanReactorProps> = ({ session, onClose, on
         }
       }
 
+      // Update difficulty visual
+      setDifficultyPct(Math.round(progress * 100));
+
       // Fail expired nodes (misses)
       const now2 = Date.now();
       const expired = s.nodes.filter((n) => now2 - n.bornAt > n.duration);
@@ -104,6 +109,10 @@ export const TitanReactor: React.FC<TitanReactorProps> = ({ session, onClose, on
           setFeedback({ id: n.id, kind: 'miss' });
           window.setTimeout(() => setFeedback((f) => (f?.id === n.id ? null : f)), 350);
         }
+        // Screen-edge flash on miss
+        setMissFlash(true);
+        window.setTimeout(() => setMissFlash(false), 300);
+
         s.nodes = s.nodes.filter((n) => now2 - n.bornAt <= n.duration);
         setNodes([...s.nodes]);
         setMisses(s.misses);
@@ -195,7 +204,17 @@ export const TitanReactor: React.FC<TitanReactorProps> = ({ session, onClose, on
 
   return (
     <div className="fixed inset-0 z-50 bg-[#050608]/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-[420px] relative flex flex-col items-center animate-fade-in">
+      {/* Screen-edge red flash on miss */}
+      {missFlash && (
+        <div
+          className="fixed inset-0 z-[55] pointer-events-none"
+          style={{
+            boxShadow: 'inset 0 0 80px 30px rgba(244,67,54,0.5)',
+            animation: 'fade-out 0.3s ease-out forwards',
+          }}
+        />
+      )}
+      <div className="w-full max-w-[420px] relative flex flex-col items-center">
         {/* Header */}
         <div className="w-full flex items-center justify-between mb-4 px-4">
           <div>
@@ -239,6 +258,24 @@ export const TitanReactor: React.FC<TitanReactorProps> = ({ session, onClose, on
             </span>
           </div>
         </div>
+
+        {/* Difficulty speed indicator */}
+        {phase === 'playing' && (
+          <div className="w-[92%] mb-3 flex items-center gap-2">
+            <span className="text-[8px] font-extrabold uppercase tracking-wider text-text-tertiary shrink-0">Reactor Speed</span>
+            <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${difficultyPct}%`,
+                  background: difficultyPct > 75 ? 'linear-gradient(90deg, #ff5252, #ff007f)' : difficultyPct > 40 ? 'linear-gradient(90deg, #ffb300, #ff5252)' : 'linear-gradient(90deg, #00e676, #ffb300)',
+                  boxShadow: difficultyPct > 75 ? '0 0 8px rgba(255,82,82,0.6)' : '0 0 6px rgba(255,179,0,0.4)',
+                }}
+              />
+            </div>
+            <span className="text-[9px] font-mono font-black text-text-tertiary shrink-0">{difficultyPct}%</span>
+          </div>
+        )}
 
         {/* Reactor grid */}
         <div className="relative border border-white/10 rounded-3xl bg-gradient-to-b from-[#12141d] to-[#0e0f14] shadow-2xl overflow-hidden mb-4 w-[92%]">

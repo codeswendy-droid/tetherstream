@@ -341,10 +341,16 @@ export const PowerGrid: React.FC<PowerGridProps> = ({ session, onClose, onComple
           </div>
           <div className="bg-white/[0.03] border border-white/5 rounded-2xl py-2 px-2 flex flex-col items-center">
             <span className="text-[9px] font-extrabold uppercase tracking-wide text-text-tertiary">Moves</span>
-            <span className="font-mono text-sm text-white font-black mt-0.5">
+            <motion.span
+              key={levelMoves}
+              initial={{ scale: 1.3 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+              className="font-mono text-sm text-white font-black mt-0.5"
+            >
               {levelMoves}
               <span className="text-text-tertiary text-[10px]">/{MAX_MOVES_PER_LEVEL}</span>
-            </span>
+            </motion.span>
           </div>
           <div className={`bg-white/[0.03] border rounded-2xl py-2 px-2 flex flex-col items-center ${timeLeft <= 15 ? 'border-error-red/40' : 'border-white/5'}`}>
             <span className="text-[9px] font-extrabold uppercase tracking-wide text-text-tertiary">Time</span>
@@ -407,7 +413,16 @@ export const PowerGrid: React.FC<PowerGridProps> = ({ session, onClose, onComple
                       style={{ background: isLit ? '#00e5ff' : 'rgba(120,140,160,0.5)' }}
                     />
                     {isStart && (
-                      <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 text-[8px]">⚡</div>
+                      <>
+                        <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 text-[8px]">⚡</div>
+                        {/* Source tile hint pulse */}
+                        {phase === 'playing' && !isLit && (
+                          <div
+                            className="absolute inset-0 rounded-xl animate-pulse pointer-events-none"
+                            style={{ boxShadow: '0 0 16px 4px rgba(0,229,255,0.35)', border: '1px solid rgba(0,229,255,0.3)' }}
+                          />
+                        )}
+                      </>
                     )}
                     {isExit && (
                       <div className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 text-[8px]">⚡</div>
