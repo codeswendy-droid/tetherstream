@@ -5,7 +5,7 @@ import { useWalletStore } from '../../../store/useWalletStore';
 import { useQuestStore } from '../../../store/useQuestStore';
 import { useTreasuryStore } from '../../../store/useTreasuryStore';
 import { useHaptics } from '../../../hooks/useHaptics';
-import { Flame, Thermometer, ChevronLeft, ChevronRight, Lock, Clock, Sparkles, CheckCircle } from 'lucide-react';
+import { Flame, Thermometer, ChevronLeft, ChevronRight, Lock, Clock, Sparkles, CheckCircle, Zap } from 'lucide-react';
 import { showToast } from '../../../components/Toast';
 import { useNavigationStore } from '../../../store/useNavigationStore';
 import { useCountryStore } from '../../../store/useCountryStore';
