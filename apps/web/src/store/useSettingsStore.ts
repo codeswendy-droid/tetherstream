@@ -188,7 +188,13 @@ export const useSettingsStore = create<SettingsState>()(
         const previousValue = get()[key];
         
         // Optimistic UI updates
-        set({ [key]: value } as any);
+        const updatePayload: any = { [key]: value };
+        if (key === 'reducedAnimations') {
+          updatePayload.reducedMotion = value;
+        } else if (key === 'reducedMotion') {
+          updatePayload.reducedAnimations = value;
+        }
+        set(updatePayload);
         get().applyStyles();
 
         try {

@@ -10,6 +10,7 @@ import { useWalletStore } from '../../store/useWalletStore';
 import { useTreasuryStore } from '../../store/useTreasuryStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useMachineOwnershipStore } from '../../store/useMachineOwnershipStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import { useTitanState, useTitanContext, useTitanStateEngine } from '../../store/useTitanStateEngine';
 import { MACHINE_CATALOG } from '../../data/machines';
 import { Cpu, Zap, TrendingUp, Activity, Calendar, Sparkles, ArrowRight, Play, ShoppingCart, HelpCircle, AlertTriangle, ShieldCheck, Flame, CheckCircle, RefreshCw } from 'lucide-react';
@@ -269,18 +270,20 @@ export const TitanHubScreen: React.FC = () => {
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-extrabold text-text-tertiary uppercase tracking-wider flex items-center gap-2">
             <Activity size={14} className="text-ton-blue" />
-            Machine Activity
+            Machine Activity ({useSettingsStore.getState().telemetryMode || 'standard'})
           </h3>
           <span className="text-[10px] font-mono text-usdt-green bg-usdt-green/10 px-2 py-0.5 rounded-full border border-usdt-green/20">
             LIVE FEED
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid gap-2 ${
+          useSettingsStore.getState().telemetryMode === 'compact' ? 'grid-cols-2' : useSettingsStore.getState().telemetryMode === 'advanced' ? 'grid-cols-4' : 'grid-cols-3'
+        }`}>
           <div className="bg-control-bg/50 rounded-xl p-2.5 border border-white/5">
             <div className="text-[9px] font-bold text-text-tertiary uppercase">Power</div>
             <div className="text-sm font-black text-text-primary font-mono mt-1">
-              {Math.round(titanState.machinePower)} Power
+              {Math.round(titanState.machinePower)} W
             </div>
           </div>
           <div className="bg-control-bg/50 rounded-xl p-2.5 border border-white/5">
@@ -289,14 +292,24 @@ export const TitanHubScreen: React.FC = () => {
               {(titanState.machineEfficiency * 100).toFixed(0)}%
             </div>
           </div>
-          <div className="bg-control-bg/50 rounded-xl p-2.5 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Temp</div>
-            <div className={`text-sm font-black font-mono mt-1 ${
-              titanState.machineTemperature > 70 ? 'text-red-400' : 'text-text-primary'
-            }`}>
-              {titanState.machineTemperature}°C
+          {useSettingsStore.getState().telemetryMode !== 'compact' && (
+            <div className="bg-control-bg/50 rounded-xl p-2.5 border border-white/5">
+              <div className="text-[9px] font-bold text-text-tertiary uppercase">Temp</div>
+              <div className={`text-sm font-black font-mono mt-1 ${
+                titanState.machineTemperature > 70 ? 'text-red-400' : 'text-text-primary'
+              }`}>
+                {titanState.machineTemperature}°C
+              </div>
             </div>
-          </div>
+          )}
+          {useSettingsStore.getState().telemetryMode === 'advanced' && (
+            <div className="bg-control-bg/50 rounded-xl p-2.5 border border-white/5">
+              <div className="text-[9px] font-bold text-text-tertiary uppercase">Core Volts</div>
+              <div className="text-sm font-black text-gold font-mono mt-1">
+                1.20 V
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
 
