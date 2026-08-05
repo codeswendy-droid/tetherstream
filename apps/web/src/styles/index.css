@@ -272,3 +272,135 @@ button:focus, button:focus-visible, input:focus, input:focus-visible {
     padding-bottom: 72px;
   }
 }
+
+/* ============================================================
+   OPERATOR CONTROL CENTER CUSTOMIZATIONS
+   ============================================================ */
+
+/* Accent Color Customizations */
+:root {
+  --color-usdt-green: #26a17b;
+  --color-usdt-green-glow: rgba(38, 161, 123, 0.4);
+}
+
+.accent-cyan {
+  --color-usdt-green: #0088cc !important;
+  --color-usdt-green-glow: rgba(0, 136, 204, 0.4) !important;
+}
+
+.accent-gold {
+  --color-usdt-green: #ffb300 !important;
+  --color-usdt-green-glow: rgba(255, 179, 0, 0.4) !important;
+}
+
+.accent-purple {
+  --color-usdt-green: #8b5cf6 !important;
+  --color-usdt-green-glow: rgba(139, 92, 246, 0.4) !important;
+}
+
+/* Light & System Themes */
+.theme-light {
+  background-color: #f3f4f6 !important;
+  --color-app-bg: #f3f4f6;
+  --color-app-bg-secondary: rgba(243, 244, 246, 0.85);
+  --color-card-bg: rgba(255, 255, 255, 0.8);
+  --color-card-glass: rgba(255, 255, 255, 0.85);
+  --color-control-bg: rgba(229, 231, 235, 0.6);
+  --color-border: rgba(0, 0, 0, 0.12);
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #9ca3af;
+}
+
+.theme-light body {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+.theme-light .web3-card {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.01) 100%) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08) !important;
+}
+
+.theme-light .glass-panel {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+.theme-light .glass-nav {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  .theme-system {
+    background-color: #f3f4f6 !important;
+    --color-app-bg: #f3f4f6;
+    --color-app-bg-secondary: rgba(243, 244, 246, 0.85);
+    --color-card-bg: rgba(255, 255, 255, 0.8);
+    --color-card-glass: rgba(255, 255, 255, 0.85);
+    --color-control-bg: rgba(229, 231, 235, 0.6);
+    --color-border: rgba(0, 0, 0, 0.12);
+    --color-text-primary: #111827;
+    --color-text-secondary: #4b5563;
+    --color-text-tertiary: #9ca3af;
+  }
+  .theme-system body {
+    background-color: #f3f4f6 !important;
+    color: #111827 !important;
+  }
+}
+
+/* Compact Mode */
+.mode-compact .p-4 {
+  padding: 0.75rem !important;
+}
+.mode-compact .p-5 {
+  padding: 1rem !important;
+}
+.mode-compact .p-6 {
+  padding: 1.25rem !important;
+}
+.mode-compact .gap-4 {
+  gap: 0.75rem !important;
+}
+.mode-compact .gap-5 {
+  gap: 1rem !important;
+}
+.mode-compact .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0.75rem !important;
+}
+.mode-compact .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1rem !important;
+}
+
+/* Large Text Sizing */
+.text-large .text-xs {
+  font-size: 0.85rem !important;
+}
+.text-large .text-sm {
+  font-size: 1rem !important;
+}
+.text-large .text-base {
+  font-size: 1.125rem !important;
+}
+.text-large .text-lg {
+  font-size: 1.25rem !important;
+}
+.text-large .text-xl {
+  font-size: 1.5rem !important;
+}
+.text-large .text-2xl {
+  font-size: 1.875rem !important;
+}
+.text-large .text-[9px] {
+  font-size: 11px !important;
+}
+.text-large .text-[10px] {
+  font-size: 12px !important;
+}
+.text-large .text-[11px] {
+  font-size: 13px !important;
+}
+

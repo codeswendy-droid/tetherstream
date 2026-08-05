@@ -14,6 +14,7 @@ import { useTitanState, useTitanContext, useTitanStateEngine } from '../../store
 import { MACHINE_CATALOG } from '../../data/machines';
 import { Cpu, Zap, TrendingUp, Activity, Calendar, Sparkles, ArrowRight, Play, ShoppingCart, HelpCircle, AlertTriangle, ShieldCheck, Flame, CheckCircle, RefreshCw } from 'lucide-react';
 import { MachineEducationModal } from '../../components/MachineEducationModal';
+import { CurrencyDisplay } from '../../components/DualCurrencyDisplay';
 import { MachineControlCenter } from './components/MachineControlCenter';
 import { MachineOwnersManualModal } from './components/MachineOwnersManualModal';
 import { MachineActivationModal } from './components/MachineActivationModal';
@@ -240,7 +241,7 @@ export const TitanHubScreen: React.FC = () => {
             </div>
             <div>
               <div className="text-xs font-black text-text-primary">
-                ₮{unclaimedBalance.toFixed(2)} Earnings Ready to Collect
+                <CurrencyDisplay amount={unclaimedBalance} size="sm" showCurrencyLabel={true} /> Ready to Collect
               </div>
               <div className="text-[10px] text-text-tertiary">
                 Earned by your machines.
@@ -441,7 +442,9 @@ export const TitanHubScreen: React.FC = () => {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-black text-text-primary font-mono">₮{machine.priceUsdt}</div>
+                          <div className="text-lg font-black text-text-primary font-mono">
+                            <CurrencyDisplay amount={machine.priceUsdt} size="lg" showCurrencyLabel={true} />
+                          </div>
                           <div className="text-[10px] text-text-tertiary">One-time</div>
                         </div>
                       </div>
@@ -450,7 +453,7 @@ export const TitanHubScreen: React.FC = () => {
                         <div className="bg-white/5 rounded-lg p-2">
                           <div className="text-[9px] font-bold text-text-tertiary uppercase">Daily Earnings</div>
                           <div className="text-xs font-extrabold text-usdt-green font-mono mt-0.5">
-                            ₮{machine.dailyYieldUsdt.toFixed(2)}
+                            <CurrencyDisplay amount={machine.dailyYieldUsdt} size="sm" showCurrencyLabel={true} />
                           </div>
                         </div>
                         <div className="bg-white/5 rounded-lg p-2">

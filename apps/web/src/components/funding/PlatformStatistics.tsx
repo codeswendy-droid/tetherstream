@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Activity, TrendingUp, ShieldCheck } from 'lucide-react';
 import { useTreasuryStore } from '../../store/useTreasuryStore';
 import { useGrowthStore } from '../../store/useGrowthStore';
+import { CurrencyDisplay } from '../DualCurrencyDisplay';
 
 export const PlatformStatistics: React.FC = () => {
   const {
@@ -41,7 +42,7 @@ export const PlatformStatistics: React.FC = () => {
         <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5 relative overflow-hidden">
           <div className="text-[10px] text-text-secondary font-bold">Community Fund</div>
           <div className="text-base font-extrabold font-mono text-text-primary mt-1">
-            ₮{(Number(treasuryToday) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <CurrencyDisplay amount={Number(treasuryToday) || 0} size="sm" showCurrencyLabel={true} />
           </div>
           <div className="text-[9px] text-usdt-green mt-1 flex items-center gap-0.5 font-bold font-mono">
             <TrendingUp size={10} /> Active Fund
@@ -61,14 +62,14 @@ export const PlatformStatistics: React.FC = () => {
         <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5 relative overflow-hidden">
           <div className="text-[10px] text-text-secondary font-bold">Money Added Today</div>
           <div className="text-base font-extrabold font-mono text-usdt-green mt-1">
-            ₮{(Number(depositsToday) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <CurrencyDisplay amount={Number(depositsToday) || 0} size="sm" showCurrencyLabel={true} />
           </div>
         </div>
 
         <div className="bg-control-bg/30 p-3 rounded-xl border border-white/5 relative overflow-hidden">
           <div className="text-[10px] text-text-secondary font-bold">Money Taken Out Today</div>
           <div className="text-base font-extrabold font-mono text-error-red mt-1">
-            ₮{(Number(withdrawalsToday) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <CurrencyDisplay amount={Number(withdrawalsToday) || 0} size="sm" showCurrencyLabel={true} />
           </div>
         </div>
 
