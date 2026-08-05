@@ -82,7 +82,7 @@ export const useMiningStore = create<MiningState>((set, get) => {
     activeCurrency: 'USDT',
     baseSpeedGhs: 1.0,
     coolerMultiplier: 1.0,
-    maxMultiplier: 20.2,
+    maxMultiplier: 10.1,
     unclaimedBalance: 0.0,
     machineMode: 'PROMOTIONAL',
     lifetimePromotionalOutput: 0.0,
