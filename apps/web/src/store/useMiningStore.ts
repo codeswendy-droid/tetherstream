@@ -275,7 +275,6 @@ export const useMiningStore = create<MiningState>((set, get) => {
         setTimeout(() => {
           set({
             isOverheated: false,
-            coolerMultiplier: 1.0,
             cooldownRemaining: 0,
           });
         }, 5000);
@@ -407,7 +406,6 @@ export const useMiningStore = create<MiningState>((set, get) => {
           nextCooldown = Math.max(0, nextCooldown - TICK_MS / 1000);
           if (nextCooldown <= 0) {
             nextOverheated = false;
-            nextMultiplier = 1.0;
           }
         }
 
