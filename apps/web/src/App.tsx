@@ -80,7 +80,7 @@ function AdminRoutes() {
 // ─── Main App (fully authenticated + onboarded) ───────────────────────────────
 
 function MainApp() {
-  const { activeTab } = useNavigationStore();
+  const { activeTab, isProfileDrawerOpen, closeProfileDrawer } = useNavigationStore();
   const { runningMission, closeRunner } = useMissionRunnerStore();
   const [runnerClaimed, setRunnerClaimed] = useState<MissionItem | null>(null);
 
