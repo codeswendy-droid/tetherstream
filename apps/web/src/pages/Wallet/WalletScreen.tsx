@@ -217,7 +217,7 @@ export const WalletScreen: React.FC = () => {
 
 
 
-      {/* DISCOVERY & GUARANTEE SECTION (10%) */}
+      {/* DISCOVERY & GUARANTEE SECTION */}
       <div className="web3-card rounded-2xl p-4 border border-white/10 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-usdt-green/10 border border-usdt-green/20 text-usdt-green flex items-center justify-center shrink-0">
           <ShieldCheck size={20} />
@@ -230,6 +230,11 @@ export const WalletScreen: React.FC = () => {
         </div>
       </div>
 
+      {/* SINGLE UNIFIED TRANSACTION HISTORY SECTION */}
+      <div className="pt-2">
+        <TransactionHistoryView />
+      </div>
+
       {/* MODALS */}
       <FundingModal
         isOpen={isFundingModalOpen}
@@ -239,9 +244,6 @@ export const WalletScreen: React.FC = () => {
         isOpen={isWithdrawModalOpen}
         onClose={() => setIsWithdrawModalOpen(false)}
       />
-      {isHistoryModalOpen && (
-        <TransactionHistoryView onClose={() => setIsHistoryModalOpen(false)} />
-      )}
     </div>
   );
 };

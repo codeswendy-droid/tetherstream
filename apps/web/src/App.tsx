@@ -50,6 +50,8 @@ import { AuthGate } from './components/AuthGate';
 import { OnboardingOverlay } from './components/OnboardingOverlay';
 import { CountrySelector } from './components/CountrySelector';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { FinancialControlCenterPage } from './pages/admin/financial';
+import { MachineControlCenterPage } from './pages/admin/machines';
 
 // ─── Admin Routes (accessible without user auth) ─────────────────────────────
 
@@ -62,6 +64,8 @@ function AdminRoutes() {
         <Route path="operations" element={<OperationsPage />} />
         <Route path="liquidity" element={<LiquidityPage />} />
         <Route path="treasury" element={<TreasuryPage />} />
+        <Route path="financial" element={<FinancialControlCenterPage />} />
+        <Route path="machines" element={<MachineControlCenterPage />} />
         <Route path="payment-rails" element={<PaymentRailsPage />} />
         <Route path="withdrawals" element={<WithdrawalsPage />} />
         <Route path="users" element={<UsersPage />} />
@@ -108,7 +112,7 @@ function MainApp() {
     useMiningStore.getState().startDisplayTicker();
     syncState();
 
-    const interval = setInterval(syncState, 5000);
+    const interval = setInterval(syncState, 30000);
     return () => {
       clearInterval(interval);
       useMiningStore.getState().stopDisplayTicker();
@@ -277,6 +281,7 @@ export function App() {
               <Route path="operations" element={<OperationsPage />} />
               <Route path="liquidity" element={<LiquidityPage />} />
               <Route path="treasury" element={<TreasuryPage />} />
+              <Route path="financial" element={<FinancialControlCenterPage />} />
               <Route path="payment-rails" element={<PaymentRailsPage />} />
               <Route path="withdrawals" element={<WithdrawalsPage />} />
               <Route path="users" element={<UsersPage />} />

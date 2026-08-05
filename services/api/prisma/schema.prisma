@@ -353,6 +353,7 @@ model User {
   gameChallengeCompletions  GameChallengeCompletion[]
   adminNotes                AdminNote[]
   assetLicenses             UserAssetLicense[]
+  userMachineFleet          UserMachineFleetItem[]
 
   @@index([state])
   @@index([createdAt])
@@ -2343,4 +2344,177 @@ model GameEvent {
 
   @@index([enabled, startsAt, endsAt])
   @@map("game_events")
+}
+
+// ===================================================
+// STAGE 10 — MACHINE, ASSET LICENSE & ECONOMY ENGINE
+// ===================================================
+
+enum MachineStatus {
+  ACTIVE
+  DISABLED
+  ARCHIVED
+  MAINTENANCE
+}
+
+enum MachineOutputStatus {
+  ENABLED
+  DISABLED
+  LOCKED
+  ARCHIVED
+}
+
+model MachineCatalogItem {
+  id                     String        @id @default(uuid()) @map("machine_id")
+  tierCode               String        @unique @map("tier_code")
+  name                   String        @map("name")
+  description            String        @map("description")
+  category               String        @default("STANDARD") @map("category")
+  priceUsdt              Decimal       @db.Decimal(36, 18) @map("price_usdt")
+  purchaseCurrency       String        @default("USDT") @map("purchase_currency")
+  capacityGhs            Decimal       @db.Decimal(36, 18) @map("capacity_ghs")
+  dailyYieldEstimateUsdt Decimal       @db.Decimal(36, 18) @map("daily_yield_estimate_usdt")
+  displayOrder           Int           @default(0) @map("display_order")
+  status                 MachineStatus @default(ACTIVE) @map("status")
+  visibility             String        @default("PUBLIC") @map("visibility")
+  icon                   String?       @map("icon")
+  artwork                String?       @map("artwork")
+  theme                  String?       @map("theme")
+  upgradePath            String?       @map("upgrade_path")
+  availableFrom          DateTime?     @map("available_from")
+  availableUntil         DateTime?     @map("available_until")
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+
+  outputs        MachineOutputStream[]
+  userFleet      UserMachineFleetItem[]
+  timelineEvents MachineTimelineEvent[]
+
+  @@index([status])
+  @@index([displayOrder])
+  @@map("machine_catalog_items")
+}
+
+model MachineOutputStream {
+  id             String              @id @default(uuid()) @map("output_id")
+  machineId      String              @map("machine_id")
+  assetCode      String              @map("asset_code")
+  baseYieldRate  Decimal             @db.Decimal(36, 18) @map("base_yield_rate")
+  yieldUnit      String              @default("PER_SECOND") @map("yield_unit")
+  multiplier     Decimal             @default(1.0) @db.Decimal(36, 18) @map("multiplier")
+  decayProfile   String              @default("STANDARD") @map("decay_profile")
+  minimumLicense String?             @map("minimum_license")
+  displayOrder   Int                 @default(0) @map("display_order")
+  status         MachineOutputStatus @default(ENABLED) @map("status")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  machine MachineCatalogItem @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@unique([machineId, assetCode])
+  @@index([machineId])
+  @@index([assetCode])
+  @@index([status])
+  @@map("machine_output_streams")
+}
+
+model UserMachineFleetItem {
+  id               String   @id @default(uuid()) @map("fleet_item_id")
+  telegramUserId   BigInt   @map("telegram_user_id")
+  machineId        String   @map("machine_id")
+  tierCode         String   @map("tier_code")
+  name             String   @map("name")
+  purchasePrice    Decimal  @db.Decimal(36, 18) @map("purchase_price")
+  currency         String   @default("USDT") @map("currency")
+  status           String   @default("ACTIVE") @map("status")
+  capacityGhs      Decimal  @db.Decimal(36, 18) @map("capacity_ghs")
+  lifetimeEarnings Decimal  @default(0) @db.Decimal(36, 18) @map("lifetime_earnings")
+  purchasedAt      DateTime @default(now()) @map("purchased_at")
+  activatedAt      DateTime @default(now()) @map("activated_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user    User               @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  machine MachineCatalogItem @relation(fields: [machineId], references: [id], onDelete: Restrict)
+
+  timelineEvents MachineTimelineEvent[]
+
+  @@index([telegramUserId])
+  @@index([machineId])
+  @@index([status])
+  @@map("user_machine_fleet")
+}
+
+model MachineTimelineEvent {
+  id            String   @id @default(uuid()) @map("timeline_event_id")
+  machineId     String?  @map("machine_id")
+  fleetItemId   String?  @map("fleet_item_id")
+  eventType     String   @map("event_type")
+  actorType     String   @default("SYSTEM") @map("actor_type")
+  actorId       String?  @map("actor_id")
+  description   String   @map("description")
+  metadata      Json?    @default("{}") @map("metadata")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  machine   MachineCatalogItem?   @relation(fields: [machineId], references: [id], onDelete: SetNull)
+  fleetItem UserMachineFleetItem? @relation(fields: [fleetItemId], references: [id], onDelete: SetNull)
+
+  @@index([machineId])
+  @@index([fleetItemId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("machine_timeline_events")
+}
+
+model EconomyProfileRecord {
+  id                 String   @id @default(uuid()) @map("profile_id")
+  code               String   @unique @map("code")
+  name               String   @map("name")
+  version            Int      @default(1) @map("version")
+  yieldMultiplier    Decimal  @default(1.0) @db.Decimal(36, 18) @map("yield_multiplier")
+  referralMultiplier Decimal  @default(1.0) @db.Decimal(36, 18) @map("referral_multiplier")
+  rewardMultiplier   Decimal  @default(1.0) @db.Decimal(36, 18) @map("reward_multiplier")
+  decayRules         Json     @default("{}") @map("decay_rules")
+  priority           Int      @default(100) @map("priority")
+  isActive           Boolean  @default(false) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([code])
+  @@index([isActive])
+  @@map("economy_profiles")
+}
+
+model PromotionCampaignRecord {
+  id               String   @id @default(uuid()) @map("campaign_id")
+  campaignCode     String   @unique @map("campaign_code")
+  title            String   @map("title")
+  description      String   @map("description")
+  discountPct      Float    @default(0.0) @map("discount_pct")
+  yieldBoostMult   Decimal  @default(1.0) @db.Decimal(36, 18) @map("yield_boost_mult")
+  startsAt         DateTime @map("starts_at")
+  endsAt           DateTime @map("ends_at")
+  status           String   @default("ACTIVE") @map("status")
+  metadata         Json?    @default("{}") @map("metadata")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@index([campaignCode])
+  @@index([status, startsAt, endsAt])
+  @@map("promotion_campaigns")
+}
+
+model MaintenanceWindowRecord {
+  id            String   @id @default(uuid()) @map("window_id")
+  scope         String   @map("scope")
+  targetId      String?  @map("target_id")
+  mode          String   @default("NO_CLAIMS") @map("mode")
+  customMessage String?  @map("custom_message")
+  startsAt      DateTime @map("starts_at")
+  endsAt        DateTime @map("ends_at")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([scope, targetId])
+  @@index([isActive, startsAt, endsAt])
+  @@map("maintenance_windows")
 }

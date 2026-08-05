@@ -43,6 +43,12 @@ import { DualAuthorizationService } from './services/dual-authorization.service'
 import { IdentityService } from '../identity/identity.service';
 import { AuthModule } from '../auth/auth.module';
 
+import { MachineModule } from '../machine/machine.module';
+import { AdminFinancialController } from './controllers/admin-financial.controller';
+import { FinancialAdminService } from './services/financial-admin.service';
+import { AdminMachineController } from './controllers/admin-machine.controller';
+import { MachineAdminService } from './services/machine-admin.service';
+
 @Module({
   imports: [
     PrismaModule, 
@@ -50,10 +56,13 @@ import { AuthModule } from '../auth/auth.module';
     forwardRef(() => FinancialModule),
     forwardRef(() => TreasuryModule),
     forwardRef(() => PaymentOrderModule),
+    forwardRef(() => MachineModule),
   ],
   controllers: [
     AdminAuthController,
     AdminDashboardController,
+    AdminFinancialController,
+    AdminMachineController,
     AdminSettlementController,
     AdminMerchantController,
     AdminUserController,
@@ -69,6 +78,8 @@ import { AuthModule } from '../auth/auth.module';
   providers: [
     AdminAuthGuard,
     RbacGuard,
+    FinancialAdminService,
+    MachineAdminService,
     AdminAuthService,
     DualAuthorizationService,
     IdentityService,
@@ -92,6 +103,8 @@ import { AuthModule } from '../auth/auth.module';
     AdminManagementService,
   ],
   exports: [
+    FinancialAdminService,
+    MachineAdminService,
     AdminAuthService,
     DualAuthorizationService,
     IdentityService,
