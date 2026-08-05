@@ -21,8 +21,15 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
   className = '',
   showCurrencyLabel = true,
 }) => {
-  const { selectedCountry, getLocalAmount } = useCountryStore();
-  const { preferLocalCurrency } = useSettingsStore();
+  const { preferLocalCurrency, hideEarnings } = useSettingsStore();
+
+  if (hideEarnings) {
+    return (
+      <span className={`font-extrabold font-mono text-text-tertiary tracking-widest ${sizeStyles[size]} ${className}`}>
+        ••••••
+      </span>
+    );
+  }
 
   const showLocal = preferLocalCurrency && !!selectedCountry && selectedCountry.code !== 'US';
 
