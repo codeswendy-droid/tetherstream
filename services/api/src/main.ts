@@ -58,7 +58,9 @@ async function bootstrap() {
       if (
         allowedOrigins.includes(cleanOrigin) ||
         cleanOrigin.endsWith('.tetherstream.app') ||
-        cleanOrigin.endsWith('.titanstream.app')
+        cleanOrigin.endsWith('.titanstream.app') ||
+        cleanOrigin.endsWith('.netlify.app') ||
+        cleanOrigin.endsWith('.railway.app')
       ) {
         callback(null, true);
       } else {
