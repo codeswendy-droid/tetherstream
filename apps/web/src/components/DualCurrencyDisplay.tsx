@@ -21,7 +21,14 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
   className = '',
   showCurrencyLabel = true,
 }) => {
+  const sizeStyles = {
+    sm: 'text-xs',
+    md: 'text-sm',
+    lg: 'text-base',
+  };
+
   const { preferLocalCurrency, hideEarnings } = useSettingsStore();
+  const { selectedCountry, getLocalAmount } = useCountryStore();
 
   if (hideEarnings) {
     return (
@@ -32,12 +39,6 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
   }
 
   const showLocal = preferLocalCurrency && !!selectedCountry && selectedCountry.code !== 'US';
-
-  const sizeStyles = {
-    sm: 'text-xs',
-    md: 'text-sm',
-    lg: 'text-base',
-  };
 
   const safeAmount = Number(amount) || 0;
 
