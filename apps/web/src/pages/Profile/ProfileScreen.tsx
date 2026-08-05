@@ -663,8 +663,17 @@ export const ProfileScreen: React.FC = () => {
               <div className="flex items-center justify-between">
                 <span className="text-text-secondary">Two-Factor Authentication</span>
                 <button
-                  onClick={() => settings.updateSetting('twoFactorEnabled', !settings.twoFactorEnabled)}
-                  className={`px-2.5 py-0.5 rounded-lg font-mono font-bold text-[10px] uppercase transition-colors border ${
+                  onClick={() => {
+                    const newState = !settings.twoFactorEnabled;
+                    settings.updateSetting('twoFactorEnabled', newState);
+                    showToast(
+                      newState
+                        ? 'Two-Factor Authentication enabled for your Telegram session.'
+                        : 'Two-Factor Authentication disabled.',
+                      newState ? 'success' : 'info'
+                    );
+                  }}
+                  className={`px-2.5 py-0.5 rounded-lg font-mono font-bold text-[10px] uppercase transition-colors border press-feedback ${
                     settings.twoFactorEnabled ? 'bg-usdt-green/20 border-usdt-green/30 text-usdt-green' : 'bg-white/5 border-white/10 text-text-secondary'
                   }`}
                 >

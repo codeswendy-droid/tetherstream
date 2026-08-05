@@ -1,4 +1,5 @@
  import { create } from 'zustand';
+import { useSettingsStore } from './useSettingsStore';
 
 type TabId = 'wallet' | 'grow' | 'hub' | 'rewards' | 'profile';
 type DeprecatedTabId = 'friends' | 'boost' | 'growth' | 'mine' | 'treasury';
@@ -10,6 +11,14 @@ const TAB_REDIRECTS: Record<DeprecatedTabId, TabId> = {
   growth: 'grow',
   mine: 'hub',
   treasury: 'rewards',
+};
+
+const getInitialTab = (): TabId => {
+  if (typeof window !== 'undefined') {
+    const autoOpen = useSettingsStore.getState().autoOpenHub;
+    return autoOpen === false ? 'wallet' : 'hub';
+  }
+  return 'hub';
 };
 
 interface NavigationState {
@@ -24,7 +33,7 @@ interface NavigationState {
 }
 
 export const useNavigationStore = create<NavigationState>((set) => ({
-  activeTab: 'hub',
+  activeTab: getInitialTab(),
   showGames: false,
   showShop: false,
   setActiveTab: (tab) => {
