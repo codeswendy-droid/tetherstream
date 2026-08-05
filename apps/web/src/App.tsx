@@ -52,6 +52,9 @@ import { CountrySelector } from './components/CountrySelector';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { FinancialControlCenterPage } from './pages/admin/financial';
 import { MachineControlCenterPage } from './pages/admin/machines';
+import { OperationsHqPage } from './pages/admin/operations-hq';
+import { IntelligencePage } from './pages/admin/intelligence';
+import { ReadinessPage } from './pages/admin/readiness';
 
 // ─── Admin Routes (accessible without user auth) ─────────────────────────────
 
@@ -62,6 +65,9 @@ function AdminRoutes() {
         <Route index element={<OverviewPage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="operations" element={<OperationsPage />} />
+        <Route path="operations-hq" element={<OperationsHqPage />} />
+        <Route path="intelligence" element={<IntelligencePage />} />
+        <Route path="readiness" element={<ReadinessPage />} />
         <Route path="liquidity" element={<LiquidityPage />} />
         <Route path="treasury" element={<TreasuryPage />} />
         <Route path="financial" element={<FinancialControlCenterPage />} />

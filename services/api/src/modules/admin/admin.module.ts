@@ -47,7 +47,8 @@ import { MachineModule } from '../machine/machine.module';
 import { AdminFinancialController } from './controllers/admin-financial.controller';
 import { FinancialAdminService } from './services/financial-admin.service';
 import { AdminMachineController } from './controllers/admin-machine.controller';
-import { MachineAdminService } from './services/machine-admin.service';
+import { AdminReadinessController } from './controllers/admin-readiness.controller';
+import { ProductionReadinessEngineService } from './services/production-readiness-engine.service';
 
 @Module({
   imports: [
@@ -62,7 +63,10 @@ import { MachineAdminService } from './services/machine-admin.service';
     AdminAuthController,
     AdminDashboardController,
     AdminFinancialController,
+    AdminIntelligenceController,
     AdminMachineController,
+    AdminOperationsHqController,
+    AdminReadinessController,
     AdminSettlementController,
     AdminMerchantController,
     AdminUserController,
@@ -78,6 +82,9 @@ import { MachineAdminService } from './services/machine-admin.service';
   providers: [
     AdminAuthGuard,
     RbacGuard,
+    ProductionReadinessEngineService,
+    ObservabilityIntelligenceEngineService,
+    PlatformOperationsEngineService,
     FinancialAdminService,
     MachineAdminService,
     AdminAuthService,
@@ -103,6 +110,9 @@ import { MachineAdminService } from './services/machine-admin.service';
     AdminManagementService,
   ],
   exports: [
+    ProductionReadinessEngineService,
+    ObservabilityIntelligenceEngineService,
+    PlatformOperationsEngineService,
     FinancialAdminService,
     MachineAdminService,
     AdminAuthService,
