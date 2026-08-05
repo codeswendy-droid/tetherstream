@@ -235,59 +235,6 @@ export const TitanHubScreen: React.FC = () => {
         </motion.div>
       )}
 
-      {/* OPERATIONAL HUD TELEMETRY */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-        className="web3-card rounded-2xl p-4 border border-white/10"
-      >
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-extrabold text-text-tertiary uppercase tracking-wider flex items-center gap-2">
-            <Activity size={14} className="text-ton-blue" />
-            Machine Activity ({useSettingsStore.getState().telemetryMode || 'standard'})
-          </h3>
-          <span className="text-[10px] font-mono text-usdt-green bg-usdt-green/10 px-2 py-0.5 rounded-full border border-usdt-green/20">
-            LIVE FEED
-          </span>
-        </div>
-
-        <div className={`grid gap-2 ${
-          useSettingsStore.getState().telemetryMode === 'compact' ? 'grid-cols-2' : useSettingsStore.getState().telemetryMode === 'advanced' ? 'grid-cols-4' : 'grid-cols-3'
-        }`}>
-          <div className="bg-control-bg/50 rounded-xl p-2.5 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Power</div>
-            <div className="text-sm font-black text-text-primary font-mono mt-1">
-              {Math.round(titanState.machinePower)} W
-            </div>
-          </div>
-          <div className="bg-control-bg/50 rounded-xl p-2.5 border border-white/5">
-            <div className="text-[9px] font-bold text-text-tertiary uppercase">Efficiency</div>
-            <div className="text-sm font-black text-text-primary font-mono mt-1">
-              {(titanState.machineEfficiency * 100).toFixed(0)}%
-            </div>
-          </div>
-          {useSettingsStore.getState().telemetryMode !== 'compact' && (
-            <div className="bg-control-bg/50 rounded-xl p-2.5 border border-white/5">
-              <div className="text-[9px] font-bold text-text-tertiary uppercase">Temp</div>
-              <div className={`text-sm font-black font-mono mt-1 ${
-                titanState.machineTemperature > 70 ? 'text-red-400' : 'text-text-primary'
-              }`}>
-                {titanState.machineTemperature}°C
-              </div>
-            </div>
-          )}
-          {useSettingsStore.getState().telemetryMode === 'advanced' && (
-            <div className="bg-control-bg/50 rounded-xl p-2.5 border border-white/5">
-              <div className="text-[9px] font-bold text-text-tertiary uppercase">Core Volts</div>
-              <div className="text-sm font-black text-gold font-mono mt-1">
-                1.20 V
-              </div>
-            </div>
-          )}
-        </div>
-      </motion.div>
-
       {/* SECTION 2: FLEET OVERVIEW & MACHINE SELECTOR */}
       <FleetOverviewCard
         onOpenShop={() => setShowShopSection(true)}
