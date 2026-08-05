@@ -8,6 +8,7 @@ import { PaymentOrderModule } from '../payment-order/payment-order.module';
 import { MiningModule } from '../mining/mining.module';
 import { MachineController } from './machine.controller';
 import { MachineService } from './machine.service';
+import { EconomyEngineService } from './services/economy-engine.service';
 
 @Module({
   imports: [
@@ -20,8 +21,8 @@ import { MachineService } from './machine.service';
     forwardRef(() => MiningModule),
   ],
   controllers: [MachineController],
-  providers: [MachineService],
-  exports: [MachineService],
+  providers: [MachineService, EconomyEngineService],
+  exports: [MachineService, EconomyEngineService],
 })
 export class MachineModule {}
 
