@@ -27,6 +27,9 @@ import { EmptyState } from '../../components/EmptyState';
 import { DestinationLoader } from '../../components/DestinationLoader';
 import { useTelegram } from '../../context/TelegramContext';
 
+import { useCountryStore } from '../../store/useCountryStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
+
 export const WalletScreen: React.FC = () => {
   const [isFundingModalOpen, setIsFundingModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -48,6 +51,10 @@ export const WalletScreen: React.FC = () => {
   const { fetchUserMachines, baseSpeedGhs, unclaimedBalance } = useMiningStore();
   const { setActiveTab } = useNavigationStore();
   const { hapticFeedback, user } = useTelegram();
+  const { selectedCountry, getLocalAmount } = useCountryStore();
+  const { preferLocalCurrency, hideEarnings } = useSettingsStore();
+
+  const isLocalPreferred = preferLocalCurrency && !!selectedCountry && selectedCountry.code !== 'US';
 
   useEffect(() => {
     fetchBalanceFromEngine();
@@ -111,11 +118,31 @@ export const WalletScreen: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-3xl font-black text-text-primary font-mono tracking-tight">
-              <CurrencyDisplay amount={totalAssetsUsdt} size="lg" />
-            </span>
-          </div>
+          {hideEarnings ? (
+            <div className="text-3xl font-black text-text-primary font-mono tracking-tight mt-1">
+              ••••••
+            </div>
+          ) : isLocalPreferred ? (
+            <div className="mt-1">
+              <div className="text-3xl font-black text-text-primary font-mono tracking-tight">
+                {getLocalAmount(totalAssetsUsdt)}
+              </div>
+              <div className="text-xs font-bold font-mono text-text-tertiary mt-0.5">
+                ≈ {totalAssetsUsdt.toFixed(2)} USDT
+              </div>
+            </div>
+          ) : (
+            <div className="mt-1">
+              <div className="text-3xl font-black text-text-primary font-mono tracking-tight">
+                {totalAssetsUsdt.toFixed(2)} USDT
+              </div>
+              {selectedCountry && selectedCountry.code !== 'US' && (
+                <div className="text-xs font-bold font-mono text-text-tertiary mt-0.5">
+                  ≈ {getLocalAmount(totalAssetsUsdt)}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Assets Breakdown Grid */}
