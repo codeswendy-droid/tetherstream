@@ -127,10 +127,20 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
 
   const handleManualClaim = async () => {
     hapticFeedback.impactOccurred('medium');
+    
+    // Check eligibility before attempting claim
+    if (!isEligible) {
+      showToast('Mission requirement not yet completed. Complete the requirement first.', 'error');
+      onClose();
+      return;
+    }
+    
     const res = await autoClaim(liveMission.id);
     if (res.success && res.reward) {
       onClaimed({ ...liveMission, status: 'CLAIMED' });
       onClose();
+    } else {
+      showToast(res.error || 'Claim failed. Please try again.', 'error');
     }
   };
 

@@ -215,12 +215,12 @@ export const WalletScreen: React.FC = () => {
         </motion.div>
       )}
 
-      {/* SUPPORTING SECTION — Portfolio Analytics & Income History (30%) */}
+      {/* SUPPORTING SECTION — Transaction History (30%) */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-text-tertiary flex items-center gap-2">
-            <PieChart size={14} className="text-usdt-green" />
-            Money History
+            <History size={14} className="text-usdt-green" />
+            Transaction History
           </h2>
           <button
             onClick={() => setIsHistoryModalOpen(true)}
@@ -263,7 +263,7 @@ export const WalletScreen: React.FC = () => {
           <EmptyState
             icon={<History size={20} />}
             title="No Transactions Yet"
-            description="Your money history will appear here after your first transaction."
+            description="Your transaction history will appear here after your first transaction."
             actionLabel="Add Money"
             onAction={() => setIsFundingModalOpen(true)}
             accentColor="green"

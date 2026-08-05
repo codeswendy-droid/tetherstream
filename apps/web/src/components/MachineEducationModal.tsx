@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Server, Cpu, Zap, HelpCircle, ChevronRight, X, Sparkles, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
+import { Server, Cpu, Zap, HelpCircle, ChevronRight, X, Sparkles, ShoppingCart } from 'lucide-react';
 
 interface MachineEducationModalProps {
   isOpen: boolean;
@@ -9,48 +9,37 @@ interface MachineEducationModalProps {
 
 export const MachineEducationModal: React.FC<MachineEducationModalProps> = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [expandedFaq, setExpandedFaq] = useState<number | null>(0);
-
-  const faqs = [
-    {
-      q: 'How are daily earnings calculated?',
-      a: 'Earnings scale with your machine total hash power (GH/s) and active multiplier. Funds credit continuously into your balance in real time.',
-    },
-    {
-      q: 'What does the Cooler Slider do?',
-      a: 'The Cooler boosts your hash rate multiplier up to maximum power. If heat threshold is hit, a 5-second automatic safety cooling activates.',
-    },
-    {
-      q: 'How do I collect my funds?',
-      a: 'Tap "Collect Now" anytime on your Hub balance display to transfer accrued yield directly into your wallet balance.',
-    },
-    {
-      q: 'How do Machine Tiers work?',
-      a: 'Tier 0 (Free Trial) lets you start earning instantly. Higher tiers (Ripple X14 to StreamTitan 2028) deliver higher speed and daily payouts.',
-    },
-  ];
 
   const cards = [
     {
       title: 'How Money Is Made',
       icon: <Server size={36} className="text-usdt-green" />,
-      sentence: 'Global enterprises rent compute capacity to process workloads. Titan Stream routes these contracts directly to your assigned hardware.',
+      sentence: 'Global enterprises rent compute capacity to process workloads like AI training, data processing, and blockchain operations. Titan Stream routes these contracts directly to your assigned hardware. Your machine processes these tasks continuously, and you earn a share of the revenue generated from each completed workload.',
     },
     {
       title: 'Your Machine Engine',
       icon: <Cpu size={36} className="text-cyan-400" />,
-      sentence: 'Your machine operates automatically 24/7. Yield continuously accumulates in real time, ready for instant collection.',
+      sentence: 'Your machine operates automatically 24/7 without any manual intervention. Yield continuously accumulates in real time based on your machine\'s hash power (GH/s) and current multiplier. You can tap the cooler to boost your speed up to 10x, but watch the temperature - if it overheats, a 5-second cooling period activates automatically.',
     },
     {
-      title: 'Bigger Machine Tiers',
+      title: 'Understanding Machine Tiers',
       icon: <Zap size={36} className="text-amber-400" />,
-      sentence: 'Higher machine tiers deliver exponentially higher compute hash rates (GH/s), maximizing your daily earnings and trust standing.',
+      sentence: 'Tier 0 (Free Trial) gives you 5 GH/s to start earning instantly. Higher tiers offer exponentially more power: Tier 1 (Ripple X14) provides 50 GH/s, Tier 2 (Quantum Core) delivers 200 GH/s, up to Tier 5 (StreamTitan 2028) with 5,000 GH/s. Each tier upgrade significantly increases your daily earnings potential.',
     },
     {
-      title: 'Detailed FAQ & Knowledge Base',
-      icon: <HelpCircle size={36} className="text-gold" />,
-      sentence: 'Access our interactive Knowledge Base & FAQs below for instant answers on rates, hardware specs, cooling, and payouts.',
-      isFaqTab: true,
+      title: 'Daily Earnings & Collection',
+      icon: <Sparkles size={36} className="text-purple-400" />,
+      sentence: 'Your daily earnings are calculated as: (Base Hash Rate × Multiplier × Rate Per GH/s). For example, a 200 GH/s machine at 2x multiplier earns approximately $0.40-$0.80 daily. Tap "Collect Now" on your Hub balance anytime to transfer accrued yield directly to your wallet balance for withdrawal.',
+    },
+    {
+      title: 'How to Purchase a Machine',
+      icon: <ShoppingCart size={36} className="text-gold" />,
+      sentence: '1. Go to the Machine Shop in Titan Hub\n2. Select your desired machine tier\n3. Pay the one-time USDT price using your wallet balance or add funds\n4. Your machine activates instantly and starts earning immediately\n5. No subscription fees - you own the machine forever',
+    },
+    {
+      title: 'Payment Methods & Funding',
+      icon: <HelpCircle size={36} className="text-green-400" />,
+      sentence: 'Add funds via Mobile Money (MTN, Airtel, M-Pesa) or CryptoBot directly in the Wallet tab. All transactions are secure and processed instantly. Once funded, you can purchase any machine tier immediately. Withdrawals are available anytime to your Mobile Money or crypto wallet.',
     },
   ];
 
@@ -82,7 +71,7 @@ export const MachineEducationModal: React.FC<MachineEducationModalProps> = ({ is
             <div className="flex items-center gap-2">
               <Sparkles size={16} className="text-usdt-green" />
               <span className="text-xs font-black uppercase tracking-wider text-text-primary">
-                How Machines Work ({currentStep + 1}/4)
+                How Machines Work ({currentStep + 1}/6)
               </span>
             </div>
             <button
@@ -101,40 +90,9 @@ export const MachineEducationModal: React.FC<MachineEducationModalProps> = ({ is
 
             <h3 className="text-base font-black text-text-primary tracking-tight">{currentCard.title}</h3>
 
-            <p className="text-xs font-medium text-text-secondary leading-relaxed px-1">
-              "{currentCard.sentence}"
+            <p className="text-xs font-medium text-text-secondary leading-relaxed px-1 whitespace-pre-line">
+              {currentCard.sentence}
             </p>
-
-            {/* Interactive FAQ Accordion List on Last Tab */}
-            {currentCard.isFaqTab && (
-              <div className="w-full mt-2 space-y-2 text-left">
-                <div className="text-[10px] font-extrabold uppercase tracking-widest text-gold flex items-center gap-1.5 mb-1 font-mono">
-                  <BookOpen size={12} /> Frequently Asked Questions
-                </div>
-                {faqs.map((faq, idx) => {
-                  const isExpanded = expandedFaq === idx;
-                  return (
-                    <div
-                      key={idx}
-                      className="bg-white/5 border border-white/10 rounded-xl overflow-hidden transition-all"
-                    >
-                      <button
-                        onClick={() => setExpandedFaq(isExpanded ? null : idx)}
-                        className="w-full px-3 py-2 flex items-center justify-between text-xs font-bold text-white text-left gap-2"
-                      >
-                        <span>{faq.q}</span>
-                        {isExpanded ? <ChevronUp size={14} className="text-gold shrink-0" /> : <ChevronDown size={14} className="text-text-tertiary shrink-0" />}
-                      </button>
-                      {isExpanded && (
-                        <div className="px-3 pb-2.5 text-[11px] text-text-secondary leading-normal border-t border-white/5 pt-1.5 bg-black/20">
-                          {faq.a}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
 
           {/* Step Indicators & Action Button */}

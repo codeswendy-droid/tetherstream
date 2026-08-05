@@ -20,7 +20,7 @@ export class AdminUserController {
   @Get(':id')
   @Permissions(AdminPermission.USER_VIEW)
   async getUser(@Param('id') id: string) {
-    return this.userService.getUserDetail(BigInt(id));
+    return this.userService.getUserDetail(id);
   }
 
   @Post(':id/freeze')
@@ -30,7 +30,7 @@ export class AdminUserController {
     @Param('id') id: string,
     @Body() body: { reason: string },
   ) {
-    return this.userService.freezeUser(admin, BigInt(id), body.reason);
+    return this.userService.freezeUser(admin, id, body?.reason);
   }
 
   @Post(':id/unfreeze')
@@ -40,6 +40,48 @@ export class AdminUserController {
     @Param('id') id: string,
     @Body() body: { reason: string },
   ) {
-    return this.userService.unfreezeUser(admin, BigInt(id), body.reason);
+    return this.userService.unfreezeUser(admin, id, body?.reason);
+  }
+
+  @Post(':id/ban')
+  @Permissions(AdminPermission.USER_BAN)
+  async banUser(
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+    @Param('id') id: string,
+    @Body() body: { reason: string },
+  ) {
+    return this.userService.banUser(admin, id, body?.reason);
+  }
+
+  @Post(':id/unban')
+  @Permissions(AdminPermission.USER_UNBAN)
+  async unbanUser(
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+    @Param('id') id: string,
+    @Body() body: { reason: string },
+  ) {
+    return this.userService.unbanUser(admin, id, body?.reason);
+  }
+
+  @Get(':id/notes')
+  @Permissions(AdminPermission.ADMIN_NOTES_READ)
+  async getAdminNotes(@Param('id') id: string) {
+    return this.userService.getAdminNotes(id);
+  }
+
+  @Post(':id/notes')
+  @Permissions(AdminPermission.ADMIN_NOTES_WRITE)
+  async addAdminNote(
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+    @Param('id') id: string,
+    @Body() body: { message: string; visibility?: string },
+  ) {
+    return this.userService.addAdminNote(admin, id, body);
+  }
+
+  @Get(':id/timeline')
+  @Permissions(AdminPermission.USER_TIMELINE_VIEW)
+  async getUserTimeline(@Param('id') id: string) {
+    return this.userService.getUserTimeline(id);
   }
 }

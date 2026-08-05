@@ -39,6 +39,7 @@ import { DestinationLoader } from '../../components/DestinationLoader';
 import { showToast } from '../../components/Toast';
 import { MachineOwnersManualModal } from '../TitanHub/components/MachineOwnersManualModal';
 import { MachineCertificateModal } from '../TitanHub/components/MachineCertificateModal';
+import { api } from '../../services/api';
 
 interface ProfileScreenProps {
   isDrawer?: boolean;
@@ -136,16 +137,23 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
     showToast('Profile data exported successfully!', 'success');
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if (deleteConfirmationText !== 'DELETE MY ACCOUNT') {
       showToast('Please type the exact phrase to confirm.', 'error');
       return;
     }
     hapticFeedback.notificationOccurred('error');
-    clearSession();
-    localStorage.clear();
-    showToast('Account deleted.', 'success');
-    window.location.reload();
+    
+    try {
+      await api.delete('/users/me');
+      clearSession();
+      localStorage.clear();
+      showToast('Account deleted successfully.', 'success');
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      showToast('Failed to delete account. Please try again.', 'error');
+    }
   };
 
   return (

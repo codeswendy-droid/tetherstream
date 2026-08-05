@@ -1,15 +1,26 @@
 import type React from 'react';
+import { useEffect, useRef } from 'react';
 import { useMiningStore } from '../../../store/useMiningStore';
 import { Thermometer, Flame, ShieldAlert } from 'lucide-react';
+import { audioSynth } from './QuantumLoopReactor';
 
 export const CoolerSlider: React.FC = () => {
   const { displayMultiplier, maxMultiplier, isOverheated, cooldownRemaining } = useMiningStore();
+  const previousOverheated = useRef(false);
 
   const percentage = isOverheated ? 100 : Math.min(100, Math.max(0, ((displayMultiplier - 1) / (maxMultiplier - 1)) * 100));
   const temperature = isOverheated ? 99.9 : Math.min(99.9, 30 + (displayMultiplier - 1.0) * 3.2);
 
   const safeCooler = Number(displayMultiplier) || 1.0;
   const safeTemp = Number(temperature) || 30;
+
+  // Play overheat sound when machine overheats
+  useEffect(() => {
+    if (isOverheated && !previousOverheated.current) {
+      audioSynth.playOverheatSound();
+    }
+    previousOverheated.current = isOverheated;
+  }, [isOverheated]);
 
   return (
     <div className="w-full px-5 my-4 flex flex-col gap-2.5">
