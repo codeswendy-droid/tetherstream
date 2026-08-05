@@ -215,61 +215,7 @@ export const WalletScreen: React.FC = () => {
         </motion.div>
       )}
 
-      {/* SUPPORTING SECTION — Transaction History (30%) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-extrabold uppercase tracking-wider text-text-tertiary flex items-center gap-2">
-            <History size={14} className="text-usdt-green" />
-            Transaction History
-          </h2>
-          <button
-            onClick={() => setIsHistoryModalOpen(true)}
-            className="text-[10px] font-extrabold text-usdt-green hover:underline flex items-center gap-1"
-          >
-            <History size={12} />
-            <span>See All</span>
-          </button>
-        </div>
 
-        {transactions.length > 0 ? (
-          <div className="web3-card rounded-2xl divide-y divide-white/5 border border-white/10 overflow-hidden">
-            {transactions.slice(0, 4).map((tx) => (
-              <div key={tx.id} className="p-3 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2.5">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold ${
-                    tx.type === 'DEPOSIT' ? 'bg-usdt-green/10 text-usdt-green' : 'bg-red-500/10 text-red-400'
-                  }`}>
-                    {tx.type === 'DEPOSIT' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
-                  </div>
-                  <div>
-                    <div className="font-extrabold text-text-primary">{tx.type}</div>
-                    <div className="text-[10px] text-text-tertiary font-mono">
-                      {new Date(tx.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-right font-mono">
-                  <div className={`font-black flex items-center justify-end gap-0.5 ${tx.type === 'DEPOSIT' ? 'text-usdt-green' : 'text-text-primary'}`}>
-                    <span>{tx.type === 'DEPOSIT' ? '+' : '-'}</span>
-                    <CurrencyDisplay amount={Number(tx.amountUsdt)} size="sm" showCurrencyLabel={false} />
-                  </div>
-                  <div className="text-[9px] text-text-tertiary uppercase">{tx.status}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon={<History size={20} />}
-            title="No Transactions Yet"
-            description="Your transaction history will appear here after your first transaction."
-            actionLabel="Add Money"
-            onAction={() => setIsFundingModalOpen(true)}
-            accentColor="green"
-          />
-        )}
-      </div>
 
       {/* DISCOVERY & GUARANTEE SECTION (10%) */}
       <div className="web3-card rounded-2xl p-4 border border-white/10 flex items-center gap-3">
