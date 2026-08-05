@@ -17,15 +17,16 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onAuthentica
       setError('Token is required');
       return;
     }
-    // Set token in localStorage and call onAuthenticated
-    localStorage.setItem('auth_token', token.trim());
+    // Set admin token in localStorage and call onAuthenticated
+    localStorage.setItem('admin_auth_token', token.trim());
     onAuthenticated();
   };
 
   const handleDevBypass = () => {
     // Inject the fast-path super admin dev token supported by NestJS AdminAuthGuard
     const devToken = 'admin-token:SUPER_ADMIN:dev_super_admin';
-    localStorage.setItem('auth_token', devToken);
+    localStorage.setItem('admin_auth_token', devToken);
+    localStorage.setItem('admin_role', 'SUPER_ADMIN');
     onAuthenticated();
   };
 

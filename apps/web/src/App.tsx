@@ -14,6 +14,8 @@ import { GrowScreen } from './pages/Grow/GrowScreen';
 import { TitanHubScreen } from './pages/TitanHub/TitanHubScreen';
 import { RewardsScreen } from './pages/Rewards/RewardsScreen';
 import { ProfileScreen } from './pages/Profile/ProfileScreen';
+import { MachineOwnersManualModal } from './pages/TitanHub/components/MachineOwnersManualModal';
+import { MachineCertificateModal } from './pages/TitanHub/components/MachineCertificateModal';
 import { OverviewPage } from './pages/admin/overview';
 import { OrdersPage } from './pages/admin/orders';
 import { OperationsPage } from './pages/admin/operations';
@@ -119,13 +121,32 @@ function MainApp() {
         <div className={activeTab === 'hub' ? 'block' : 'hidden'}>
           <TitanHubScreen />
         </div>
+        <div className={activeTab === 'shop' ? 'block' : 'hidden'}>
+          <BoostScreen />
+        </div>
         <div className={activeTab === 'rewards' ? 'block' : 'hidden'}>
           <RewardsScreen />
         </div>
-        <div className={activeTab === 'profile' ? 'block' : 'hidden'}>
-          <ProfileScreen />
-        </div>
       </div>
+
+      {/* Global Hardware Modals */}
+      <MachineOwnersManualModal />
+      <MachineCertificateModal />
+
+      {/* Profile Slide-Over Drawer */}
+      <AnimatePresence>
+        {isProfileDrawerOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: '0%' }}
+            exit={{ opacity: 0, x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed inset-0 z-50 overflow-y-auto bg-[#090b10] shadow-2xl"
+          >
+            <ProfileScreen isDrawer={true} onClose={closeProfileDrawer} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Mission Runner — floats above all tabs while escorting the user */}
       <MissionRunner
