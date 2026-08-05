@@ -169,20 +169,6 @@ export const Header: React.FC = () => {
           {user?.first_name ? user.first_name[0].toUpperCase() : 'T'}
         </button>
 
-        {/* Logout button - only show if user is authenticated */}
-        {user && (
-          <button
-            onClick={() => {
-              hapticFeedback.impactOccurred('medium');
-              logout();
-            }}
-            className="press-feedback w-9 h-9 rounded-full bg-error-red/10 border border-error-red/20 flex items-center justify-center text-error-red hover:bg-error-red/20 shadow-sm"
-            title="Logout"
-          >
-            <LogOut size={16} />
-          </button>
-        )}
-
       {/* Help Modal */}
       <HelpModal
         isOpen={isHelpModalOpen}
