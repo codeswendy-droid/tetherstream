@@ -5,6 +5,7 @@ import { useReferralStore } from '../../store/useReferralStore';
 import { showToast } from '../../components/Toast';
 import { Copy, Share2, Users, Flame, Star, Award, Gift, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { EducationCard } from '../../components/EducationCard';
+import { CurrencyDisplay } from '../../components/DualCurrencyDisplay';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   REGISTERED:  { label: 'Joined',      color: 'text-text-secondary',  icon: <Clock size={10} /> },
@@ -110,11 +111,10 @@ export const FriendsScreen: React.FC = () => {
         <div className="flex flex-col gap-0.5 border-t border-white/5 pt-4">
           <span className="text-[10px] font-extrabold text-text-tertiary uppercase tracking-wider">Total Earned</span>
           <div className="flex items-center gap-1.5 mt-1 font-mono">
-            <span className="text-sm font-extrabold text-usdt-green">₮</span>
             {isLoading ? (
               <span className="text-lg font-black text-text-primary animate-pulse">—</span>
             ) : (
-              <span className="text-lg font-black text-text-primary">{earnedUsdt.toFixed(2)}</span>
+              <CurrencyDisplay amount={earnedUsdt} size="lg" />
             )}
           </div>
         </div>

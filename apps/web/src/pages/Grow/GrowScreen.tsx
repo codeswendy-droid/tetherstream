@@ -9,6 +9,8 @@ import { DestinationLoader } from '../../components/DestinationLoader';
 import { Copy, Share2, Users, Flame, Star, Award, Gift, CheckCircle, Clock, AlertCircle, TrendingUp, Sparkles, ChevronRight, BarChart3 } from 'lucide-react';
 import { EducationCard } from '../../components/EducationCard';
 
+import { CurrencyDisplay } from '../../components/DualCurrencyDisplay';
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   REGISTERED:  { label: 'Joined',      color: 'text-text-secondary',  icon: <Clock size={10} /> },
   ONBOARDED:   { label: 'Joined',      color: 'text-ton-blue',        icon: <CheckCircle size={10} /> },
@@ -111,7 +113,7 @@ export const GrowScreen: React.FC = () => {
           <div className="bg-white/5 rounded-2xl p-3 border border-white/5">
             <div className="text-[9px] font-bold text-text-tertiary uppercase">Referral Rewards</div>
             <div className="text-xl font-black text-usdt-green font-mono mt-1">
-              ₮{earnedUsdt.toFixed(2)}
+              <CurrencyDisplay amount={earnedUsdt} size="sm" />
             </div>
           </div>
         </div>
