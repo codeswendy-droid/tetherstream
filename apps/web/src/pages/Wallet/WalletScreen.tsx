@@ -113,12 +113,8 @@ export const WalletScreen: React.FC = () => {
 
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-3xl font-black text-text-primary font-mono tracking-tight">
-              ₮{totalAssetsUsdt.toFixed(2)}
+              <CurrencyDisplay amount={totalAssetsUsdt} size="lg" />
             </span>
-            <span className="text-xs font-bold text-text-secondary">USDT</span>
-          </div>
-          <div className="text-xs text-text-tertiary font-mono">
-            <CurrencyDisplay amountUsdt={totalAssetsUsdt} />
           </div>
         </div>
 
@@ -130,7 +126,7 @@ export const WalletScreen: React.FC = () => {
               <Coins size={12} className="text-usdt-green" />
             </div>
             <div className="text-base font-black text-usdt-green font-mono">
-              ₮{usdtBalance.toFixed(2)}
+              <CurrencyDisplay amount={usdtBalance} size="sm" />
             </div>
             <div className="text-[9px] text-text-tertiary">Wallet Balance</div>
           </div>
@@ -141,7 +137,7 @@ export const WalletScreen: React.FC = () => {
               <Lock size={12} className="text-amber-400" />
             </div>
             <div className="text-base font-black text-amber-400 font-mono">
-              ₮{unclaimedBalance.toFixed(2)}
+              <CurrencyDisplay amount={unclaimedBalance} size="sm" />
             </div>
             <div className="text-[9px] text-text-tertiary">From your machines</div>
           </div>
@@ -180,8 +176,8 @@ export const WalletScreen: React.FC = () => {
               <Zap size={16} />
             </div>
             <div>
-              <div className="text-xs font-black text-text-primary">
-                ₮{unclaimedBalance.toFixed(2)} Earnings Ready to Collect
+              <div className="text-xs font-black text-text-primary flex items-center gap-1">
+                <CurrencyDisplay amount={unclaimedBalance} size="sm" /> Earnings Ready to Collect
               </div>
               <div className="text-[10px] text-text-secondary">
                 Your machine is earning money! Tap to collect.
@@ -227,8 +223,9 @@ export const WalletScreen: React.FC = () => {
                 </div>
 
                 <div className="text-right font-mono">
-                  <div className={`font-black ${tx.type === 'DEPOSIT' ? 'text-usdt-green' : 'text-text-primary'}`}>
-                    {tx.type === 'DEPOSIT' ? '+' : '-'}₮{Number(tx.amountUsdt).toFixed(2)}
+                  <div className={`font-black flex items-center justify-end gap-0.5 ${tx.type === 'DEPOSIT' ? 'text-usdt-green' : 'text-text-primary'}`}>
+                    <span>{tx.type === 'DEPOSIT' ? '+' : '-'}</span>
+                    <CurrencyDisplay amount={Number(tx.amountUsdt)} size="sm" showCurrencyLabel={false} />
                   </div>
                   <div className="text-[9px] text-text-tertiary uppercase">{tx.status}</div>
                 </div>
