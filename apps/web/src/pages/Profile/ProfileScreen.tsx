@@ -570,8 +570,21 @@ export const ProfileScreen: React.FC = () => {
             </h3>
 
             <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between pb-1 border-b border-white/5">
+                <span className="text-text-secondary font-extrabold">App Theme</span>
+                <select
+                  value={settings.theme || 'dark'}
+                  onChange={(e) => settings.updateSetting('theme', e.target.value as any)}
+                  className="bg-black/40 border border-white/10 rounded-xl px-2.5 py-1 text-text-primary font-mono focus:outline-none"
+                >
+                  <option value="dark">Dark Theme</option>
+                  <option value="light">Light Theme</option>
+                  <option value="system">System Default</option>
+                </select>
+              </div>
+
               <div className="flex flex-col gap-1.5">
-                <span className="text-text-secondary">Theme Color</span>
+                <span className="text-text-secondary">Accent Color</span>
                 <div className="grid grid-cols-4 gap-2">
                   {[
                     { key: 'green', color: 'bg-usdt-green border-usdt-green/40' },

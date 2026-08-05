@@ -159,6 +159,14 @@ export function App() {
 
   const isCountrySet = countrySelected || hasSelectedCountry || localStorage.getItem('has_chosen_currency') === 'true';
 
+  // Fetch backend preferences & apply root styles
+  useEffect(() => {
+    useSettingsStore.getState().applyStyles();
+    if (isAuthenticated) {
+      useSettingsStore.getState().fetchPreferences();
+    }
+  }, [isAuthenticated]);
+
   // IP-based country detection on first auth
   useEffect(() => {
     if (isAuthenticated && !isCountrySet) {
