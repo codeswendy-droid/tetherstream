@@ -20,9 +20,11 @@ import { CryptoBotModule } from './cryptobot/cryptobot.module';
 import { CryptoBotClient } from './cryptobot/cryptobot.client';
 import { CryptoBotSignatureService } from './cryptobot/cryptobot.signature.service';
 import { CryptoBotReconciliationService } from './cryptobot/cryptobot.reconciliation.service';
+import { PesapalModule } from './pesapal/pesapal.module';
+import { PesapalProvider } from './pesapal/pesapal.provider';
 
 @Module({
-  imports: [PrismaModule, FinancialOrchestrationModule, CryptoBotModule],
+  imports: [PrismaModule, FinancialOrchestrationModule, CryptoBotModule, PesapalModule],
   controllers: [OperatorController, SettlementController, OperationsPortalController, UniversalSettlementController],
   providers: [
     OperatorRepository,
@@ -35,6 +37,7 @@ import { CryptoBotReconciliationService } from './cryptobot/cryptobot.reconcilia
     MerchantSettlementProvider,
     CryptoBotProvider,
     CryptoBotSettlementProvider,
+    PesapalProvider,
     ProviderRegistryService,
     SettlementProviderRegistry,
   ],
@@ -47,6 +50,8 @@ import { CryptoBotReconciliationService } from './cryptobot/cryptobot.reconcilia
     MerchantSettlementProvider,
     CryptoBotProvider,
     CryptoBotSettlementProvider,
+    PesapalProvider,
+    PesapalModule,
   ],
 })
 export class SettlementModule {}

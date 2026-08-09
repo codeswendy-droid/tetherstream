@@ -49,15 +49,33 @@ export const NotificationsPage: React.FC = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  const handleBroadcast = (e: React.FormEvent) => {
+  const handleBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastText.trim()) return;
     setIsSending(true);
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/admin/operations-hq/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetAudience,
+          message: broadcastText.trim(),
+          reason: `Admin broadcast dispatch to ${targetAudience}`,
+        }),
+      });
       setIsSending(false);
-      alert(`Broadcast successfully published to Telegram audience: "${targetAudience}"!`);
-      setBroadcastText('');
-    }, 800);
+      if (res.ok) {
+        alert(`Broadcast successfully published to Telegram audience: "${targetAudience}" via durable queue!`);
+        setBroadcastText('');
+        fetchNotifications();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(`Broadcast Error: ${err.message || 'Failed to dispatch broadcast notification'}`);
+      }
+    } catch (err: any) {
+      setIsSending(false);
+      alert(`Network Error: ${err?.message || 'Broadcast service unavailable'}`);
+    }
   };
 
   return (

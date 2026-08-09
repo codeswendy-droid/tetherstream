@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, Optional, Inject, forwardRef } from '@nestjs/common';
 import { FinancialOperationType, Prisma, SettlementProviderId, SettlementStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
@@ -6,6 +6,7 @@ import { OperationalAuditService } from '../admin/services/operational-audit.ser
 import { WithdrawalRiskService } from './withdrawal-risk.service';
 import { EventBusService } from '../automation/event-bus.service';
 import { TreasuryService } from '../treasury/treasury.service';
+import { PlatformOperationsEngineService } from '../admin/services/platform-operations-engine.service';
 
 export interface InitiateWithdrawalDto {
   telegramUserId: bigint;
@@ -28,15 +29,23 @@ export class WithdrawalService {
     private readonly auditService: OperationalAuditService,
     private readonly eventBus: EventBusService,
     @Optional() private readonly treasuryService?: TreasuryService,
+    @Optional() @Inject(forwardRef(() => PlatformOperationsEngineService)) private readonly opsEngine?: PlatformOperationsEngineService,
   ) {}
 
   async initiateWithdrawal(dto: InitiateWithdrawalDto, idempotencyKey?: string) {
     const asset = dto.asset || 'USDT';
+
+    // 0. Operational Switch Enforcement
+    if (this.opsEngine) {
+      await this.opsEngine.assertOperationalModeAllowed('WITHDRAWAL', asset);
+    }
+
     const amountStr = dto.amount.toString();
     const idKey = idempotencyKey || `wd_${dto.telegramUserId}_${Date.now()}`;
 
     // 1. Risk & Limit Checks
     const riskEval = await this.riskService.evaluateWithdrawal(dto.telegramUserId, dto.amount);
+
 
     if (this.treasuryService) {
       const treasuryCheck = await this.treasuryService.checkWithdrawalSafety(dto.amount);

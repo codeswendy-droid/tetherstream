@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Inject, forwardRef, Optional } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { NotificationService } from '../notification/notification.service';
@@ -6,6 +6,7 @@ import { BalanceService } from '../financial/balance.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
 import { PaymentOrderService } from '../payment-order/payment-order.service';
 import { MiningService } from '../mining/mining.service';
+import { PlatformOperationsEngineService } from '../admin/services/platform-operations-engine.service';
 import { FinancialOperationType } from '@prisma/client';
 import { AuditEventType } from '../../common/interfaces/user-state.enum';
 import type { NotificationPayload } from '../notification/notification.service';
@@ -180,6 +181,7 @@ export class MachineService {
     private readonly paymentOrderService: PaymentOrderService,
     @Inject(forwardRef(() => MiningService))
     private readonly miningService?: MiningService,
+    @Optional() @Inject(forwardRef(() => PlatformOperationsEngineService)) private readonly opsEngine?: PlatformOperationsEngineService,
   ) {}
 
   getCatalog(): MachineTier[] {
@@ -239,6 +241,11 @@ export class MachineService {
 
   async fulfillMachineOwnershipAfterPayment(telegramUserId: bigint, tierCode: string, pricePaid: number) {
     const tier = this.catalog.find((t) => t.tierCode === tierCode);
+
+    if (this.opsEngine) {
+      await this.opsEngine.assertOperationalModeAllowed('PURCHASE', 'USDT', tier?.performanceTier || tier?.computeRating);
+    }
+
     const machineName = tier ? tier.name : tierCode;
     const capacityGhs = tier ? tier.capacityGhs : 5.0;
 

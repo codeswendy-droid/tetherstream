@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Optional, Inject, forwardRef } from '@nestjs/common';
 import { FinancialOperationType, Prisma, SettlementEventType, SettlementProviderId, SettlementStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
@@ -6,6 +6,7 @@ import { CreateSettlementSessionDto } from './dto/create-settlement-session.dto'
 import { OperatorRepository } from './operator.repository';
 import { RoutingService } from './routing.service';
 import { EventBusService } from '../automation/event-bus.service';
+import { PlatformOperationsEngineService } from '../admin/services/platform-operations-engine.service';
 
 const ACTIVE_STATUSES = [
   SettlementStatus.CREATED,
@@ -27,9 +28,14 @@ export class SettlementService {
     private readonly operators: OperatorRepository,
     private readonly orchestrator: FinancialOrchestratorService,
     private readonly eventBus: EventBusService,
+    @Optional() @Inject(forwardRef(() => PlatformOperationsEngineService)) private readonly opsEngine?: PlatformOperationsEngineService,
   ) {}
 
   async createCustomerSession(telegramUserId: bigint, dto: CreateSettlementSessionDto) {
+    if (this.opsEngine) {
+      await this.opsEngine.assertOperationalModeAllowed('SETTLEMENT', dto.asset);
+    }
+
     await this.assertNoActiveSettlement(telegramUserId, dto.asset);
     const operator = await this.routing.selectOperator({
       country: dto.country,

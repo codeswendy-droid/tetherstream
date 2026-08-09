@@ -1,9 +1,10 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, Optional } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
 import { FinancialOperationType, Prisma } from '@prisma/client';
 import { MachineService } from '../machine/machine.service';
 import type { MachineTier } from '../machine/machine.service';
+import { PlatformOperationsEngineService } from '../admin/services/platform-operations-engine.service';
 
 export interface UserMiningState {
   telegramUserId: string;
@@ -36,6 +37,7 @@ export class MiningService {
     private readonly orchestrator: FinancialOrchestratorService,
     @Inject(forwardRef(() => MachineService))
     private readonly machineService: MachineService,
+    @Optional() @Inject(forwardRef(() => PlatformOperationsEngineService)) private readonly opsEngine?: PlatformOperationsEngineService,
   ) {}
 
   private async loadFromDb(telegramUserId: string): Promise<UserMiningState | null> {
@@ -359,6 +361,12 @@ export class MiningService {
 
   async claim(telegramUserId: string): Promise<{ success: boolean; amount: string; session: UserMiningState }> {
     const session = await this.getOrCreateSession(telegramUserId);
+
+    // Operational control switch enforcement
+    if (this.opsEngine) {
+      await this.opsEngine.assertOperationalModeAllowed('CLAIM', session.activeCurrency);
+    }
+
     const claimAmount = session.unclaimedBalance;
     if (claimAmount < 0.000001) {
       return { success: false, amount: '0.00', session };

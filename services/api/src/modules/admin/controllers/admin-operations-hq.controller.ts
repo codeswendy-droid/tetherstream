@@ -72,4 +72,13 @@ export class AdminOperationsHqController {
   async getProviderHealthMetrics() {
     return this.operationsEngine.getProviderHealthMetrics();
   }
+
+  @Post('broadcast')
+  @Permissions(AdminPermission.OPERATIONS_CONTROL)
+  async publishBroadcastNotification(
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+    @Body() dto: { targetAudience: string; message: string; reason: string },
+  ) {
+    return this.operationsEngine.publishBroadcastNotification(admin, dto);
+  }
 }

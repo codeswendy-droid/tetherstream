@@ -259,6 +259,7 @@ enum SettlementProviderId {
   INTERNAL_OPERATIONS
   MERCHANT_MOBILE_MONEY
   CRYPTOBOT
+  PESAPAL
 }
 
 enum SettlementProviderStatus {
@@ -372,7 +373,7 @@ model AdminNote {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@index([telegramUserId, createdAt])
   @@map("admin_notes")
@@ -392,7 +393,7 @@ model UserAssetLicense {
   createdAt               DateTime            @default(now()) @map("created_at")
   updatedAt               DateTime            @updatedAt @map("updated_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@unique([telegramUserId, asset])
   @@index([telegramUserId])
@@ -435,7 +436,7 @@ model AssetBalance {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  asset Asset @relation(fields: [asset], references: [assetCode], onDelete: Cascade)
+  asset Asset @relation(fields: [asset], references: [assetCode], onDelete: Restrict)
 
   @@unique([telegramUserId, asset])
   @@index([telegramUserId])
@@ -781,7 +782,7 @@ model SettlementEvent {
   payload      Json                @default("{}") @map("payload")
   createdAt    DateTime            @default(now()) @map("created_at")
 
-  settlement SettlementSession @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  settlement SettlementSession @relation(fields: [settlementId], references: [id], onDelete: Restrict)
 
   @@index([settlementId])
   @@index([eventType])
@@ -815,7 +816,7 @@ model SettlementNote {
   note         String   @map("note")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  settlement SettlementSession @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  settlement SettlementSession @relation(fields: [settlementId], references: [id], onDelete: Restrict)
   operator   Operator?         @relation(fields: [operatorId], references: [id], onDelete: SetNull)
 
   @@index([settlementId])
@@ -932,7 +933,7 @@ model OnboardingProgress {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@map("onboarding_progress")
 }
@@ -977,7 +978,7 @@ model EducationCompletion {
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
 
-  user   User            @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user   User            @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
   module EducationModule @relation(fields: [moduleId], references: [id])
 
   @@unique([telegramUserId, moduleId])
@@ -1001,7 +1002,7 @@ model UserConsent {
   createdAt      DateTime    @default(now()) @map("created_at")
   expiresAt      DateTime?   @map("expires_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@unique([telegramUserId, consentType, version])
   @@index([telegramUserId])
@@ -1047,7 +1048,7 @@ model ReadinessScore {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@index([isReady])
   @@index([overallScore])
@@ -1067,7 +1068,7 @@ model ReadinessHistory {
   barriers        Json     @default("[]") @map("barriers")
   createdAt       DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@index([telegramUserId])
   @@index([createdAt])
@@ -1084,7 +1085,7 @@ model UserStateTransition {
   metadata       Json?     @map("metadata")
   createdAt      DateTime  @default(now()) @map("created_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@index([telegramUserId])
   @@index([createdAt])
@@ -1361,7 +1362,7 @@ model ReferralCode {
   metadata       Json?    @map("metadata")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  user          User                   @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user          User                   @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
   relationships ReferralRelationship[]
 
   @@index([code])
@@ -1399,7 +1400,7 @@ model ReferralEvent {
   payload        Json?           @map("payload")
   createdAt      DateTime        @default(now()) @map("created_at")
 
-  relationship ReferralRelationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  relationship ReferralRelationship @relation(fields: [relationshipId], references: [id], onDelete: Restrict)
 
   @@index([relationshipId])
   @@map("referral_events")
@@ -1411,8 +1412,8 @@ model ReferralReward {
   rewardId       String   @unique @map("reward_id")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  relationship ReferralRelationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
-  reward       Reward               @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  relationship ReferralRelationship @relation(fields: [relationshipId], references: [id], onDelete: Restrict)
+  reward       Reward               @relation(fields: [rewardId], references: [id], onDelete: Restrict)
 
   @@index([relationshipId])
   @@map("referral_rewards")
@@ -1429,7 +1430,7 @@ model ReferralQualificationHistory {
   metadata       Json?    @map("metadata")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@index([telegramUserId])
   @@index([checkType])
@@ -1495,7 +1496,7 @@ model Achievement {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@unique([telegramUserId, code])
   @@index([telegramUserId, achievedAt])
@@ -1515,7 +1516,7 @@ model UserTrustProfile {
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
-  user        User         @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user        User         @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
   trustEvents TrustEvent[]
 
   @@index([trustScore])
@@ -1532,7 +1533,7 @@ model TrustEvent {
   metadata       Json?    @map("metadata")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  profile UserTrustProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  profile UserTrustProfile @relation(fields: [profileId], references: [id], onDelete: Restrict)
 
   @@index([profileId])
   @@index([telegramUserId])
@@ -1563,7 +1564,7 @@ model UserLevelRecord {
   createdAt      DateTime      @default(now()) @map("created_at")
   updatedAt      DateTime      @updatedAt @map("updated_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@index([currentLevel])
   @@map("user_levels")
@@ -1595,7 +1596,7 @@ model UserBenefit {
   grantedAt      DateTime  @default(now()) @map("granted_at")
   expiresAt      DateTime? @map("expires_at")
 
-  user User        @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User        @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
   rule BenefitRule @relation(fields: [benefitRuleId], references: [id], onDelete: Cascade)
 
   @@index([telegramUserId])
@@ -1640,7 +1641,7 @@ model NotificationRecord {
   metadata       Json?               @map("metadata")
   createdAt      DateTime            @default(now()) @map("created_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@index([telegramUserId])
   @@index([createdAt])
@@ -1657,7 +1658,7 @@ model NotificationPreference {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@map("notification_preferences")
 }
@@ -1721,7 +1722,7 @@ model ChannelVerificationEvent {
   verifiedAt     DateTime @default(now()) @map("verified_at")
   metadata       Json?    @map("metadata")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@index([telegramUserId])
   @@index([channelId])
@@ -1751,7 +1752,7 @@ model ProductSubscription {
   createdAt      DateTime  @default(now()) @map("created_at")
   metadata       Json?     @map("metadata")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@index([telegramUserId])
   @@index([productCode])
@@ -1771,7 +1772,7 @@ model UserMiningState {
   lifetimePromotionalOutput    Decimal   @default(0.0) @map("lifetime_promotional_output")
   interactivePromotionalOutput Decimal   @default(0.0) @map("interactive_promotional_output")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@map("user_mining_states")
 }
@@ -1789,7 +1790,7 @@ model UserMachine {
   purchasedAt      DateTime @default(now()) @map("purchased_at")
   activatedAt      DateTime @default(now()) @map("activated_at")
 
-  user     User            @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user     User            @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
   outputs  MachineOutput[]
 
   @@index([telegramUserId])
@@ -1809,7 +1810,7 @@ model MachineOutput {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  userMachine UserMachine @relation(fields: [userMachineId], references: [id], onDelete: Cascade)
+  userMachine UserMachine @relation(fields: [userMachineId], references: [id], onDelete: Restrict)
 
   @@unique([userMachineId, asset])
   @@index([userMachineId])
@@ -1887,7 +1888,7 @@ model UserPreferences {
   createdAt             DateTime            @default(now()) @map("created_at")
   updatedAt             DateTime            @updatedAt @map("updated_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@map("user_preferences")
 }
@@ -2016,7 +2017,7 @@ model UserAchievement {
   unlockedAt     DateTime  @default(now()) @map("unlocked_at")
   sharedAt       DateTime? @map("shared_at")
 
-  achievement SystemAchievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  achievement SystemAchievement @relation(fields: [achievementId], references: [id], onDelete: Restrict)
 
   @@unique([telegramUserId, achievementId])
   @@index([telegramUserId])
@@ -2052,7 +2053,7 @@ model SupportMessage {
   attachments Json     @default("[]") @map("attachments")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
 
   @@index([ticketId])
   @@map("support_messages")
@@ -2123,7 +2124,7 @@ model CrystalAccount {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  user         User                 @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user         User                 @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
   transactions CrystalTransaction[]
 
   @@map("crystal_accounts")
@@ -2142,8 +2143,8 @@ model CrystalTransaction {
   metadata       Json?                 @map("metadata")
   createdAt      DateTime              @default(now()) @map("created_at")
 
-  account CrystalAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  user    User           @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  account CrystalAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  user    User           @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@index([telegramUserId, createdAt])
   @@index([type])
@@ -2196,7 +2197,7 @@ model GameSession {
   reference         String            @unique @map("reference")
   createdAt         DateTime          @default(now()) @map("created_at")
 
-  user User         @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User         @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
   game GameCatalog  @relation(fields: [gameId], references: [gameId], onDelete: Restrict)
 
   @@index([telegramUserId, createdAt])
@@ -2226,7 +2227,7 @@ model GameProfile {
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@map("game_profiles")
 }
@@ -2253,7 +2254,7 @@ model GamePlayerStat {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  user User        @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User        @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
   game GameCatalog @relation(fields: [gameId], references: [gameId], onDelete: Restrict)
 
   @@unique([telegramUserId, gameId])
@@ -2275,7 +2276,7 @@ model GameRewardGrant {
   metadata       Json?                @map("metadata")
   createdAt      DateTime             @default(now()) @map("created_at")
 
-  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user User @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
 
   @@index([telegramUserId, createdAt])
   @@index([type])
@@ -2317,7 +2318,7 @@ model GameChallengeCompletion {
   rewardXp       Int      @default(0) @map("reward_xp")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  user      User              @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user      User              @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
   challenge GameDailyChallenge @relation(fields: [challengeId], references: [id], onDelete: Restrict)
 
   @@unique([telegramUserId, challengeId, challengeDay])
@@ -2409,7 +2410,7 @@ model MachineOutputStream {
   createdAt      DateTime            @default(now()) @map("created_at")
   updatedAt      DateTime            @updatedAt @map("updated_at")
 
-  machine MachineCatalogItem @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  machine MachineCatalogItem @relation(fields: [machineId], references: [id], onDelete: Restrict)
 
   @@unique([machineId, assetCode])
   @@index([machineId])
@@ -2433,7 +2434,7 @@ model UserMachineFleetItem {
   activatedAt      DateTime @default(now()) @map("activated_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  user    User               @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Cascade)
+  user    User               @relation(fields: [telegramUserId], references: [telegramUserId], onDelete: Restrict)
   machine MachineCatalogItem @relation(fields: [machineId], references: [id], onDelete: Restrict)
 
   timelineEvents MachineTimelineEvent[]
@@ -2518,3 +2519,23 @@ model MaintenanceWindowRecord {
   @@index([isActive, startsAt, endsAt])
   @@map("maintenance_windows")
 }
+
+model PlatformOperationalConfig {
+  id                        String   @id @default("AUTHORITATIVE_PLATFORM_CONFIG") @map("config_id")
+  version                   Int      @default(1) @map("version")
+  maintenanceMode           Boolean  @default(false) @map("maintenance_mode")
+  readOnlyMode              Boolean  @default(false) @map("read_only_mode")
+  disableRegistrations      Boolean  @default(false) @map("disable_registrations")
+  disablePurchases          Boolean  @default(false) @map("disable_purchases")
+  disableWithdrawals        Boolean  @default(false) @map("disable_withdrawals")
+  disableClaims             Boolean  @default(false) @map("disable_claims")
+  disableSettlements        Boolean  @default(false) @map("disable_settlements")
+  disabledAssets            Json     @default("[]") @map("disabled_assets")
+  disabledMachineCategories Json     @default("[]") @map("disabled_machine_categories")
+  reason                    String   @default("INITIAL_BOOTSTRAP") @map("reason")
+  updatedBy                 String   @default("SYSTEM") @map("updated_by")
+  updatedAt                 DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_operational_configs")
+}
+

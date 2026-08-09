@@ -27,13 +27,16 @@ export class CryptoBotController {
   ) {
     this.logger.log(`[CryptoBotWebhook] Received update_type: ${body?.update_type}, update_id: ${body?.update_id}`);
 
-    // 1. Signature verification
+    // 1. Signature verification (Fail-Closed)
     const apiToken = this.client.getApiToken();
+    const isProd = process.env.NODE_ENV === 'production';
+
+    if (!signature && (apiToken || isProd)) {
+      this.logger.error('[CryptoBotWebhook] Missing signature header');
+      throw new UnauthorizedException('MISSING_SIGNATURE');
+    }
+
     if (apiToken) {
-      if (!signature) {
-        this.logger.error('[CryptoBotWebhook] Missing signature header');
-        throw new UnauthorizedException('MISSING_SIGNATURE');
-      }
       const rawBody = req.rawBody || JSON.stringify(body);
       try {
         this.signatureService.validateOrThrow(rawBody, signature, apiToken);
@@ -41,8 +44,11 @@ export class CryptoBotController {
         this.logger.error(`[CryptoBotWebhook] Signature verification failed: ${err?.message}`);
         throw new UnauthorizedException('INVALID_SIGNATURE');
       }
+    } else if (isProd) {
+      this.logger.error('[CryptoBotWebhook] FATAL: Production webhook signature check failed because CRYPTOBOT_API_TOKEN is unconfigured.');
+      throw new UnauthorizedException('WEBHOOK_SECURITY_ENFORCED: Production signature verification required');
     } else {
-      this.logger.warn('[CryptoBotWebhook] No CRYPTOBOT_API_TOKEN set. Skipping signature verification (testing mode).');
+      this.logger.warn('[CryptoBotWebhook] No CRYPTOBOT_API_TOKEN set in non-production. Skipping signature verification.');
     }
 
     const updateId = body?.update_id;

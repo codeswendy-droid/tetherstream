@@ -4,6 +4,7 @@ import { X, Smartphone, Bot, CreditCard, ChevronRight, RefreshCw, AlertCircle, S
 import { settlementService, type SettlementProviderItem } from '../../services/settlementService';
 import { MobileMoneyFunding } from './MobileMoneyFunding';
 import { CryptoBotFunding } from './CryptoBotFunding';
+import { PesapalFunding } from './PesapalFunding';
 import { useTelegram } from '../../context/TelegramContext';
 
 interface FundingModalProps {
@@ -124,7 +125,9 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
               </button>
 
               {/* Render Provider Workflow */}
-              {selectedProvider.provider === 'CRYPTOBOT' ? (
+              {selectedProvider.provider === 'PESAPAL' ? (
+                <PesapalFunding onCancel={onClose} />
+              ) : selectedProvider.provider === 'CRYPTOBOT' ? (
                 <CryptoBotFunding
                   providerId={selectedProvider.provider}
                   onCancel={onClose}

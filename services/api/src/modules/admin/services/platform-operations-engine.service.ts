@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { OperationalAuditService } from './operational-audit.service';
 import { UserInvestigationService } from './user-investigation.service';
@@ -33,11 +33,15 @@ export interface ManageQueueDto {
   reason: string;
 }
 
+import { DurableQueueService } from '../../queue/durable-queue.service';
+
+const CONFIG_SINGLETON_ID = 'AUTHORITATIVE_PLATFORM_CONFIG';
+
 @Injectable()
-export class PlatformOperationsEngineService {
+export class PlatformOperationsEngineService implements OnModuleInit {
   private readonly logger = new Logger(PlatformOperationsEngineService.name);
 
-  // In-memory cache for operational flags backed by audit events
+  // In-memory cache for operational flags, initialized from authoritative DB state
   private currentSwitches = {
     maintenanceMode: false,
     readOnlyMode: false,
@@ -58,12 +62,123 @@ export class PlatformOperationsEngineService {
     private readonly auditService: OperationalAuditService,
     private readonly userInvestigation: UserInvestigationService,
     private readonly financialAdmin: FinancialAdminService,
+    @Optional() @Inject(forwardRef(() => DurableQueueService)) private readonly durableQueue?: DurableQueueService,
   ) {}
+
+  async onModuleInit() {
+    this.logger.log('Initializing PlatformOperationsEngineService — loading authoritative configuration from DB...');
+    await this.loadAuthoritativeConfig();
+  }
+
+  /**
+   * Assert that an operational action is permitted under the authoritative platform switches.
+   * Throws ForbiddenException if blocked by maintenanceMode, readOnlyMode, or granular switches.
+   */
+  async assertOperationalModeAllowed(
+    opType: 'REGISTRATION' | 'PURCHASE' | 'WITHDRAWAL' | 'CLAIM' | 'SETTLEMENT' | 'MUTATION',
+    assetCode?: string,
+    machineCategory?: string,
+  ) {
+    const switches = await this.getGlobalSwitches();
+
+    if (switches.maintenanceMode) {
+      throw new ForbiddenException('PLATFORM_MAINTENANCE_ACTIVE: System is currently under maintenance.');
+    }
+
+    if (switches.readOnlyMode && opType !== 'REGISTRATION') {
+      throw new ForbiddenException('PLATFORM_READ_ONLY_ACTIVE: System is currently in read-only mode.');
+    }
+
+    if (opType === 'REGISTRATION' && switches.disableRegistrations) {
+      throw new ForbiddenException('REGISTRATIONS_DISABLED: Platform registrations are currently disabled.');
+    }
+
+    if (opType === 'PURCHASE' && switches.disablePurchases) {
+      throw new ForbiddenException('PURCHASES_DISABLED: Machine purchases are currently disabled.');
+    }
+
+    if (opType === 'WITHDRAWAL' && switches.disableWithdrawals) {
+      throw new ForbiddenException('WITHDRAWALS_DISABLED: Platform withdrawals are currently disabled.');
+    }
+
+    if (opType === 'CLAIM' && switches.disableClaims) {
+      throw new ForbiddenException('CLAIMS_DISABLED: Yield claims are currently disabled.');
+    }
+
+    if (opType === 'SETTLEMENT' && switches.disableSettlements) {
+      throw new ForbiddenException('SETTLEMENTS_DISABLED: Platform settlements are currently disabled.');
+    }
+
+    if (assetCode && switches.disabledAssets && switches.disabledAssets.map((a) => a.toUpperCase()).includes(assetCode.toUpperCase())) {
+      throw new ForbiddenException(`ASSET_DISABLED: Operations on asset ${assetCode} are currently disabled.`);
+    }
+
+    if (
+      machineCategory &&
+      switches.disabledMachineCategories &&
+      switches.disabledMachineCategories.map((c) => c.toUpperCase()).includes(machineCategory.toUpperCase())
+    ) {
+      throw new ForbiddenException(`CATEGORY_DISABLED: Purchases for machine category ${machineCategory} are disabled.`);
+    }
+  }
+
+
+  /**
+   * Load authoritative configuration from database into memory.
+   */
+  async loadAuthoritativeConfig() {
+    try {
+      let dbConfig = await this.prisma.platformOperationalConfig.findUnique({
+        where: { id: CONFIG_SINGLETON_ID },
+      });
+
+      if (!dbConfig) {
+        this.logger.log('No authoritative PlatformOperationalConfig record found. Seeding initial DB singleton...');
+        dbConfig = await this.prisma.platformOperationalConfig.create({
+          data: {
+            id: CONFIG_SINGLETON_ID,
+            version: 1,
+            maintenanceMode: false,
+            readOnlyMode: false,
+            disableRegistrations: false,
+            disablePurchases: false,
+            disableWithdrawals: false,
+            disableClaims: false,
+            disableSettlements: false,
+            disabledAssets: [],
+            disabledMachineCategories: [],
+            reason: 'INITIAL_PLATFORM_BOOTSTRAP',
+            updatedBy: 'SYSTEM',
+          },
+        });
+      }
+
+      this.currentSwitches = {
+        maintenanceMode: dbConfig.maintenanceMode,
+        readOnlyMode: dbConfig.readOnlyMode,
+        disableRegistrations: dbConfig.disableRegistrations,
+        disablePurchases: dbConfig.disablePurchases,
+        disableWithdrawals: dbConfig.disableWithdrawals,
+        disableClaims: dbConfig.disableClaims,
+        disableSettlements: dbConfig.disableSettlements,
+        disabledAssets: (dbConfig.disabledAssets as string[]) || [],
+        disabledMachineCategories: (dbConfig.disabledMachineCategories as string[]) || [],
+        version: dbConfig.version,
+        lastUpdatedBy: dbConfig.updatedBy,
+        lastUpdatedAt: dbConfig.updatedAt.toISOString(),
+      };
+
+      this.logger.log(`Loaded authoritative platform operational config (v${dbConfig.version}, maintenanceMode=${dbConfig.maintenanceMode})`);
+    } catch (err: any) {
+      this.logger.error(`Failed to load authoritative platform config from DB: ${err?.message}`);
+    }
+  }
 
   /**
    * 1. Overall Platform Health & Observability Overview
    */
   async getPlatformHealthOverview() {
+    await this.loadAuthoritativeConfig();
     const [
       openQueueCount,
       openRiskCount,
@@ -87,6 +202,8 @@ export class PlatformOperationsEngineService {
       healthStatus = 'DEGRADED';
     }
 
+    const queueMetrics = this.durableQueue ? await this.durableQueue.getQueueMetrics() : null;
+
     return {
       platformHealth: {
         status: healthStatus,
@@ -102,6 +219,7 @@ export class PlatformOperationsEngineService {
         openRiskCount,
         openSupportCount,
         totalUsers,
+        durableQueueMetrics: queueMetrics,
       },
       activeSwitches: this.currentSwitches,
       providersHealth: providers.map((p) => ({
@@ -123,6 +241,7 @@ export class PlatformOperationsEngineService {
    * 2. Versioned Global Operational Control Switches
    */
   async getGlobalSwitches() {
+    await this.loadAuthoritativeConfig();
     return this.currentSwitches;
   }
 
@@ -133,19 +252,72 @@ export class PlatformOperationsEngineService {
 
     const previousState = { ...this.currentSwitches };
 
+    const updatedConfig = await this.prisma.$transaction(async (tx) => {
+      const current = await tx.platformOperationalConfig.findUnique({
+        where: { id: CONFIG_SINGLETON_ID },
+      });
+
+      const nextVersion = (current?.version || previousState.version) + 1;
+
+      const newMaintenance = dto.maintenanceMode !== undefined ? dto.maintenanceMode : (current?.maintenanceMode ?? previousState.maintenanceMode);
+      const newReadOnly = dto.readOnlyMode !== undefined ? dto.readOnlyMode : (current?.readOnlyMode ?? previousState.readOnlyMode);
+      const newRegistrations = dto.disableRegistrations !== undefined ? dto.disableRegistrations : (current?.disableRegistrations ?? previousState.disableRegistrations);
+      const newPurchases = dto.disablePurchases !== undefined ? dto.disablePurchases : (current?.disablePurchases ?? previousState.disablePurchases);
+      const newWithdrawals = dto.disableWithdrawals !== undefined ? dto.disableWithdrawals : (current?.disableWithdrawals ?? previousState.disableWithdrawals);
+      const newClaims = dto.disableClaims !== undefined ? dto.disableClaims : (current?.disableClaims ?? previousState.disableClaims);
+      const newSettlements = dto.disableSettlements !== undefined ? dto.disableSettlements : (current?.disableSettlements ?? previousState.disableSettlements);
+      const newAssets = dto.disabledAssets || (current?.disabledAssets as string[]) || previousState.disabledAssets;
+      const newCategories = dto.disabledMachineCategories || (current?.disabledMachineCategories as string[]) || previousState.disabledMachineCategories;
+
+      const saved = await tx.platformOperationalConfig.upsert({
+        where: { id: CONFIG_SINGLETON_ID },
+        update: {
+          version: nextVersion,
+          maintenanceMode: newMaintenance,
+          readOnlyMode: newReadOnly,
+          disableRegistrations: newRegistrations,
+          disablePurchases: newPurchases,
+          disableWithdrawals: newWithdrawals,
+          disableClaims: newClaims,
+          disableSettlements: newSettlements,
+          disabledAssets: newAssets,
+          disabledMachineCategories: newCategories,
+          reason: dto.reason.trim(),
+          updatedBy: admin.id,
+        },
+        create: {
+          id: CONFIG_SINGLETON_ID,
+          version: nextVersion,
+          maintenanceMode: newMaintenance,
+          readOnlyMode: newReadOnly,
+          disableRegistrations: newRegistrations,
+          disablePurchases: newPurchases,
+          disableWithdrawals: newWithdrawals,
+          disableClaims: newClaims,
+          disableSettlements: newSettlements,
+          disabledAssets: newAssets,
+          disabledMachineCategories: newCategories,
+          reason: dto.reason.trim(),
+          updatedBy: admin.id,
+        },
+      });
+
+      return saved;
+    });
+
     this.currentSwitches = {
-      maintenanceMode: dto.maintenanceMode !== undefined ? dto.maintenanceMode : previousState.maintenanceMode,
-      readOnlyMode: dto.readOnlyMode !== undefined ? dto.readOnlyMode : previousState.readOnlyMode,
-      disableRegistrations: dto.disableRegistrations !== undefined ? dto.disableRegistrations : previousState.disableRegistrations,
-      disablePurchases: dto.disablePurchases !== undefined ? dto.disablePurchases : previousState.disablePurchases,
-      disableWithdrawals: dto.disableWithdrawals !== undefined ? dto.disableWithdrawals : previousState.disableWithdrawals,
-      disableClaims: dto.disableClaims !== undefined ? dto.disableClaims : previousState.disableClaims,
-      disableSettlements: dto.disableSettlements !== undefined ? dto.disableSettlements : previousState.disableSettlements,
-      disabledAssets: dto.disabledAssets || previousState.disabledAssets,
-      disabledMachineCategories: dto.disabledMachineCategories || previousState.disabledMachineCategories,
-      version: previousState.version + 1,
-      lastUpdatedBy: admin.id,
-      lastUpdatedAt: new Date().toISOString(),
+      maintenanceMode: updatedConfig.maintenanceMode,
+      readOnlyMode: updatedConfig.readOnlyMode,
+      disableRegistrations: updatedConfig.disableRegistrations,
+      disablePurchases: updatedConfig.disablePurchases,
+      disableWithdrawals: updatedConfig.disableWithdrawals,
+      disableClaims: updatedConfig.disableClaims,
+      disableSettlements: updatedConfig.disableSettlements,
+      disabledAssets: (updatedConfig.disabledAssets as string[]) || [],
+      disabledMachineCategories: (updatedConfig.disabledMachineCategories as string[]) || [],
+      version: updatedConfig.version,
+      lastUpdatedBy: updatedConfig.updatedBy,
+      lastUpdatedAt: updatedConfig.updatedAt.toISOString(),
     };
 
     await this.auditService.logAction({
@@ -163,6 +335,7 @@ export class PlatformOperationsEngineService {
 
     return this.currentSwitches;
   }
+
 
   /**
    * 3. Structured Risk Workflow State Engine
@@ -303,11 +476,19 @@ export class PlatformOperationsEngineService {
     if (dto.action === 'RETRY' || dto.action === 'REQUEUE') updatedStatus = 'OPEN';
     if (dto.action === 'DRAIN') updatedStatus = 'RESOLVED';
 
+    if (this.durableQueue) {
+      if (dto.action === 'RETRY' || dto.action === 'REQUEUE') {
+        await this.durableQueue.retryDlqItem(dto.queueItemId, admin.id, dto.reason.trim());
+      } else if (dto.action === 'RESOLVE' || dto.action === 'DRAIN') {
+        await this.durableQueue.resolveDlqItem(dto.queueItemId, admin.id, dto.reason.trim());
+      }
+    }
+
     const updated = await this.prisma.operationsQueueItem.update({
       where: { id: dto.queueItemId },
       data: {
         status: updatedStatus,
-        resolvedAt: dto.action === 'DRAIN' ? new Date() : null,
+        resolvedAt: dto.action === 'DRAIN' || dto.action === 'RESOLVE' ? new Date() : null,
         payload: {
           ...(typeof item.payload === 'object' ? item.payload : {}),
           lastAction: dto.action,
@@ -317,13 +498,30 @@ export class PlatformOperationsEngineService {
       },
     });
 
+    // Financial Reversal Safety Guard: check if payload contains abandoned financial withdrawal
+    const payload = typeof item.payload === 'object' ? (item.payload as any) : {};
+    if ((dto.action === 'RESOLVE' || dto.action === 'DRAIN') && payload.withdrawalId) {
+      try {
+        const session = await this.prisma.settlementSession.findUnique({ where: { id: payload.withdrawalId } });
+        if (session && session.status !== 'POSTED' && session.status !== 'FAILED') {
+          await this.prisma.settlementSession.update({
+            where: { id: payload.withdrawalId },
+            data: { status: 'FAILED' },
+          });
+          this.logger.log(`[DLQ Financial Guard] Marked abandoned withdrawal settlement ${payload.withdrawalId} as FAILED on DLQ resolve.`);
+        }
+      } catch (err: any) {
+        this.logger.warn(`DLQ Financial reversal check error for ${payload.withdrawalId}: ${err?.message}`);
+      }
+    }
+
     await this.auditService.logAction({
       actorId: admin.id,
       actorRole: admin.role,
       action: `QUEUE_ACTION_${dto.action}`,
       entity: 'OPERATIONS_QUEUE',
       entityId: dto.queueItemId,
-      metadata: { previousStatus: item.status, newStatus: updated.status, action: dto.action, reason: dto.reason },
+      metadata: { previousStatus: item.status, newStatus: updatedStatus, reason: dto.reason.trim(), financialPayload: payload.withdrawalId || null },
     });
 
     return updated;
@@ -343,10 +541,52 @@ export class PlatformOperationsEngineService {
       status: p.status,
       healthStatus: p.health?.healthStatus || 'HEALTHY',
       checkedAt: p.health?.checkedAt || new Date(),
-      latencyMs: Math.floor(Math.random() * 80) + 20, // Simulated real-time latency ping
+      latencyMs: 45,
       successRatePct: 99.4,
       errorRatePct: 0.6,
       queueDepth: 0,
     }));
+  }
+
+  /**
+   * Publish Telegram/Notification Broadcast to audience channel via durable queue.
+   */
+  async publishBroadcastNotification(
+    admin: { id: string; role: string },
+    dto: { targetAudience: string; message: string; reason: string },
+  ) {
+    if (!dto.message || !dto.message.trim()) {
+      throw new BadRequestException('BROADCAST_MESSAGE_REQUIRED: Broadcast message text is mandatory');
+    }
+    if (!dto.reason || !dto.reason.trim()) {
+      throw new BadRequestException('BROADCAST_REASON_REQUIRED: Reason for broadcast is mandatory');
+    }
+
+    const idempotencyKey = `bcast_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const payload = {
+      targetAudience: dto.targetAudience || 'Public Channel',
+      message: dto.message.trim(),
+      publishedBy: admin.id,
+      publishedAt: new Date().toISOString(),
+    };
+
+    if (this.durableQueue) {
+      await this.durableQueue.enqueueJob('notifications', idempotencyKey, payload);
+    }
+
+    await this.auditService.logAction({
+      actorId: admin.id,
+      actorRole: admin.role,
+      action: 'ADMIN_NOTIFICATION_BROADCAST_PUBLISHED',
+      entity: 'NOTIFICATION_CHANNEL',
+      metadata: { targetAudience: dto.targetAudience, message: dto.message, reason: dto.reason },
+    });
+
+    return {
+      success: true,
+      targetAudience: dto.targetAudience,
+      message: dto.message,
+      enqueuedAt: payload.publishedAt,
+    };
   }
 }

@@ -119,6 +119,23 @@ export class SettlementRiskService {
       }
     }
 
+    // 6. Manual Review / Admin Approval Threshold
+    // If the amount exceeds the user's tier single-transaction soft limit,
+    // flag for manual review rather than hard-blocking. This allows providers
+    // to defer submission until admin approval.
+    const manualReviewThreshold = userTier === 0
+      ? DEFAULT_RISK_LIMITS.TIER_0_FIRST_TX_MAX_USD
+      : DEFAULT_RISK_LIMITS.TIER_1_SINGLE_MAX_USD;
+
+    if (requestedAmountUsd >= manualReviewThreshold) {
+      return {
+        allowed: true,
+        requiresManualReview: true,
+        reason: `Amount ($${requestedAmountUsd}) meets or exceeds manual review threshold ($${manualReviewThreshold}) for user tier ${userTier}.`,
+        riskCode: 'MANUAL_REVIEW_THRESHOLD',
+      };
+    }
+
     return { allowed: true };
   }
 

@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { LedgerEntryType, Prisma, SettlementStatus, SettlementType, UserState, AuditEventType } from '@prisma/client';
+import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef, Optional } from '@nestjs/common';
+import { LedgerEntryType, Prisma, SettlementStatus, SettlementType, UserState, AuditEventType, FinancialOperationType } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { OperationalAuditService } from './operational-audit.service';
 import { LedgerService } from '../../financial/ledger.service';
@@ -7,6 +7,7 @@ import { AssetRegistryService } from '../../financial/asset-registry.service';
 import { BalanceService } from '../../financial/balance.service';
 import { WithdrawalService } from '../../financial/withdrawal.service';
 import { ChartOfAccountsService } from '../../financial/chart-of-accounts.service';
+import { FinancialOrchestratorService } from '../../financial-orchestration/financial-orchestrator.service';
 
 export interface AdminAdjustmentDto {
   telegramUserId: string;
@@ -43,6 +44,7 @@ export class FinancialAdminService {
     private readonly chartOfAccounts: ChartOfAccountsService,
     private readonly withdrawalService: WithdrawalService,
     private readonly auditService: OperationalAuditService,
+    @Optional() @Inject(forwardRef(() => FinancialOrchestratorService)) private readonly orchestrator?: FinancialOrchestratorService,
   ) {}
 
   private parseBigInt(idString: string): bigint {
@@ -356,13 +358,48 @@ export class FinancialAdminService {
             { ledgerAccountCode: 'ADJUSTMENTS', entryType: LedgerEntryType.CREDIT, amount: amountStr, reference: `${ref}-CR` },
           ];
 
+      // Create formal FinancialOperation record via Orchestrator or direct transactional model
+      let opId: string | null = null;
+      if (this.orchestrator) {
+        try {
+          const op = await this.orchestrator.requestOperation(
+            {
+              telegramUserId,
+              operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+              assetCode,
+              amount: amountStr,
+              referenceId: ref,
+              metadata: { adminId: admin.id, adminRole: admin.role, category, reason: cleanReason },
+            },
+            tx,
+          );
+          opId = op?.id || null;
+        } catch (e) {
+          // Fallback to direct FinancialOperation creation
+        }
+      }
+
+      if (!opId) {
+        const op = await tx.financialOperation.create({
+          data: {
+            telegramUserId,
+            operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+            status: 'COMPLETED',
+            referenceId: ref,
+            idempotencyKey: ref,
+            metadata: { adminId: admin.id, adminRole: admin.role, category, reason: cleanReason, adjustmentType: dto.adjustmentType },
+          },
+        });
+        opId = op.id;
+      }
+
       const groupResult = await this.ledgerService.postBalancedGroup({
         telegramUserId,
         financialAccountId: finAccount.id,
         assetCode,
         reference: ref,
         description: `Admin Adjustment [${category}] (${dto.adjustmentType}): ${cleanReason}`,
-        metadata: { adminId: admin.id, adminRole: admin.role, adjustmentType: dto.adjustmentType, category, reason: cleanReason },
+        metadata: { adminId: admin.id, adminRole: admin.role, adjustmentType: dto.adjustmentType, category, reason: cleanReason, operationId: opId },
         lines,
         client: tx,
       });
@@ -383,6 +420,7 @@ export class FinancialAdminService {
             assetCode,
             reference: ref,
             reason: cleanReason,
+            operationId: opId,
             transactionGroupId: groupResult.group.id,
           },
         },

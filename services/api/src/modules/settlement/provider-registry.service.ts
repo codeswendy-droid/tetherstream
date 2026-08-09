@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CryptoBotProvider } from './cryptobot.provider';
+import { PesapalProvider } from './pesapal/pesapal.provider';
 import { CreateSettlementSessionDto } from './dto/create-settlement-session.dto';
 import { MerchantSettlementProvider } from './merchant-settlement.provider';
 import { InternalOperationsProvider } from './operator-settlement.provider';
@@ -37,6 +38,7 @@ export class ProviderRegistryService implements OnModuleInit {
     operator: InternalOperationsProvider,
     cryptobot: CryptoBotProvider,
     @Optional() merchant?: MerchantSettlementProvider,
+    @Optional() pesapal?: PesapalProvider,
     @Optional() private readonly riskService?: SettlementRiskService,
   ) {
     this.adapters = new Map<SettlementProviderId, SettlementProvider>([
@@ -45,6 +47,9 @@ export class ProviderRegistryService implements OnModuleInit {
     ]);
     if (merchant) {
       this.adapters.set(merchant.providerId, merchant);
+    }
+    if (pesapal) {
+      this.adapters.set(pesapal.providerId, pesapal);
     }
   }
 
@@ -184,6 +189,7 @@ export class ProviderRegistryService implements OnModuleInit {
     let displayName = 'Mobile Money';
     if (provider.providerId === SettlementProviderId.CRYPTOBOT) displayName = 'CryptoBot';
     if (provider.providerId === SettlementProviderId.MERCHANT_MOBILE_MONEY) displayName = 'Merchant Mobile Money';
+    if (provider.providerId === SettlementProviderId.PESAPAL) displayName = 'Pesapal (Card & Mobile Money)';
 
     await this.prisma.settlementProvider.upsert({
       where: { id: provider.providerId },
