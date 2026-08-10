@@ -29,6 +29,7 @@ export interface SettlementProviderItem {
 
 export interface CreateSettlementPayload {
   provider: string;
+  paymentMethod?: string;
   asset: string;
   requestedAmount: string;
   expectedCryptoAmount: string;

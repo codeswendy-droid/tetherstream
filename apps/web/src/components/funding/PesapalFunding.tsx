@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, ExternalLink, ShieldCheck, Clock, CheckCircle2, AlertCircle, ArrowLeft, XCircle, RefreshCw, AlertTriangle } from 'lucide-react';
+import { CreditCard, ExternalLink, ShieldCheck, Clock, CheckCircle2, AlertCircle, ArrowLeft, XCircle, RefreshCw, AlertTriangle, Smartphone } from 'lucide-react';
 import { settlementService, type SettlementSessionView } from '../../services/settlementService';
 import { useTelegram } from '../../context/TelegramContext';
 
 interface PesapalFundingProps {
+  paymentMethod?: 'MOBILE_MONEY' | 'CARD';
   onCancel: () => void;
 }
 
-export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
+export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 'MOBILE_MONEY', onCancel }) => {
   const [amountUsdt, setAmountUsdt] = useState<string>('50');
   const [country, setCountry] = useState<string>('KE');
   const [session, setSession] = useState<SettlementSessionView | null>(null);
@@ -32,12 +33,13 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
       // Exchange rate 1 USDT = 1 USD equivalent or live rate
       const res = await settlementService.createSession({
         provider: 'PESAPAL',
+        paymentMethod,
         asset: 'USDT',
         requestedAmount: amountUsdt,
         expectedCryptoAmount: amountUsdt,
         exchangeRate: '1.0',
         country,
-        mobileMoneyNetwork: 'PESAPAL',
+        mobileMoneyNetwork: paymentMethod === 'CARD' ? 'PESAPAL_CARD' : 'PESAPAL',
       });
 
       setSession(res);
@@ -99,7 +101,15 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
         </button>
 
         <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center gap-1">
-          <ShieldCheck size={12} /> Pesapal Gateway
+          {paymentMethod === 'CARD' ? (
+            <>
+              <CreditCard size={12} /> Pesapal Card Gateway
+            </>
+          ) : (
+            <>
+              <Smartphone size={12} /> Pesapal Mobile Money
+            </>
+          )}
         </span>
       </div>
 
@@ -160,6 +170,21 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
             </select>
           </div>
 
+          {/* Method Info */}
+          <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2.5 text-xs text-text-tertiary">
+            {paymentMethod === 'CARD' ? (
+              <>
+                <CreditCard size={16} className="text-purple-400 shrink-0" />
+                <span>Pay securely with Visa or Mastercard via Pesapal</span>
+              </>
+            ) : (
+              <>
+                <Smartphone size={16} className="text-usdt-green shrink-0" />
+                <span>Pay securely with Mobile Money (M-Pesa, MTN, Airtel) via Pesapal</span>
+              </>
+            )}
+          </div>
+
           {/* Threshold Policy Info */}
           <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-xs text-amber-300">
             <ShieldCheck size={16} className="shrink-0 mt-0.5" />
@@ -182,9 +207,13 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
           >
             {isLoading ? (
               <span>Initializing Pesapal...</span>
+            ) : paymentMethod === 'CARD' ? (
+              <>
+                <CreditCard size={18} /> Continue to Card Checkout
+              </>
             ) : (
               <>
-                <CreditCard size={18} /> Continue to Pesapal
+                <Smartphone size={18} /> Continue to Mobile Money
               </>
             )}
           </button>

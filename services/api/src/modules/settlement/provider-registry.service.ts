@@ -201,7 +201,7 @@ export class ProviderRegistryService implements OnModuleInit {
         id: provider.providerId,
         displayName,
         supportedAssets: provider.manifest.supported_assets as Prisma.InputJsonValue,
-        supportedCountries: (provider.providerId === SettlementProviderId.CRYPTOBOT ? [] : ['KE']) as Prisma.InputJsonValue,
+        supportedCountries: (provider.providerId === SettlementProviderId.CRYPTOBOT ? [] : ['KE', 'UG', 'US']) as Prisma.InputJsonValue,
         capabilityManifest: provider.manifest as unknown as Prisma.InputJsonValue,
         priority: provider.providerId === SettlementProviderId.CRYPTOBOT ? 20 : 10,
         config: { create: { configuration: {} } },

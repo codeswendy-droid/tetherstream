@@ -29,4 +29,8 @@ export class CreateSettlementSessionDto {
   @IsString()
   @IsNotEmpty()
   mobileMoneyNetwork!: string;
+
+  @IsString()
+  @IsOptional()
+  paymentMethod?: string;
 }

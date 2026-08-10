@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Smartphone, Bot, CreditCard, ChevronRight, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
-import { settlementService, type SettlementProviderItem } from '../../services/settlementService';
-import { MobileMoneyFunding } from './MobileMoneyFunding';
+import { X, Smartphone, CreditCard, ChevronRight, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
+import { settlementService } from '../../services/settlementService';
 import { CryptoBotFunding } from './CryptoBotFunding';
 import { PesapalFunding } from './PesapalFunding';
 import { useTelegram } from '../../context/TelegramContext';
@@ -12,67 +11,75 @@ interface FundingModalProps {
   onClose: () => void;
 }
 
+export interface FundingOption {
+  id: 'MOBILE_MONEY' | 'CARD' | 'USDT';
+  name: string;
+  displayName: string;
+  description: string;
+  provider: string;
+  paymentMethod: 'MOBILE_MONEY' | 'CARD' | 'USDT';
+  icon: React.ReactNode;
+  badge: string;
+}
+
+const FUNDING_OPTIONS: FundingOption[] = [
+  {
+    id: 'MOBILE_MONEY',
+    name: 'Mobile Money',
+    displayName: 'Mobile Money',
+    description: 'Pay securely with Mobile Money through Pesapal',
+    provider: 'PESAPAL',
+    paymentMethod: 'MOBILE_MONEY',
+    icon: <Smartphone size={22} className="text-usdt-green" />,
+    badge: 'M-Pesa / MTN / Airtel',
+  },
+  {
+    id: 'CARD',
+    name: 'Card',
+    displayName: 'Card',
+    description: 'Pay securely with your bank card through Pesapal',
+    provider: 'PESAPAL',
+    paymentMethod: 'CARD',
+    icon: <CreditCard size={22} className="text-purple-400" />,
+    badge: 'Visa / Mastercard',
+  },
+  {
+    id: 'USDT',
+    name: 'USDT',
+    displayName: 'USDT',
+    description: 'Fund directly using USDT through the supported crypto settlement network',
+    provider: 'CRYPTOBOT',
+    paymentMethod: 'USDT',
+    icon: <Sparkles size={22} className="text-sky-400" />,
+    badge: 'Crypto',
+  },
+];
+
 export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) => {
-  const [providers, setProviders] = useState<SettlementProviderItem[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState<SettlementProviderItem | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [selectedOption, setSelectedOption] = useState<FundingOption | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const { hapticFeedback } = useTelegram();
 
   useEffect(() => {
     if (isOpen) {
-      loadProviders();
+      loadCapabilities();
     } else {
-      setSelectedProvider(null);
+      setSelectedOption(null);
     }
   }, [isOpen]);
 
-  const loadProviders = async () => {
+  const loadCapabilities = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await settlementService.getProviders({ asset: 'USDT' });
-      setProviders(data);
+      // Probes backend providers health/capabilities
+      await settlementService.getProviders({ asset: 'USDT' });
     } catch (err: any) {
-      console.warn('Failed to load providers from API:', err?.message);
-      // Fallback fallback defaults if network or auth error during preview
-      setProviders([
-        {
-          provider: 'MERCHANT_MOBILE_MONEY',
-          name: 'Mobile Money',
-          displayName: 'Mobile Money (M-Pesa)',
-          type: 'MERCHANT_MOBILE_MONEY',
-          status: 'ENABLED',
-          healthStatus: 'HEALTHY',
-          priority: 10,
-          supported_assets: ['USDT'],
-        },
-        {
-          provider: 'CRYPTOBOT',
-          name: 'CryptoBot',
-          displayName: 'Telegram CryptoBot',
-          type: 'CRYPTOBOT',
-          status: 'ENABLED',
-          healthStatus: 'HEALTHY',
-          priority: 20,
-          supported_assets: ['USDT'],
-        },
-      ]);
+      console.warn('API provider capabilities load warning:', err?.message);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const getProviderIcon = (providerId: string) => {
-    switch (providerId) {
-      case 'MERCHANT_MOBILE_MONEY':
-      case 'INTERNAL_OPERATIONS':
-        return <Smartphone size={22} className="text-usdt-green" />;
-      case 'CRYPTOBOT':
-        return <Bot size={22} className="text-sky-400" />;
-      default:
-        return <CreditCard size={22} className="text-purple-400" />;
     }
   };
 
@@ -95,7 +102,7 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
                 ₮
               </div>
               <h2 className="text-base font-extrabold text-text-primary">
-                {selectedProvider ? selectedProvider.displayName || selectedProvider.name : 'Add Money'}
+                {selectedOption ? selectedOption.displayName : 'Fund Titan Stream'}
               </h2>
             </div>
 
@@ -111,45 +118,39 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
           </div>
 
           {/* Body Content */}
-          {selectedProvider ? (
+          {selectedOption ? (
             <div>
               {/* Back navigation button */}
               <button
                 onClick={() => {
                   hapticFeedback.selectionChanged();
-                  setSelectedProvider(null);
+                  setSelectedOption(null);
                 }}
                 className="mb-4 text-xs font-bold text-usdt-green flex items-center gap-1 hover:underline"
               >
                 ← Choose Different Payment Method
               </button>
 
-              {/* Render Provider Workflow */}
-              {selectedProvider.provider === 'PESAPAL' ? (
-                <PesapalFunding onCancel={onClose} />
-              ) : selectedProvider.provider === 'CRYPTOBOT' ? (
-                <CryptoBotFunding
-                  providerId={selectedProvider.provider}
-                  onCancel={onClose}
-                />
+              {/* Render Selected Method Workflow */}
+              {selectedOption.id === 'MOBILE_MONEY' ? (
+                <PesapalFunding paymentMethod="MOBILE_MONEY" onCancel={onClose} />
+              ) : selectedOption.id === 'CARD' ? (
+                <PesapalFunding paymentMethod="CARD" onCancel={onClose} />
               ) : (
-                <MobileMoneyFunding
-                  providerId={selectedProvider.provider}
-                  onCancel={onClose}
-                />
+                <CryptoBotFunding providerId="CRYPTOBOT" onCancel={onClose} />
               )}
             </div>
           ) : (
             <div className="space-y-4">
               <p className="text-xs text-text-tertiary">
-                Select how you would like to add money to your wallet.
+                Choose how you want to fund your account.
               </p>
 
               {/* Loading State */}
               {isLoading ? (
                 <div className="py-10 flex flex-col items-center justify-center space-y-3">
                   <RefreshCw size={24} className="animate-spin text-usdt-green" />
-                  <span className="text-xs text-text-tertiary">Loading payment methods...</span>
+                  <span className="text-xs text-text-tertiary">Loading payment options...</span>
                 </div>
               ) : error ? (
                 <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-3">
@@ -157,44 +158,42 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
                   <span>{error}</span>
                 </div>
               ) : (
-                /* Dynamic Provider List */
-                <div className="space-y-2.5">
-                  {providers.map((item) => (
+                /* Funding Options List */
+                <div className="space-y-3">
+                  {FUNDING_OPTIONS.map((item) => (
                     <button
-                      key={item.provider}
+                      key={item.id}
                       onClick={() => {
                         hapticFeedback.impactOccurred('medium');
-                        setSelectedProvider(item);
+                        setSelectedOption(item);
                       }}
                       className="press-feedback w-full p-4 rounded-2xl glass-panel border border-white/10 hover:border-usdt-green/40 flex items-center justify-between transition-all group text-left"
                     >
                       <div className="flex items-center gap-3.5">
                         <div className="w-12 h-12 rounded-xl bg-control-bg border border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform">
-                          {getProviderIcon(item.provider)}
+                          {item.icon}
                         </div>
 
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-extrabold text-text-primary group-hover:text-usdt-green transition-colors">
-                              {item.displayName || item.name}
+                              {item.displayName}
                             </span>
                             <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-usdt-green/10 text-usdt-green border border-usdt-green/20">
-                              Instant
+                              {item.badge}
                             </span>
                           </div>
                           <p className="text-xs text-text-tertiary mt-0.5">
-                            {item.provider === 'CRYPTOBOT'
-                              ? 'Pay using Telegram wallet'
-                              : 'Pay using local Mobile Money'}
+                            {item.description}
                           </p>
                         </div>
                       </div>
 
-                      <ChevronRight size={18} className="text-text-tertiary group-hover:text-usdt-green group-hover:translate-x-0.5 transition-all" />
+                      <ChevronRight size={18} className="text-text-tertiary group-hover:text-usdt-green group-hover:translate-x-0.5 transition-all shrink-0 ml-2" />
                     </button>
                   ))}
 
-                  {/* Future Providers Teaser */}
+                  {/* Future Options Teaser */}
                   <div className="p-3 rounded-2xl bg-white/5 border border-dashed border-white/10 flex items-center gap-2.5 text-xs text-text-tertiary">
                     <Sparkles size={16} className="text-amber-400 shrink-0" />
                     <span>More payment options coming soon.</span>

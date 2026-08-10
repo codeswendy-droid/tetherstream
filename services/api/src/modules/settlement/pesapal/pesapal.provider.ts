@@ -144,6 +144,7 @@ export class PesapalProvider implements SettlementProvider {
         expiresAt,
         providerMetadata: {
           provider: SettlementProviderId.PESAPAL,
+          paymentMethod: dto.paymentMethod || (dto.mobileMoneyNetwork?.includes('CARD') ? 'CARD' : 'MOBILE_MONEY'),
           requiresAdminApproval,
           expectedCryptoUsd,
           riskCode: riskResult.riskCode || null,
@@ -158,6 +159,7 @@ export class PesapalProvider implements SettlementProvider {
               actorType: 'CUSTOMER',
               actorId: telegramUserId.toString(),
               payload: {
+                paymentMethod: dto.paymentMethod || (dto.mobileMoneyNetwork?.includes('CARD') ? 'CARD' : 'MOBILE_MONEY'),
                 requiresAdminApproval,
                 amountUsd: expectedCryptoUsd,
                 riskCode: riskResult.riskCode || null,

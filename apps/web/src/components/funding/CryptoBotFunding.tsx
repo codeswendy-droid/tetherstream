@@ -102,8 +102,8 @@ export const CryptoBotFunding: React.FC<CryptoBotFundingProps> = ({
           <Bot size={20} />
         </div>
         <div>
-          <h3 className="text-sm font-extrabold text-text-primary">Telegram CryptoBot</h3>
-          <p className="text-xs text-text-tertiary">Pay directly via Telegram CryptoBot wallet</p>
+          <h3 className="text-sm font-extrabold text-text-primary">USDT Crypto Settlement</h3>
+          <p className="text-xs text-text-tertiary">Fund directly using USDT through the supported crypto network</p>
         </div>
       </div>
 
