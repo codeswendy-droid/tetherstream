@@ -221,4 +221,29 @@ export class ProductionReadinessEngineService {
       },
     };
   }
+
+  async verifyIdempotencyTest(admin: { id: string; role: string }, idempotencyKey: string) {
+    const existing = await this.prisma.financialIdempotencyRecord.findFirst({
+      where: { idempotencyKey },
+    });
+
+    if (existing) {
+      throw new BadRequestException(`IDEMPOTENCY_COLLISION_DETECTED: Key '${idempotencyKey}' was previously processed and locked`);
+    }
+
+    await this.prisma.financialIdempotencyRecord.create({
+      data: {
+        telegramUserId: BigInt(0),
+        idempotencyKey,
+        status: 'COMPLETED',
+        requestPayload: { test: true, adminId: admin.id },
+        responsePayload: { success: true, verifiedAt: new Date().toISOString() },
+      },
+    });
+
+    return {
+      success: true,
+      message: `Idempotency key '${idempotencyKey}' recorded and verified.`,
+    };
+  }
 }
