@@ -101,7 +101,10 @@ export class ProviderRegistryService implements OnModuleInit {
 
   async listProviders(params: { asset?: string; country?: string; buyOnly?: boolean } = {}) {
     const providers = await this.prisma.settlementProvider.findMany({
-      where: { status: SettlementProviderStatus.ENABLED },
+      where: {
+        status: SettlementProviderStatus.ENABLED,
+        id: { not: SettlementProviderId.CRYPTOBOT },
+      },
       include: { health: true, config: true },
       orderBy: { priority: 'asc' },
     });
@@ -136,7 +139,10 @@ export class ProviderRegistryService implements OnModuleInit {
   }
 
   async routeCreate(telegramUserId: bigint, dto: CreateSettlementSessionDto) {
-    const providerId = dto.provider || SettlementProviderId.INTERNAL_OPERATIONS;
+    const providerId = dto.provider || SettlementProviderId.PESAPAL;
+    if (providerId === SettlementProviderId.CRYPTOBOT || (dto.provider as string) === 'CRYPTOBOT') {
+      throw new BadRequestException('UNSUPPORTED_PROVIDER: CryptoBot settlement has been retired');
+    }
     await this.assertNoActiveSettlement(telegramUserId, dto.asset);
     if (this.riskService) {
       await this.riskService.assertSessionCreationRisk(telegramUserId, Number(dto.expectedCryptoAmount));
@@ -194,16 +200,18 @@ export class ProviderRegistryService implements OnModuleInit {
     await this.prisma.settlementProvider.upsert({
       where: { id: provider.providerId },
       update: {
+        status: provider.providerId === SettlementProviderId.CRYPTOBOT ? SettlementProviderStatus.DISABLED : undefined,
         capabilityManifest: provider.manifest as unknown as Prisma.InputJsonValue,
         supportedAssets: provider.manifest.supported_assets as Prisma.InputJsonValue,
       },
       create: {
         id: provider.providerId,
         displayName,
+        status: provider.providerId === SettlementProviderId.CRYPTOBOT ? SettlementProviderStatus.DISABLED : SettlementProviderStatus.ENABLED,
         supportedAssets: provider.manifest.supported_assets as Prisma.InputJsonValue,
         supportedCountries: (provider.providerId === SettlementProviderId.CRYPTOBOT ? [] : ['KE', 'UG', 'US']) as Prisma.InputJsonValue,
         capabilityManifest: provider.manifest as unknown as Prisma.InputJsonValue,
-        priority: provider.providerId === SettlementProviderId.CRYPTOBOT ? 20 : 10,
+        priority: provider.providerId === SettlementProviderId.CRYPTOBOT ? 99 : 10,
         config: { create: { configuration: {} } },
         health: { create: { healthStatus: SettlementProviderHealthStatus.HEALTHY, details: {} } },
       },

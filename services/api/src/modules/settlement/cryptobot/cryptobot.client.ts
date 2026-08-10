@@ -33,32 +33,8 @@ export class CryptoBotClient {
   /**
    * Create an invoice via CryptoBot API.
    */
-  async createInvoice(payload: CryptoBotInvoicePayload): Promise<CryptoBotInvoiceResponse> {
-    this.logger.log(`[CryptoBotClient] Creating invoice for ${payload.amount} ${payload.asset}...`);
-
-    if (!this.apiToken) {
-      this.logger.warn('[CryptoBotClient] No CRYPTOBOT_API_TOKEN set. Generating fallback mock invoice for sandbox testing.');
-      const mockId = Math.floor(100000 + Math.random() * 900000);
-      return {
-        invoice_id: mockId,
-        hash: `mock_hash_${mockId}`,
-        currency_type: 'crypto',
-        asset: payload.asset,
-        amount: payload.amount,
-        pay_url: `https://t.me/CryptoBot?start=IV${mockId}`,
-        bot_invoice_url: `https://t.me/CryptoBot?start=IV${mockId}`,
-        mini_app_invoice_url: `https://t.me/CryptoBot/app?startapp=invoice-${mockId}`,
-        web_app_invoice_url: `https://t.me/CryptoBot/app?startapp=invoice-${mockId}`,
-        status: 'active',
-        created_at: new Date().toISOString(),
-        allow_comments: true,
-        allow_anonymous: false,
-        description: payload.description,
-        payload: payload.payload,
-      };
-    }
-
-    return this.request<CryptoBotInvoiceResponse>('createInvoice', payload);
+  async createInvoice(_payload: CryptoBotInvoicePayload): Promise<CryptoBotInvoiceResponse> {
+    throw new BadGatewayException('CRYPTOBOT_PROVIDER_RETIRED: CryptoBot API calls are disabled. Provider is retired.');
   }
 
   /**

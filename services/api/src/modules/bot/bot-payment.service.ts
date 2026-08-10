@@ -41,7 +41,7 @@ export class BotPaymentService {
       };
     }
 
-    const text = `<b>➕ Deposit Funds into TitanStream</b>\n\nSelect a deposit amount or enter a custom amount:\n\n• Instant USDT crediting\n• Supported rails: CryptoBot (Telegram Pay), TRC20, Mobile Money`;
+    const text = `<b>➕ Deposit Funds into TitanStream</b>\n\nSelect a deposit amount or enter a custom amount:\n\n• Instant USDT crediting\n• Supported rails: Mobile Money (M-Pesa/MTN/Airtel), Card`;
 
     return {
       text,
@@ -80,7 +80,7 @@ export class BotPaymentService {
     const invoice = await this.prisma.paymentInvoice.create({
       data: {
         telegramUserId: dto.telegramUserId,
-        provider: dto.provider || SettlementProviderId.CRYPTOBOT,
+        provider: dto.provider || SettlementProviderId.PESAPAL,
         externalInvoiceId,
         asset: dto.asset || 'USDT',
         amount: amountDecimal,

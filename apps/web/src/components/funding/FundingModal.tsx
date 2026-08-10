@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Smartphone, CreditCard, ChevronRight, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
 import { settlementService } from '../../services/settlementService';
-import { CryptoBotFunding } from './CryptoBotFunding';
 import { PesapalFunding } from './PesapalFunding';
 import { useTelegram } from '../../context/TelegramContext';
 
@@ -12,12 +11,12 @@ interface FundingModalProps {
 }
 
 export interface FundingOption {
-  id: 'MOBILE_MONEY' | 'CARD' | 'USDT';
+  id: 'MOBILE_MONEY' | 'CARD';
   name: string;
   displayName: string;
   description: string;
   provider: string;
-  paymentMethod: 'MOBILE_MONEY' | 'CARD' | 'USDT';
+  paymentMethod: 'MOBILE_MONEY' | 'CARD';
   icon: React.ReactNode;
   badge: string;
 }
@@ -27,7 +26,7 @@ const FUNDING_OPTIONS: FundingOption[] = [
     id: 'MOBILE_MONEY',
     name: 'Mobile Money',
     displayName: 'Mobile Money',
-    description: 'Pay securely with Mobile Money through Pesapal',
+    description: 'Pay securely with Mobile Money (M-Pesa, MTN, Airtel) through Pesapal',
     provider: 'PESAPAL',
     paymentMethod: 'MOBILE_MONEY',
     icon: <Smartphone size={22} className="text-usdt-green" />,
@@ -37,21 +36,11 @@ const FUNDING_OPTIONS: FundingOption[] = [
     id: 'CARD',
     name: 'Card',
     displayName: 'Card',
-    description: 'Pay securely with your bank card through Pesapal',
+    description: 'Pay securely with your bank card (Visa / Mastercard) through Pesapal',
     provider: 'PESAPAL',
     paymentMethod: 'CARD',
     icon: <CreditCard size={22} className="text-purple-400" />,
     badge: 'Visa / Mastercard',
-  },
-  {
-    id: 'USDT',
-    name: 'USDT',
-    displayName: 'USDT',
-    description: 'Fund directly using USDT through the supported crypto settlement network',
-    provider: 'CRYPTOBOT',
-    paymentMethod: 'USDT',
-    icon: <Sparkles size={22} className="text-sky-400" />,
-    badge: 'Crypto',
   },
 ];
 
@@ -134,10 +123,8 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
               {/* Render Selected Method Workflow */}
               {selectedOption.id === 'MOBILE_MONEY' ? (
                 <PesapalFunding paymentMethod="MOBILE_MONEY" onCancel={onClose} />
-              ) : selectedOption.id === 'CARD' ? (
-                <PesapalFunding paymentMethod="CARD" onCancel={onClose} />
               ) : (
-                <CryptoBotFunding providerId="CRYPTOBOT" onCancel={onClose} />
+                <PesapalFunding paymentMethod="CARD" onCancel={onCancelMethod => onClose()} />
               )}
             </div>
           ) : (
@@ -196,7 +183,7 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
                   {/* Future Options Teaser */}
                   <div className="p-3 rounded-2xl bg-white/5 border border-dashed border-white/10 flex items-center gap-2.5 text-xs text-text-tertiary">
                     <Sparkles size={16} className="text-amber-400 shrink-0" />
-                    <span>More payment options coming soon.</span>
+                    <span>Direct USDT wallet funding coming soon.</span>
                   </div>
                 </div>
               )}

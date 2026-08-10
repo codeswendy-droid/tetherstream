@@ -54,73 +54,8 @@ export class CryptoBotProvider implements SettlementProvider {
   /**
    * Create a live CryptoBot payment invoice and save a local SettlementSession & PaymentInvoice.
    */
-  async createSettlement(telegramUserId: bigint, dto: CreateSettlementSessionDto) {
-    // 1. Call CryptoBot API to issue live invoice
-    const liveInvoice = await this.cryptoBotClient.createInvoice({
-      asset: dto.asset,
-      amount: dto.requestedAmount,
-      description: `TitanStream ${dto.asset} Funding`,
-      payload: `user_${telegramUserId}`,
-      expires_in: 900,
-    });
-
-    const externalInvoiceId = liveInvoice.invoice_id.toString();
-    const referenceCode = `CB-${externalInvoiceId}`;
-
-    // 2. Persist PaymentInvoice
-    const paymentInvoice = await this.prisma.paymentInvoice.create({
-      data: {
-        telegramUserId,
-        provider: SettlementProviderId.CRYPTOBOT,
-        externalInvoiceId,
-        asset: dto.asset,
-        amount: new Prisma.Decimal(dto.requestedAmount),
-        currency: dto.asset,
-        payUrl: liveInvoice.pay_url,
-        status: PaymentInvoiceStatus.WAITING_FOR_PAYMENT,
-        metadata: {
-          botInvoiceUrl: liveInvoice.bot_invoice_url,
-          miniAppInvoiceUrl: liveInvoice.mini_app_invoice_url,
-        },
-      },
-    });
-
-    // 3. Persist SettlementSession
-    const session = await this.prisma.settlementSession.create({
-      data: {
-        telegramUserId,
-        provider: SettlementProviderId.CRYPTOBOT,
-        asset: dto.asset,
-        requestedAmount: new Prisma.Decimal(dto.requestedAmount),
-        expectedCryptoAmount: new Prisma.Decimal(dto.expectedCryptoAmount),
-        exchangeRate: new Prisma.Decimal(dto.exchangeRate),
-        country: dto.country || 'GLOBAL',
-        mobileMoneyNetwork: dto.mobileMoneyNetwork || 'CRYPTOBOT',
-        referenceCode,
-        status: SettlementStatus.WAITING_FOR_PAYMENT,
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-        providerMetadata: {
-          externalInvoiceId,
-          paymentInvoiceId: paymentInvoice.id,
-          payUrl: liveInvoice.pay_url,
-          miniAppInvoiceUrl: liveInvoice.mini_app_invoice_url,
-        },
-        events: {
-          create: [
-            { eventType: SettlementEventType.SettlementCreated, actorType: 'CUSTOMER', actorId: telegramUserId.toString(), payload: {} },
-            { eventType: SettlementEventType.SettlementInitialized, actorType: 'PROVIDER', actorId: SettlementProviderId.CRYPTOBOT, payload: { externalInvoiceId } },
-          ],
-        },
-      },
-    });
-
-    await this.emitSettlementEvent(session.id, SettlementEventType.SettlementInitialized, { referenceCode, payUrl: liveInvoice.pay_url });
-
-    return {
-      ...this.toProviderIndependentView(session),
-      payUrl: liveInvoice.pay_url,
-      externalInvoiceId,
-    };
+  async createSettlement(_telegramUserId: bigint, _dto: CreateSettlementSessionDto): Promise<any> {
+    throw new BadRequestException('UNSUPPORTED_PROVIDER: CryptoBot funding has been retired. Please use Pesapal Mobile Money or Card.');
   }
 
   async validateSettlement(settlementId: string) {

@@ -24,7 +24,7 @@ import { PesapalModule } from './pesapal/pesapal.module';
 import { PesapalProvider } from './pesapal/pesapal.provider';
 
 @Module({
-  imports: [PrismaModule, FinancialOrchestrationModule, CryptoBotModule, PesapalModule],
+  imports: [PrismaModule, FinancialOrchestrationModule, PesapalModule],
   controllers: [OperatorController, SettlementController, OperationsPortalController, UniversalSettlementController],
   providers: [
     OperatorRepository,
