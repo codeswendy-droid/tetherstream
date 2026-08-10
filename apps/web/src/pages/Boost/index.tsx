@@ -43,7 +43,7 @@ export const BoostScreen: React.FC = () => {
   // Payment states
   const [selectedMachine, setSelectedMachine] = useState<FrontendMachineModel | null>(null);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [paymentProvider, setPaymentProvider] = useState<'CRYPTOBOT' | 'MOBILE_MONEY'>('CRYPTOBOT');
+  const [paymentProvider, setPaymentProvider] = useState<'USDT' | 'MOBILE_MONEY' | 'CARD'>('MOBILE_MONEY');
   const [invoiceStatus, setInvoiceStatus] = useState<'NONE' | 'PENDING' | 'PAID'>('NONE');
   const [phoneNo, setPhoneNo] = useState('+256 771 234 567');
   const [mnoNetwork, setMnoNetwork] = useState('MTN Momo');
@@ -81,7 +81,7 @@ export const BoostScreen: React.FC = () => {
     setSelectedMachine(machine);
     setShowCheckout(true);
     setInvoiceStatus('NONE');
-    setPaymentProvider(preferLocalCurrency ? 'MOBILE_MONEY' : 'CRYPTOBOT');
+    setPaymentProvider(preferLocalCurrency ? 'MOBILE_MONEY' : 'USDT');
     setInvoiceId(`INV-${machine.tierCode}-${Math.floor(100000 + Math.random() * 900000)}`);
     setTimeLeft(900);
   };
@@ -496,19 +496,19 @@ export const BoostScreen: React.FC = () => {
                         type="button"
                         onClick={() => {
                           hapticFeedback.selectionChanged();
-                          setPaymentProvider('CRYPTOBOT');
+                          setPaymentProvider('USDT');
                         }}
                         className={`p-3.5 rounded-2xl border flex items-center justify-between transition-all text-left ${
-                          paymentProvider === 'CRYPTOBOT'
+                          paymentProvider === 'USDT'
                             ? 'bg-sky-500/15 border-sky-400 text-sky-300'
                             : 'bg-white/5 border-white/10 text-text-secondary hover:text-text-primary'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <Bot size={20} className={paymentProvider === 'CRYPTOBOT' ? 'text-sky-400' : 'text-text-secondary'} />
+                          <Sparkles size={20} className={paymentProvider === 'USDT' ? 'text-sky-400' : 'text-text-secondary'} />
                           <div>
-                            <span className="text-xs font-extrabold block">Telegram @CryptoBot</span>
-                            <span className="text-[10px] text-text-tertiary">Pay using Telegram wallet</span>
+                            <span className="text-xs font-extrabold block">USDT (TRC-20)</span>
+                            <span className="text-[10px] text-text-tertiary">Pay using TRON receiving address</span>
                           </div>
                         </div>
                         <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-sky-500/20 text-sky-400 rounded-full border border-sky-500/30">USDT</span>

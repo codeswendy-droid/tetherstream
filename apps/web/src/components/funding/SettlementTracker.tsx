@@ -275,7 +275,7 @@ export const SettlementTracker: React.FC<SettlementTrackerProps> = ({
               </div>
             )}
 
-            {/* CryptoBot direct link if available */}
+            {/* External Payment Gateway link if available */}
             {session.paymentUrl && (
               <a
                 href={session.paymentUrl}
@@ -283,7 +283,7 @@ export const SettlementTracker: React.FC<SettlementTrackerProps> = ({
                 rel="noreferrer"
                 className="press-feedback w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs shadow-md"
               >
-                <span>Pay via CryptoBot</span>
+                <span>Open Payment Gateway</span>
                 <ExternalLink size={14} />
               </a>
             )}

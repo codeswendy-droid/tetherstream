@@ -51,14 +51,6 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose })
       status: 'ENABLED'
     },
     {
-      id: 'CRYPTOBOT' as WithdrawMethod,
-      name: 'CryptoBot',
-      displayName: 'Telegram CryptoBot',
-      icon: <Bot size={22} className="text-sky-400" />,
-      description: 'Withdraw via Telegram @CryptoBot',
-      status: 'ENABLED'
-    },
-    {
       id: 'USDT_ADDRESS' as WithdrawMethod,
       name: 'USDT Address',
       displayName: 'USDT Wallet Address',

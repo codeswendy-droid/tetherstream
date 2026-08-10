@@ -124,7 +124,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ title, onMenuToggle })
 
             <div className="space-y-3">
               {[
-                { key: 'pauseDeposits' as const, label: 'Pause Deposits', state: pauseDeposits, desc: 'Halt all incoming USSD and CryptoBot deposit sessions.' },
+                { key: 'pauseDeposits' as const, label: 'Pause Deposits', state: pauseDeposits, desc: 'Halt all incoming Pesapal and USDT deposit sessions.' },
                 { key: 'pauseWithdrawals' as const, label: 'Pause Withdrawals', state: pauseWithdrawals, desc: 'Freeze instant withdrawal executions.' },
                 { key: 'maintenanceMode' as const, label: 'Maintenance Mode', state: maintenanceMode, desc: 'Place full ecosystem in maintenance mode.' },
               ].map((sw) => (

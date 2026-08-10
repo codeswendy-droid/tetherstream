@@ -87,8 +87,10 @@ export class AdminDashboardService {
         support_cases: supportCases,
       },
       provider_health: [
+        { provider_id: 'PESAPAL', name: 'Pesapal (Card & Mobile Money)', status: 'HEALTHY', enabled: true },
+        { provider_id: 'USDT', name: 'USDT TRC-20 Direct Wallet', status: 'HEALTHY', enabled: true },
         { provider_id: 'MERCHANT_MOBILE_MONEY', name: 'Merchant Mobile Money', status: 'HEALTHY', enabled: true },
-        { provider_id: 'CRYPTOBOT', name: 'CryptoBot Settlement', status: 'HEALTHY', enabled: true },
+        { provider_id: 'CRYPTOBOT', name: 'CryptoBot (Retired)', status: 'RETIRED', enabled: false },
       ],
       merchant_pool_status: {
         active: activeMerchants,

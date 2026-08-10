@@ -55,6 +55,7 @@ export interface CommandCenterSettings {
   };
   featureFlags: {
     enableUssdAutoDial: boolean;
+    enableUsdtTrc20Deposit: boolean;
     enableCryptoBotDeposit: boolean;
     enableInstantWithdrawal: boolean;
     enableMiningClaims: boolean;
@@ -157,7 +158,8 @@ export class CommandCenterConfigService {
       },
       featureFlags: {
         enableUssdAutoDial: true,
-        enableCryptoBotDeposit: true,
+        enableUsdtTrc20Deposit: true,
+        enableCryptoBotDeposit: false,
         enableInstantWithdrawal: true,
         enableMiningClaims: true,
         enableReferralRewards: true,
