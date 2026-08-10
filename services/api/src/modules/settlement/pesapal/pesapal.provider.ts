@@ -11,7 +11,7 @@ import { FinancialOrchestratorService } from '../../financial-orchestration/fina
 import { CreateSettlementSessionDto } from '../dto/create-settlement-session.dto';
 import { ProviderEventService } from '../provider-event.service';
 import { SettlementCapabilityManifest, SettlementProvider } from '../settlement-provider.interface';
-import { SettlementRiskService } from '../settlement-risk.service';
+import { SettlementRiskService, RiskEvaluationResult } from '../settlement-risk.service';
 import { PesapalClient } from './pesapal.client';
 import {
   PesapalNormalizedStatus,
@@ -339,7 +339,7 @@ export class PesapalProvider implements SettlementProvider {
               eventType: SettlementEventType.SettlementRejected,
               actorType: 'PROVIDER',
               actorId: this.providerId,
-              payload: { liveStatus } as Prisma.InputJsonValue,
+              payload: { liveStatus } as unknown as Prisma.InputJsonValue,
             },
           },
         },
@@ -452,7 +452,7 @@ export class PesapalProvider implements SettlementProvider {
         eventType: SettlementEventType.SettlementCompleted,
         actorType: 'PROVIDER',
         actorId: this.providerId,
-        payload: { reference, liveStatus } as Prisma.InputJsonValue,
+        payload: { reference, liveStatus } as unknown as Prisma.InputJsonValue,
       },
     });
 

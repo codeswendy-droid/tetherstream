@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger, OnModuleInit, Optional, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { OperationalAuditService } from './operational-audit.service';
 import { UserInvestigationService } from './user-investigation.service';
@@ -29,7 +29,7 @@ export interface TransitionRiskStateDto {
 
 export interface ManageQueueDto {
   queueItemId: string;
-  action: 'RETRY' | 'PAUSE' | 'RESUME' | 'DRAIN' | 'REQUEUE';
+  action: 'RETRY' | 'PAUSE' | 'RESUME' | 'DRAIN' | 'REQUEUE' | 'RESOLVE';
   reason: string;
 }
 

@@ -87,7 +87,7 @@ export class FinancialAdminService {
       this.prisma.settlementSession.count({
         where: { status: { in: [SettlementStatus.FAILED, SettlementStatus.REJECTED, SettlementStatus.EXPIRED] } },
       }),
-      this.assetRegistry.listEnabled(),
+      this.prisma.asset.findMany({ where: { enabled: true } }),
       this.prisma.user.count(),
     ]);
 
@@ -121,10 +121,10 @@ export class FinancialAdminService {
    * 2. Platform Multi-Asset Breakdown (USDT, TON, XRP, BTC, ETH, SOL)
    */
   async getAssetMetrics() {
-    const assets = await this.assetRegistry.listEnabled();
+    const assets = await this.prisma.asset.findMany({ where: { enabled: true } });
 
     const assetMetrics = await Promise.all(
-      assets.map(async (asset) => {
+      assets.map(async (asset: any) => {
         const [ledgerEntries, pendingDeposits, pendingPayouts] = await Promise.all([
           this.prisma.ledgerEntry.aggregate({
             where: { assetCode: asset.assetCode },
@@ -179,9 +179,10 @@ export class FinancialAdminService {
 
     if (user.financialAccount) {
       try {
-        const bal = await this.balanceService.getBalances(user.financialAccount.id, 'USDT');
-        availableBalance = bal.available;
-        lockedBalance = bal.locked;
+        const bal = await this.balanceService.getBalances(telegramUserId, user.financialAccount.id);
+        const usdtBal = bal.balances.find(b => b.assetCode === 'USDT');
+        availableBalance = usdtBal?.availableBalance || '0';
+        lockedBalance = usdtBal?.pendingBalance || '0';
       } catch {
         // Fallback default
       }
@@ -233,9 +234,9 @@ export class FinancialAdminService {
       })),
       riskEvents: riskEvents.map((r) => ({
         id: r.id,
-        ruleCode: r.ruleCode,
+        ruleCode: r.ruleTriggered,
         severity: r.severity,
-        description: r.description,
+        description: r.notes,
         createdAt: r.createdAt,
       })),
     };
@@ -368,12 +369,12 @@ export class FinancialAdminService {
               operationType: FinancialOperationType.SYSTEM_ALLOCATION,
               assetCode,
               amount: amountStr,
-              referenceId: ref,
+              reference: ref,
               metadata: { adminId: admin.id, adminRole: admin.role, category, reason: cleanReason },
             },
             tx,
           );
-          opId = op?.id || null;
+          opId = (op as any)?.id || null;
         } catch (e) {
           // Fallback to direct FinancialOperation creation
         }
@@ -385,7 +386,7 @@ export class FinancialAdminService {
             telegramUserId,
             operationType: FinancialOperationType.SYSTEM_ALLOCATION,
             status: 'COMPLETED',
-            referenceId: ref,
+            reference: ref,
             idempotencyKey: ref,
             metadata: { adminId: admin.id, adminRole: admin.role, category, reason: cleanReason, adjustmentType: dto.adjustmentType },
           },
@@ -671,9 +672,10 @@ export class FinancialAdminService {
     const finAccount = await this.prisma.financialAccount.findUnique({ where: { telegramUserId: session.telegramUserId } });
     if (finAccount) {
       try {
-        const bal = await this.balanceService.getBalances(finAccount.id, session.asset);
-        availBal = bal.available;
-        hasBalance = Number(bal.available) >= Number(session.requestedAmount);
+        const bal = await this.balanceService.getBalances(session.telegramUserId, finAccount.id);
+        const assetBal = bal.balances.find(b => b.assetCode === session.asset);
+        availBal = assetBal?.availableBalance || '0';
+        hasBalance = Number(availBal) >= Number(session.requestedAmount);
       } catch {
         hasBalance = false;
       }

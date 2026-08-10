@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, HttpCode, HttpStatus, Logger, Post, Req, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Headers, HttpCode, HttpStatus, Logger, Post, Req, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { CryptoBotSignatureService } from './cryptobot.signature.service';
 import { CryptoBotReconciliationService } from './cryptobot.reconciliation.service';
 import { CryptoBotClient } from './cryptobot.client';

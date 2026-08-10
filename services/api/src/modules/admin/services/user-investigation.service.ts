@@ -100,9 +100,6 @@ export class UserInvestigationService {
           settlementSessions: {
             select: { requestedAmount: true, sessionType: true, status: true },
           },
-          riskEvents: {
-            select: { severity: true },
-          },
         },
         orderBy: { createdAt: 'desc' },
         take: limit,
@@ -113,7 +110,7 @@ export class UserInvestigationService {
 
     const totalPages = Math.ceil(total / limit) || 1;
 
-    const formattedItems = items.map((user) => {
+    const formattedItems = items.map((user: any) => {
       const totalDeposits = user.settlementSessions
         .filter((s) => s.sessionType === 'DEPOSIT' && s.status === 'COMPLETED')
         .reduce((sum, s) => sum + Number(s.requestedAmount || 0), 0);
@@ -125,7 +122,6 @@ export class UserInvestigationService {
       const flags: string[] = [];
       if (user.state === UserState.SUSPENDED_USER) flags.push('FROZEN');
       if (user.state === UserState.BANNED_USER) flags.push('BANNED');
-      if (user.riskEvents && user.riskEvents.length > 0) flags.push(`${user.riskEvents.length} RISK_EVENTS`);
 
       return {
         id: user.telegramUserId.toString(),
@@ -578,7 +574,7 @@ export class UserInvestigationService {
       }),
       this.prisma.userMachine.findMany({
         where: { telegramUserId },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { purchasedAt: 'desc' },
         take: 20,
       }),
       this.prisma.gameRewardGrant.findMany({
@@ -641,9 +637,9 @@ export class UserInvestigationService {
         timestamp: r.createdAt,
         type: 'RISK_EVENT',
         title: `Risk Incident [${r.severity}]`,
-        description: r.description || `Risk rule ${r.ruleCode} triggered`,
+        description: r.notes || `Risk rule ${r.ruleTriggered} triggered`,
         actor: 'RISK_ENGINE',
-        metadata: { ruleCode: r.ruleCode, scoreImpact: r.scoreImpact },
+        metadata: { ruleCode: r.ruleTriggered, scoreImpact: null },
       });
     });
 
@@ -676,10 +672,10 @@ export class UserInvestigationService {
     userMachines.forEach((m) => {
       timelineItems.push({
         id: `machine-${m.id}`,
-        timestamp: m.createdAt,
+        timestamp: m.purchasedAt,
         type: 'MACHINE_FLEET',
         title: `Mining Machine Deployed (${m.status})`,
-        description: `Machine ID ${m.machineId} active with hash speed ${m.customSpeed || 'standard'}`,
+        description: `Machine ID ${m.id} active with hash speed ${m.capacityGhs || 'standard'}`,
         actor: 'USER',
       });
     });

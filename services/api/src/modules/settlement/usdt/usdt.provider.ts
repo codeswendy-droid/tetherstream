@@ -85,8 +85,8 @@ export class UsdtProvider implements SettlementProvider {
     const expectedCryptoUsd = Number(dto.expectedCryptoAmount);
 
     // 2. Risk evaluation
-    const riskResult = await this.riskService.evaluateUserRisk(telegramUserId, expectedCryptoUsd, dto.country || 'GLOBAL');
-    if (riskResult.action === 'REJECT') {
+    const riskResult = await this.riskService.evaluateUserRisk(telegramUserId, expectedCryptoUsd);
+    if (!riskResult.allowed) {
       throw new BadRequestException(`SETTLEMENT_RISK_REJECTED: ${riskResult.reason}`);
     }
 

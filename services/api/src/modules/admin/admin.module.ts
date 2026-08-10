@@ -49,6 +49,11 @@ import { FinancialAdminService } from './services/financial-admin.service';
 import { AdminMachineController } from './controllers/admin-machine.controller';
 import { AdminReadinessController } from './controllers/admin-readiness.controller';
 import { ProductionReadinessEngineService } from './services/production-readiness-engine.service';
+import { AdminIntelligenceController } from './controllers/admin-intelligence.controller';
+import { AdminOperationsHqController } from './controllers/admin-operations-hq.controller';
+import { ObservabilityIntelligenceEngineService } from './services/observability-intelligence-engine.service';
+import { PlatformOperationsEngineService } from './services/platform-operations-engine.service';
+import { MachineAdminService } from './services/machine-admin.service';
 
 @Module({
   imports: [

@@ -4,6 +4,7 @@ import { AdminAuthGuard } from '../guards/admin-auth.guard';
 import { RbacGuard } from '../guards/rbac.guard';
 import { Permissions } from '../decorators/permissions.decorator';
 import { MerchantPortalService } from '../services/merchant-portal.service';
+import { AdminPermission } from '../interfaces/admin-permissions.enum';
 
 @Controller('merchant')
 @UseGuards(AdminAuthGuard, RbacGuard)
@@ -11,14 +12,14 @@ export class MerchantPortalController {
   constructor(private readonly portalService: MerchantPortalService) {}
 
   @Get('assigned-settlements')
-  @Permissions('SETTLEMENT_READ')
+  @Permissions(AdminPermission.SETTLEMENT_VIEW)
   async getAssignedSettlements(@CurrentAdmin() admin: AuthenticatedAdmin, @Headers('x-merchant-id') headerMerchantId?: string) {
     const merchantId = headerMerchantId || admin?.id || 'merch_default';
     return this.portalService.getAssignedSettlements(merchantId);
   }
 
   @Post('settlements/:id/fulfill')
-  @Permissions('SETTLEMENT_EXECUTE')
+  @Permissions(AdminPermission.SETTLEMENT_OVERRIDE)
   async fulfillSettlement(
     @CurrentAdmin() admin: AuthenticatedAdmin,
     @Param('id') id: string,
@@ -30,7 +31,7 @@ export class MerchantPortalController {
   }
 
   @Get('history')
-  @Permissions('SETTLEMENT_READ')
+  @Permissions(AdminPermission.SETTLEMENT_VIEW)
   async getHistory(
     @CurrentAdmin() admin: AuthenticatedAdmin,
     @Query('limit') limit?: number,
@@ -42,7 +43,7 @@ export class MerchantPortalController {
   }
 
   @Get('performance')
-  @Permissions('SETTLEMENT_READ')
+  @Permissions(AdminPermission.SETTLEMENT_VIEW)
   async getPerformance(@CurrentAdmin() admin: AuthenticatedAdmin, @Headers('x-merchant-id') headerMerchantId?: string) {
     const merchantId = headerMerchantId || admin?.id || 'merch_default';
     return this.portalService.getMerchantPerformance(merchantId);

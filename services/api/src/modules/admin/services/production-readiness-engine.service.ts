@@ -26,19 +26,19 @@ export class ProductionReadinessEngineService {
     const [groupsCount, entriesCount, debitsSum, creditsSum] = await Promise.all([
       this.prisma.transactionGroup.count(),
       this.prisma.ledgerEntry.count(),
-      this.prisma.ledgerEntry.aggregate({ where: { direction: 'DEBIT' }, _sum: { amount: true } }),
-      this.prisma.ledgerEntry.aggregate({ where: { direction: 'CREDIT' }, _sum: { amount: true } }),
+      this.prisma.ledgerEntry.aggregate({ where: { entryType: 'DEBIT' }, _sum: { amount: true } }),
+      this.prisma.ledgerEntry.aggregate({ where: { entryType: 'CREDIT' }, _sum: { amount: true } }),
     ]);
 
-    const totalDebits = Number(debitsSum._sum.amount || 0);
-    const totalCredits = Number(creditsSum._sum.amount || 0);
+    const totalDebits = Number(debitsSum._sum?.amount || 0);
+    const totalCredits = Number(creditsSum._sum?.amount || 0);
     const imbalanceDelta = Math.abs(totalDebits - totalCredits);
 
     const isBalanced = imbalanceDelta < 0.00001;
 
     // Scan for orphaned settlement sessions without matching ledger transaction groups
     const orphanedSettlements = await this.prisma.settlementSession.findMany({
-      where: { status: SettlementStatus.COMPLETED, ledgerGroupId: null },
+      where: { status: SettlementStatus.COMPLETED, orchestratorReference: null },
       select: { id: true, referenceCode: true, requestedAmount: true, asset: true, createdAt: true },
       take: 10,
     });
@@ -236,7 +236,7 @@ export class ProductionReadinessEngineService {
         telegramUserId: BigInt(0),
         idempotencyKey,
         status: 'COMPLETED',
-        requestPayload: { test: true, adminId: admin.id },
+        requestHash: 'test-hash',
         responsePayload: { success: true, verifiedAt: new Date().toISOString() },
       },
     });

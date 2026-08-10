@@ -162,9 +162,9 @@ export class ObservabilityIntelligenceEngineService {
         _sum: { lifetimeEarnings: true },
       }),
       this.prisma.assetBalance.groupBy({
-        by: ['asset'],
+        by: ['assetCode'],
         _sum: { availableBalance: true, lockedBalance: true, totalEarned: true },
-        _count: { telegramUserId: true },
+        _count: { _all: true },
       }),
     ]);
 
@@ -188,11 +188,11 @@ export class ObservabilityIntelligenceEngineService {
         };
       }),
       assetDistributionAnalytics: assetBalances.map((a) => ({
-        assetCode: a.asset,
-        holdersCount: a._count.telegramUserId,
-        availableSupply: Number(a._sum.availableBalance || 0),
-        lockedSupply: Number(a._sum.lockedBalance || 0),
-        totalEarnedHistorical: Number(a._sum.totalEarned || 0),
+        assetCode: a.assetCode,
+        holdersCount: a._count?._all || 0,
+        availableSupply: Number(a._sum?.availableBalance || 0),
+        lockedSupply: Number(a._sum?.lockedBalance || 0),
+        totalEarnedHistorical: Number(a._sum?.totalEarned || 0),
       })),
     };
   }
