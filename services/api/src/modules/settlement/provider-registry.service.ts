@@ -9,6 +9,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { CryptoBotProvider } from './cryptobot.provider';
 import { PesapalProvider } from './pesapal/pesapal.provider';
+import { UsdtProvider } from './usdt/usdt.provider';
 import { CreateSettlementSessionDto } from './dto/create-settlement-session.dto';
 import { MerchantSettlementProvider } from './merchant-settlement.provider';
 import { InternalOperationsProvider } from './operator-settlement.provider';
@@ -39,6 +40,7 @@ export class ProviderRegistryService implements OnModuleInit {
     cryptobot: CryptoBotProvider,
     @Optional() merchant?: MerchantSettlementProvider,
     @Optional() pesapal?: PesapalProvider,
+    @Optional() usdt?: UsdtProvider,
     @Optional() private readonly riskService?: SettlementRiskService,
   ) {
     this.adapters = new Map<SettlementProviderId, SettlementProvider>([
@@ -50,6 +52,9 @@ export class ProviderRegistryService implements OnModuleInit {
     }
     if (pesapal) {
       this.adapters.set(pesapal.providerId, pesapal);
+    }
+    if (usdt) {
+      this.adapters.set(usdt.providerId, usdt);
     }
   }
 
@@ -196,6 +201,7 @@ export class ProviderRegistryService implements OnModuleInit {
     if (provider.providerId === SettlementProviderId.CRYPTOBOT) displayName = 'CryptoBot';
     if (provider.providerId === SettlementProviderId.MERCHANT_MOBILE_MONEY) displayName = 'Merchant Mobile Money';
     if (provider.providerId === SettlementProviderId.PESAPAL) displayName = 'Pesapal (Card & Mobile Money)';
+    if (provider.providerId === SettlementProviderId.USDT) displayName = 'USDT Direct Wallet';
 
     await this.prisma.settlementProvider.upsert({
       where: { id: provider.providerId },

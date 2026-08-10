@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Smartphone, CreditCard, ChevronRight, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
 import { settlementService } from '../../services/settlementService';
 import { PesapalFunding } from './PesapalFunding';
+import { UsdtFunding } from './UsdtFunding';
 import { useTelegram } from '../../context/TelegramContext';
 
 interface FundingModalProps {
@@ -11,12 +12,12 @@ interface FundingModalProps {
 }
 
 export interface FundingOption {
-  id: 'MOBILE_MONEY' | 'CARD';
+  id: 'MOBILE_MONEY' | 'CARD' | 'USDT';
   name: string;
   displayName: string;
   description: string;
   provider: string;
-  paymentMethod: 'MOBILE_MONEY' | 'CARD';
+  paymentMethod: 'MOBILE_MONEY' | 'CARD' | 'USDT';
   icon: React.ReactNode;
   badge: string;
 }
@@ -41,6 +42,16 @@ const FUNDING_OPTIONS: FundingOption[] = [
     paymentMethod: 'CARD',
     icon: <CreditCard size={22} className="text-purple-400" />,
     badge: 'Visa / Mastercard',
+  },
+  {
+    id: 'USDT',
+    name: 'USDT',
+    displayName: 'USDT',
+    description: 'Pay directly using USDT on the TRON (TRC-20) network to receiving address',
+    provider: 'USDT',
+    paymentMethod: 'USDT',
+    icon: <Sparkles size={22} className="text-sky-400" />,
+    badge: 'TRC-20 (TRON)',
   },
 ];
 
@@ -123,8 +134,10 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
               {/* Render Selected Method Workflow */}
               {selectedOption.id === 'MOBILE_MONEY' ? (
                 <PesapalFunding paymentMethod="MOBILE_MONEY" onCancel={onClose} />
+              ) : selectedOption.id === 'CARD' ? (
+                <PesapalFunding paymentMethod="CARD" onCancel={onClose} />
               ) : (
-                <PesapalFunding paymentMethod="CARD" onCancel={onCancelMethod => onClose()} />
+                <UsdtFunding onCancel={onClose} />
               )}
             </div>
           ) : (
@@ -180,10 +193,10 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
                     </button>
                   ))}
 
-                  {/* Future Options Teaser */}
+                  {/* Operational Footer Info */}
                   <div className="p-3 rounded-2xl bg-white/5 border border-dashed border-white/10 flex items-center gap-2.5 text-xs text-text-tertiary">
                     <Sparkles size={16} className="text-amber-400 shrink-0" />
-                    <span>Direct USDT wallet funding coming soon.</span>
+                    <span>All deposits processed securely with real-time audit trail.</span>
                   </div>
                 </div>
               )}

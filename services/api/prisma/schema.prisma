@@ -260,6 +260,7 @@ enum SettlementProviderId {
   MERCHANT_MOBILE_MONEY
   CRYPTOBOT
   PESAPAL
+  USDT
 }
 
 enum SettlementProviderStatus {
@@ -2537,5 +2538,89 @@ model PlatformOperationalConfig {
   updatedAt                 DateTime @updatedAt @map("updated_at")
 
   @@map("platform_operational_configs")
+}
+
+enum UsdtTxProcessingStatus {
+  DETECTED
+  CONFIRMING
+  CONFIRMED
+  MATCHED
+  VERIFYING
+  PENDING_ADMIN_APPROVAL
+  SETTLED
+  DUPLICATE
+  UNDERPAYMENT
+  OVERPAYMENT
+  AMBIGUOUS_MATCH
+  INVALID_TOKEN
+  INVALID_NETWORK
+  INVALID_RECIPIENT
+  FAILED
+  RECONCILIATION_REQUIRED
+}
+
+model UsdtConfig {
+  id                    String    @id @default("default") @map("id")
+  enabled               Boolean   @default(true) @map("enabled")
+  network               String    @default("TRON") @map("network")
+  tokenContract         String    @default("TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t") @map("token_contract")
+  receivingAddress      String    @map("receiving_address")
+  requiredConfirmations Int       @default(19) @map("required_confirmations")
+  pollIntervalSeconds   Int       @default(10) @map("poll_interval_seconds")
+  lastScannedBlock      BigInt    @default(0) @map("last_scanned_block")
+  lastScanAt            DateTime? @map("last_scan_at")
+  configuredByAdminId   String?   @map("configured_by_admin_id")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@map("usdt_configs")
+}
+
+model UsdtAddressHistory {
+  id                  String    @id @default(uuid()) @map("id")
+  address             String    @map("address")
+  network             String    @map("network")
+  tokenContract       String    @map("token_contract")
+  configuredByAdminId String?   @map("configured_by_admin_id")
+  activatedAt         DateTime  @default(now()) @map("activated_at")
+  deactivatedAt       DateTime? @map("deactivated_at")
+  reason              String?   @map("reason")
+
+  @@index([address])
+  @@index([network])
+  @@map("usdt_address_histories")
+}
+
+model UsdtBlockchainTransaction {
+  id                    String                 @id @default(uuid()) @map("id")
+  transactionHash       String                 @map("transaction_hash")
+  network               String                 @map("network")
+  tokenContract         String                 @map("token_contract")
+  blockNumber           BigInt                 @map("block_number")
+  blockTimestamp        DateTime               @map("block_timestamp")
+  senderAddress         String                 @map("sender_address")
+  recipientAddress      String                 @map("recipient_address")
+  rawTokenAmount        String                 @map("raw_token_amount")
+  normalizedAmount      Decimal                @map("normalized_amount") @db.Decimal(36, 18)
+  confirmations         Int                    @default(0) @map("confirmations")
+  onChainStatus         String                 @default("SUCCESS") @map("on_chain_status")
+  processingStatus      UsdtTxProcessingStatus @default(DETECTED) @map("processing_status")
+  anomalyReason         String?                @map("anomaly_reason")
+  firstObservedAt       DateTime               @default(now()) @map("first_observed_at")
+  lastObservedAt        DateTime               @default(now()) @map("last_observed_at")
+  finalizedAt           DateTime?              @map("finalized_at")
+  settlementSessionId   String?                @map("settlement_session_id")
+  orchestratorReference String?                @map("orchestrator_reference")
+  metadata              Json                   @default("{}") @map("metadata")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+
+  @@unique([network, tokenContract, transactionHash], name: "usdt_tx_unique")
+  @@index([transactionHash])
+  @@index([recipientAddress])
+  @@index([senderAddress])
+  @@index([processingStatus])
+  @@index([settlementSessionId])
+  @@map("usdt_blockchain_transactions")
 }
 
