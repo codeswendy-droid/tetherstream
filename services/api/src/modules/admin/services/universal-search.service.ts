@@ -18,7 +18,7 @@ export class UniversalSearchService {
   async globalSearch(query: string): Promise<SearchResultItem[]> {
     if (!query || query.trim().length < 2) return [];
 
-    const q = query.trim();
+    const q = query.trim().replace(/^@/, '');
     const isNumber = /^\d+$/.test(q);
     const results: SearchResultItem[] = [];
 

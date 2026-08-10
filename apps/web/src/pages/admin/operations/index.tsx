@@ -9,18 +9,32 @@ import { showToast } from '@/components/Toast';
 export const OperationsPage: React.FC = () => {
   const [queueItems, setQueueItems] = useState<OperationsQueueRecord[]>([]);
   const [incidents, setIncidents] = useState<SystemIncidentRecord[]>([]);
+  const [switches, setSwitches] = useState<any>({
+    maintenanceMode: false,
+    readOnlyMode: false,
+    disableWithdrawals: false,
+    disablePurchases: false,
+    disableClaims: false,
+    disableRegistrations: false,
+    disableSettlements: false,
+  });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'queue' | 'incidents'>('queue');
+  const [activeTab, setActiveTab] = useState<'switches' | 'queue' | 'incidents'>('switches');
+  const [savingSwitch, setSavingSwitch] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [qItems, incs] = await Promise.all([
-        operationsService.getOperationsQueue(),
-        operationsService.getIncidents(),
+      const [qItems, incs, sws] = await Promise.all([
+        operationsService.getOperationsQueue().catch(() => []),
+        operationsService.getIncidents().catch(() => []),
+        operationsService.getGlobalSwitches().catch(() => ({})),
       ]);
-      setQueueItems(qItems);
-      setIncidents(incs);
+      setQueueItems(qItems || []);
+      setIncidents(incs || []);
+      if (sws && typeof sws === 'object') {
+        setSwitches((prev: any) => ({ ...prev, ...sws }));
+      }
     } catch (err: any) {
       console.warn('Failed to load operations data:', err);
     } finally {
@@ -31,6 +45,28 @@ export const OperationsPage: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleToggleSwitch = async (key: string, currentVal: boolean) => {
+    const actionLabel = currentVal ? 'DISABLE / TURN OFF' : 'ENABLE / TURN ON';
+    const reason = prompt(`[MANDATORY AUDIT REASON] Reason for ${actionLabel} on ${key}:`, `Admin operational toggle: ${key}`);
+    if (reason === null) return;
+    if (!reason.trim()) {
+      showToast('Action cancelled: Audit reason is mandatory.', 'error');
+      return;
+    }
+
+    const updated = { ...switches, [key]: !currentVal };
+    setSavingSwitch(true);
+    try {
+      await operationsService.updateGlobalSwitches(updated, reason.trim());
+      setSwitches(updated);
+      showToast(`Operational Switch '${key}' updated successfully.`, 'success');
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to update operational switch', 'error');
+    } finally {
+      setSavingSwitch(false);
+    }
+  };
 
   const handleResolveQueueItem = async (id: string) => {
     try {
@@ -64,16 +100,26 @@ export const OperationsPage: React.FC = () => {
 
   const openQueueCount = queueItems.filter((q) => q.status === 'OPEN').length;
   const activeIncidentCount = incidents.filter((i) => i.status !== 'RESOLVED').length;
+  const activeSwitchesCount = Object.values(switches).filter(Boolean).length;
 
   return (
     <div className="space-y-4">
-      <MetricCardGrid columns={2}>
+      <MetricCardGrid columns={3}>
+        <MetricCard label="Active Emergency Locks" value={activeSwitchesCount.toString()} change={0} icon="Cpu" variant={activeSwitchesCount > 0 ? 'red' : 'green'} />
         <MetricCard label="Operations Queue" value={openQueueCount.toString()} change={0} icon="Clock" variant="gold" />
         <MetricCard label="Active Incidents" value={activeIncidentCount.toString()} change={0} icon="ShieldAlert" variant="red" />
       </MetricCardGrid>
 
       {/* Tab Selector */}
       <div className="flex items-center gap-2 border-b border-border/50 pb-2">
+        <button
+          onClick={() => setActiveTab('switches')}
+          className={`px-4 py-2 text-xs font-extrabold rounded-xl transition-colors cursor-pointer ${
+            activeTab === 'switches' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Emergency Kill Switches ({activeSwitchesCount} Active)
+        </button>
         <button
           onClick={() => setActiveTab('queue')}
           className={`px-4 py-2 text-xs font-extrabold rounded-xl transition-colors cursor-pointer ${
@@ -93,7 +139,60 @@ export const OperationsPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-xs text-text-tertiary">Loading operational records...</div>
+        <div className="text-center py-8 text-xs text-text-tertiary">Loading operational controls...</div>
+      ) : activeTab === 'switches' ? (
+        <div className="space-y-4">
+          <div className="bg-card-bg border border-white/10 rounded-2xl p-5 shadow-lg space-y-4">
+            <div>
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-text-primary">Persistent Platform Emergency Switches</h3>
+              <p className="text-[11px] text-text-tertiary mt-1">
+                Toggling any switch updates the single database authority in real-time. API controllers globally block restricted endpoints when active.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { key: 'maintenanceMode', label: 'Platform Maintenance Mode', desc: 'Blocks all non-admin user HTTP API traffic' },
+                { key: 'readOnlyMode', label: 'Global Read-Only Mode', desc: 'Blocks all state-mutating requests platform-wide' },
+                { key: 'disableWithdrawals', label: 'Disable Withdrawals', desc: 'Halts user withdrawal requests & worker processing' },
+                { key: 'disablePurchases', label: 'Disable Machine Purchases', desc: 'Blocks new machine catalog license orders' },
+                { key: 'disableClaims', label: 'Disable Reward Claims', desc: 'Halts mining yield & achievement claims' },
+                { key: 'disableRegistrations', label: 'Disable New Registrations', desc: 'Blocks new Telegram user registrations' },
+                { key: 'disableSettlements', label: 'Disable Settlement Engine', desc: 'Halts CryptoBot & Merchant settlement execution' },
+              ].map((sw) => {
+                const isActive = Boolean(switches[sw.key]);
+                return (
+                  <div
+                    key={sw.key}
+                    className={`p-4 rounded-xl border transition-all flex items-center justify-between gap-4 ${
+                      isActive ? 'bg-error-red/10 border-error-red/40' : 'bg-control-bg border-white/10'
+                    }`}
+                  >
+                    <div>
+                      <div className="text-xs font-extrabold text-text-primary flex items-center gap-2">
+                        {sw.label}
+                        {isActive && <span className="px-2 py-0.5 rounded text-[9px] font-black bg-error-red text-white">ACTIVE LOCK</span>}
+                      </div>
+                      <div className="text-[11px] text-text-tertiary mt-0.5">{sw.desc}</div>
+                    </div>
+
+                    <button
+                      onClick={() => handleToggleSwitch(sw.key, isActive)}
+                      disabled={savingSwitch}
+                      className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex-shrink-0 ${
+                        isActive
+                          ? 'bg-usdt-green text-app-bg hover:opacity-90 shadow-md'
+                          : 'bg-error-red/20 text-error-red border border-error-red/40 hover:bg-error-red hover:text-white'
+                      }`}
+                    >
+                      {isActive ? 'UNLOCK' : 'LOCK'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       ) : activeTab === 'queue' ? (
         <div className="space-y-3">
           {queueItems.map((item) => (

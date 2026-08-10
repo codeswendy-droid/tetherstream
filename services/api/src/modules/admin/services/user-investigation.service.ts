@@ -72,7 +72,7 @@ export class UserInvestigationService {
       where.state = params.state;
     }
     if (params.query && !searchTelegramId && !params.telegramUsername) {
-      const q = params.query.trim();
+      const q = params.query.trim().replace(/^@/, '');
       const isNumeric = /^\d+$/.test(q);
       where.OR = [
         { firstName: { contains: q, mode: 'insensitive' } },

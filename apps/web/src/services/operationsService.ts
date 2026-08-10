@@ -116,4 +116,14 @@ export const operationsService = {
     const res = await api.get('/admin/operations/search', { params: { q: query } });
     return res.data.data;
   },
+
+  async getGlobalSwitches(): Promise<any> {
+    const res = await api.get('/admin/operations-hq/switches');
+    return res.data;
+  },
+
+  async updateGlobalSwitches(switches: any, reason: string): Promise<any> {
+    const res = await api.post('/admin/operations-hq/switches', { ...switches, reason });
+    return res.data;
+  },
 };
