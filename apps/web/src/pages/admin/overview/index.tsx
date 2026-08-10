@@ -76,7 +76,7 @@ export const OverviewPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* 1. MISSION CONTROL HEADER */}
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-card-bg/90 backdrop-blur-md border border-white/10 rounded-2xl p-5 shadow-2xl relative overflow-hidden">
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-card-bg/90 backdrop-blur-md border border-white/10 rounded-2xl p-5 shadow-2xl relative z-30">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-usdt-green/10 border border-usdt-green/30 flex items-center justify-center text-usdt-green relative shadow-[0_0_15px_rgba(16,185,129,0.15)]">
             <Radio size={28} className="animate-pulse" />
@@ -93,23 +93,25 @@ export const OverviewPage: React.FC = () => {
         </div>
 
         {/* Global Search Bar */}
-        <div className="relative w-full md:w-96">
+        <div className="relative w-full md:w-96 z-50">
           <input
             type="text"
             placeholder="Search Telegram ID, wallet, hash, ref code..."
             value={globalSearch}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full bg-control-bg text-text-primary text-xs rounded-xl pl-9 pr-4 py-2.5 border border-white/10 focus:border-usdt-green focus:ring-1 focus:ring-usdt-green focus:outline-none transition-all"
+            className="w-full bg-control-bg text-text-primary text-xs rounded-xl pl-9 pr-4 py-2.5 border border-white/10 focus:border-usdt-green focus:ring-1 focus:ring-usdt-green focus:outline-none transition-all shadow-inner"
           />
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
 
-          {/* Search Dropdown Results */}
+          {/* Search Dropdown Results - High Z-Index Floating Drawer */}
           {globalSearch.length >= 2 && (
-            <div className="absolute left-0 right-0 top-12 z-50 bg-app-bg-secondary border border-white/15 rounded-xl shadow-2xl p-2 max-h-80 overflow-y-auto space-y-1 backdrop-blur-xl">
+            <div className="absolute left-0 right-0 top-12 z-[1000] bg-app-bg-secondary/95 border border-usdt-green/40 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] p-2 max-h-96 overflow-y-auto space-y-1 backdrop-blur-2xl">
               {searching ? (
-                <div className="p-3 text-center text-xs text-text-tertiary">Searching production system...</div>
+                <div className="p-4 text-center text-xs text-text-tertiary flex items-center justify-center gap-2">
+                  <RefreshCw size={14} className="animate-spin text-usdt-green" /> Searching production system...
+                </div>
               ) : searchResults.length === 0 ? (
-                <div className="p-3 text-center text-xs text-text-tertiary">No matching entities found</div>
+                <div className="p-4 text-center text-xs text-text-tertiary">No matching users, orders, or transactions found</div>
               ) : (
                 searchResults.map((item) => (
                   <div
@@ -120,14 +122,14 @@ export const OverviewPage: React.FC = () => {
                       else if (item.linkTab === 'Treasury & Financials') navigate('/admin/treasury');
                       else navigate('/admin/operations');
                     }}
-                    className="p-2.5 rounded-lg bg-control-bg hover:bg-white/10 cursor-pointer flex items-center justify-between transition-all"
+                    className="p-3 rounded-lg bg-control-bg hover:bg-usdt-green/10 hover:border-usdt-green/30 border border-white/5 cursor-pointer flex items-center justify-between transition-all group"
                   >
                     <div>
-                      <div className="text-xs font-bold text-text-primary">{item.title}</div>
-                      <div className="text-[10px] text-text-tertiary">{item.subtitle}</div>
+                      <div className="text-xs font-bold text-text-primary group-hover:text-usdt-green transition-colors">{item.title}</div>
+                      <div className="text-[10px] text-text-tertiary mt-0.5">{item.subtitle}</div>
                     </div>
                     {item.badge && (
-                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-usdt-green/20 text-usdt-green">
+                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-usdt-green/20 text-usdt-green border border-usdt-green/30 flex-shrink-0">
                         {item.badge}
                       </span>
                     )}

@@ -14,12 +14,32 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ title, onMenuToggle })
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [killModalOpen, setKillModalOpen] = useState(false);
+  const [headerSearch, setHeaderSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
   const { pauseDeposits, pauseWithdrawals, maintenanceMode, toggleKillSwitch } = useSettingsStore();
 
   const isWarningActive = pauseDeposits || pauseWithdrawals || maintenanceMode;
 
+  const handleSearch = async (val: string) => {
+    setHeaderSearch(val);
+    if (!val || val.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    try {
+      const res = await api.get<any[]>(`/admin/dashboard/search?q=${encodeURIComponent(val)}`);
+      setSearchResults(res.data || []);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
   return (
-    <header className="h-14 bg-app-bg-secondary border-b border-border flex items-center justify-between px-3 sm:px-6 sticky top-0 z-20">
+    <header className="h-14 bg-app-bg-secondary border-b border-border flex items-center justify-between px-3 sm:px-6 sticky top-0 z-50">
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onMenuToggle}
@@ -67,13 +87,49 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ title, onMenuToggle })
         </button>
 
         {/* Desktop search */}
-        <div className="relative hidden md:block">
+        <div className="relative hidden md:block z-[100]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
           <input
             type="text"
             placeholder="Search orders, users, operators..."
-            className="w-48 lg:w-64 bg-control-bg/50 text-text-primary rounded-lg pl-9 pr-3 py-2 text-sm border border-white/5 focus:border-usdt-green focus:outline-none placeholder:text-text-tertiary"
+            value={headerSearch}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="w-48 lg:w-64 bg-control-bg/50 text-text-primary rounded-lg pl-9 pr-3 py-2 text-sm border border-white/10 focus:border-usdt-green focus:outline-none placeholder:text-text-tertiary transition-all"
           />
+
+          {/* Floating Dropdown Results */}
+          {headerSearch.trim().length >= 2 && (
+            <div className="absolute right-0 top-11 w-80 lg:w-96 z-[1000] bg-app-bg-secondary/95 border border-usdt-green/40 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] p-2 max-h-96 overflow-y-auto space-y-1 backdrop-blur-2xl">
+              {searching ? (
+                <div className="p-3 text-center text-xs text-text-tertiary">Searching production system...</div>
+              ) : searchResults.length === 0 ? (
+                <div className="p-3 text-center text-xs text-text-tertiary">No matching entities found</div>
+              ) : (
+                searchResults.map((item) => (
+                  <div
+                    key={`header_${item.entityType}_${item.id}`}
+                    onClick={() => {
+                      setHeaderSearch('');
+                      if (item.linkTab === 'Users & Support') navigate('/admin/users');
+                      else if (item.linkTab === 'Treasury & Financials') navigate('/admin/treasury');
+                      else navigate('/admin/operations');
+                    }}
+                    className="p-2.5 rounded-lg bg-control-bg hover:bg-usdt-green/10 hover:border-usdt-green/30 border border-white/5 cursor-pointer flex items-center justify-between transition-all group"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-text-primary group-hover:text-usdt-green transition-colors">{item.title}</div>
+                      <div className="text-[10px] text-text-tertiary mt-0.5">{item.subtitle}</div>
+                    </div>
+                    {item.badge && (
+                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-usdt-green/20 text-usdt-green border border-usdt-green/30 flex-shrink-0">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         {/* Mobile search toggle */}
