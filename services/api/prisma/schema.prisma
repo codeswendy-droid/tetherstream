@@ -428,20 +428,20 @@ model Asset {
 model AssetBalance {
   id               String   @id @default(uuid()) @map("balance_id")
   telegramUserId   BigInt   @map("telegram_user_id")
-  asset            String   @map("asset")
-  availableBalance Decimal @default(0) @map("available_balance") @db.Decimal(36, 18)
-  lockedBalance    Decimal @default(0) @map("locked_balance") @db.Decimal(36, 18)
-  totalEarned      Decimal @default(0) @map("total_earned") @db.Decimal(36, 18)
+  assetCode        String   @map("asset")
+  availableBalance Decimal  @default(0) @map("available_balance") @db.Decimal(36, 18)
+  lockedBalance    Decimal  @default(0) @map("locked_balance") @db.Decimal(36, 18)
+  totalEarned      Decimal  @default(0) @map("total_earned") @db.Decimal(36, 18)
   lastClaimedAt    DateTime? @map("last_claimed_at")
   metadata         Json?    @default("{}") @map("metadata")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  asset Asset @relation(fields: [asset], references: [assetCode], onDelete: Restrict)
+  asset Asset @relation(fields: [assetCode], references: [assetCode], onDelete: Restrict)
 
-  @@unique([telegramUserId, asset])
+  @@unique([telegramUserId, assetCode])
   @@index([telegramUserId])
-  @@index([asset])
+  @@index([assetCode])
   @@map("asset_balances")
 }
 
@@ -1853,7 +1853,7 @@ model UniversalIdentity {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   channels     ChannelIdentity[]
-  adminNotes   AdminNote[]
+  adminNotes   UniversalAdminNote[]
   supportCases SupportTicket[]
   users        User[]
 
@@ -1961,7 +1961,7 @@ model TelegramConfirmationToken {
   @@map("telegram_confirmation_tokens")
 }
 
-model AdminNote {
+model UniversalAdminNote {
   id         String   @id @default(uuid()) @map("note_id")
   authorId   String   @map("author_id")
   targetType String   @map("target_type")
@@ -1974,7 +1974,7 @@ model AdminNote {
 
   @@index([targetType, targetId])
   @@index([authorId])
-  @@map("admin_notes")
+  @@map("universal_admin_notes")
 }
 
 model FeatureFlag {
