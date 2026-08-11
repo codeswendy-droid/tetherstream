@@ -1,5 +1,5 @@
 [build]
-  command = "pnpm run build"
+  command = "pnpm --filter web build"
   publish = "dist"
 
 [build.environment]
