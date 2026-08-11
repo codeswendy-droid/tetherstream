@@ -796,7 +796,7 @@ export class PesapalProvider implements SettlementProvider {
       merchant_reference: session.referenceCode,
       payment_status_code: 'COMPLETED',
       currency: payCurrency,
-      error: { error_type: undefined, code: undefined, message: undefined },
+      error: { code: undefined, message: undefined },
       status: '200',
     };
 
