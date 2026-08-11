@@ -454,8 +454,8 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ paymentMethod = 
                 </a>
               )}
             </div>
-          )
-        </motion.div>
+          </motion.div>
+        )
       )}
     </div>
   );
