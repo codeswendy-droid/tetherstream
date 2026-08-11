@@ -788,7 +788,6 @@ export class PesapalProvider implements SettlementProvider {
       created_date: new Date().toISOString(),
       confirmation_code: `SANDBOX_SIM_${Date.now()}`,
       payment_status_description: 'Completed',
-      description: 'Sandbox Payment Simulation',
       message: 'Sandbox mock completion',
       payment_account: '256700000000',
       call_back_url: 'https://tetherstream.internal',
