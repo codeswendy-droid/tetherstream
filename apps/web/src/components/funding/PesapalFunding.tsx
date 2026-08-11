@@ -97,7 +97,25 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({ onCancel }) => {
       setSession(response.session);
     } catch (err: any) {
       console.error('Failed to create payment session:', err);
-      setError(err?.response?.data?.message || err.message || 'Failed to initialize payment session');
+      const errMsg = err?.response?.data?.message || err.message || '';
+
+      if (errMsg.includes('ACTIVE_SETTLEMENT_EXISTS')) {
+        try {
+          const history = await fundingService.getHistory();
+          const active = history.find((s) =>
+            ['CREATED', 'WAITING_FOR_PAYMENT', 'WAITING_PAYMENT', 'VERIFYING'].includes(s.status)
+          );
+          if (active) {
+            setSession(active as any);
+            setError(null);
+            return;
+          }
+        } catch {
+          // fallback to error display
+        }
+      }
+
+      setError(errMsg || 'Failed to initialize payment session');
     } finally {
       setIsLoading(false);
     }
