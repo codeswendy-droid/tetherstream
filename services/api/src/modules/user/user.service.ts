@@ -194,13 +194,16 @@ export class UserService {
         });
       }
 
-      // 2. Delete SettlementEvent records (child of SettlementSession)
+      // 2. Delete SettlementNote & SettlementEvent records (child of SettlementSession)
       const settlementSessions = await tx.settlementSession.findMany({
         where: { telegramUserId },
         select: { id: true },
       });
       if (settlementSessions.length > 0) {
         const sessionIds = settlementSessions.map((s: { id: string }) => s.id);
+        await tx.settlementNote.deleteMany({
+          where: { settlementId: { in: sessionIds } },
+        });
         await tx.settlementEvent.deleteMany({
           where: { settlementId: { in: sessionIds } },
         });
@@ -278,15 +281,32 @@ export class UserService {
       await tx.gameProfile.deleteMany({ where: { telegramUserId } });
 
       // 12. Delete achievements & user achievements
-      await tx.achievement.deleteMany({ where: { telegramUserId } });
       await tx.userAchievement.deleteMany({ where: { telegramUserId } });
+      await tx.achievement.deleteMany({ where: { telegramUserId } });
 
       // 13. Delete product subscriptions & payment invoices
       await tx.productSubscription.deleteMany({ where: { telegramUserId } });
       await tx.paymentInvoice.deleteMany({ where: { telegramUserId } });
       await tx.channelVerificationEvent.deleteMany({ where: { telegramUserId } });
 
-      // 14. Delete referral relationships (both as referrer and referee)
+      // 14. Delete referral relationships, referral events, and referral rewards
+      const refRels = await tx.referralRelationship.findMany({
+        where: { OR: [{ referrerId: telegramUserId }, { refereeId: telegramUserId }] },
+        select: { id: true },
+      });
+      if (refRels.length > 0) {
+        const relIds = refRels.map((r: { id: string }) => r.id);
+        await tx.referralEvent.deleteMany({
+          where: { relationshipId: { in: relIds } },
+        });
+        await tx.referralReward.deleteMany({
+          where: { relationshipId: { in: relIds } },
+        });
+      }
+      await tx.referralReward.deleteMany({
+        where: { reward: { telegramUserId } },
+      });
+
       await tx.referralRelationship.deleteMany({ where: { referrerId: telegramUserId } });
       await tx.referralRelationship.deleteMany({ where: { refereeId: telegramUserId } });
       await tx.referralCode.deleteMany({ where: { telegramUserId } });
