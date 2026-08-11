@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { UserState, AuditEventType } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { UserState, AuditEventType } from '../../common/interfaces/user-state.enum';
 
 export interface CreateUserData {
   telegramUserId: bigint;
@@ -39,6 +40,24 @@ export class UserService {
     });
   }
 
+  async getProfile(telegramUserId: bigint) {
+    const user = await this.findByTelegramUserId(telegramUserId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  async updateProfile(telegramUserId: bigint, dto: UpdateUserData) {
+    return this.updateUser(telegramUserId, dto);
+  }
+
+  async getTrustProfile(telegramUserId: bigint) {
+    return this.prisma.userTrustProfile.findUnique({
+      where: { telegramUserId },
+    });
+  }
+
   async createUser(data: CreateUserData) {
     const existing = await this.prisma.user.findUnique({
       where: { telegramUserId: data.telegramUserId },
@@ -48,7 +67,7 @@ export class UserService {
       throw new ConflictException('User already exists');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.user.create({
         data: {
           telegramUserId: data.telegramUserId,
@@ -57,7 +76,7 @@ export class UserService {
           lastName: data.lastName,
           photoUrl: data.photoUrl,
           languageCode: data.languageCode || 'en',
-          state: UserState.NEW,
+          state: UserState.NEW as any,
         },
       });
 
@@ -81,7 +100,7 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updated = await tx.user.update({
         where: { telegramUserId },
         data: {
@@ -112,17 +131,17 @@ export class UserService {
 
     const previousState = user.state;
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const updated = await tx.user.update({
         where: { telegramUserId },
-        data: { state },
+        data: { state: state as any },
       });
 
       await tx.userStateTransition.create({
         data: {
           telegramUserId,
           fromState: previousState,
-          toState: state,
+          toState: state as any,
           reason: (metadata?.reason as string) || 'State transition requested',
           metadata: metadata ? (metadata as any) : undefined,
         },
@@ -162,14 +181,14 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Delete MachineOutput records (child of UserMachine)
       const userMachines = await tx.userMachine.findMany({
         where: { telegramUserId },
         select: { id: true },
       });
       if (userMachines.length > 0) {
-        const machineIds = userMachines.map((m) => m.id);
+        const machineIds = userMachines.map((m: { id: string }) => m.id);
         await tx.machineOutput.deleteMany({
           where: { userMachineId: { in: machineIds } },
         });
@@ -181,7 +200,7 @@ export class UserService {
         select: { id: true },
       });
       if (settlementSessions.length > 0) {
-        const sessionIds = settlementSessions.map((s) => s.id);
+        const sessionIds = settlementSessions.map((s: { id: string }) => s.id);
         await tx.settlementEvent.deleteMany({
           where: { settlementId: { in: sessionIds } },
         });
@@ -193,7 +212,7 @@ export class UserService {
         select: { id: true },
       });
       if (ops.length > 0) {
-        const opIds = ops.map((op) => op.id);
+        const opIds = ops.map((op: { id: string }) => op.id);
         await tx.financialWorkflowStep.deleteMany({
           where: { operationId: { in: opIds } },
         });
@@ -294,7 +313,7 @@ export class UserService {
         select: { id: true },
       });
       if (trustProfiles.length > 0) {
-        const profileIds = trustProfiles.map((p) => p.id);
+        const profileIds = trustProfiles.map((p: { id: string }) => p.id);
         await tx.trustEvent.deleteMany({
           where: { profileId: { in: profileIds } },
         });
