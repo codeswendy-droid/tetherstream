@@ -767,6 +767,9 @@ export class PesapalProvider implements SettlementProvider {
       currencySymbol: metadata.currencySymbol || null,
       exchangeRateSource: metadata.exchangeRateSource || null,
       exchangeRateTimestamp: metadata.exchangeRateTimestamp || null,
+    };
+  }
+
   /**
    * SANDBOX SIMULATION: Instantly complete settlement and credit user balance.
    */
@@ -793,7 +796,7 @@ export class PesapalProvider implements SettlementProvider {
       merchant_reference: session.referenceCode,
       payment_status_code: 'COMPLETED',
       currency: payCurrency,
-      error: { error_type: null, code: null, message: null },
+      error: { error_type: undefined, code: undefined, message: undefined },
       status: '200',
     };
 
