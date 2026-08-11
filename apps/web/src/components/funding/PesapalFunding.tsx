@@ -13,7 +13,7 @@ import {
   XCircle,
   AlertTriangle
 } from 'lucide-react';
-import { fundingService, SettlementSession } from '../../services/fundingService';
+import { fundingService, type SettlementSession } from '../../services/fundingService';
 import { useCountryStore } from '../../store/useCountryStore';
 
 interface PesapalFundingProps {

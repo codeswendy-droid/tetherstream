@@ -1,7 +1,8 @@
 import { settlementService, type CreateSettlementPayload, type SettlementSessionView, type SettlementProviderItem } from './settlementService';
 
-// Export type alias for SettlementSession
+// Export SettlementSession as type and runtime value object
 export type SettlementSession = SettlementSessionView;
+export const SettlementSession = {} as unknown as SettlementSessionView;
 export type { SettlementSessionView, SettlementProviderItem };
 
 // ─── Unified Funding Interface ───────────────────────────────────────────────
