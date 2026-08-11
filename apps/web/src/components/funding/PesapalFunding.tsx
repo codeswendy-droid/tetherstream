@@ -187,15 +187,30 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
   const estimatedRate = liveRate || (currFormat.code === 'USD' ? 1.0 : null);
   const estimatedFiatAmount = estimatedRate ? Math.round(numInputUsdt * estimatedRate) : null;
 
-  // Post-session locked values (authoritative backend financial snapshot)
-  const sessionPayCurrency = (session as any)?.paymentCurrency || currFormat.code;
-  const sessionPaySymbol = (session as any)?.currencySymbol || currFormat.symbol;
-  const sessionPayAmount = (session as any)?.paymentAmount != null
-    ? Number((session as any).paymentAmount)
-    : Math.round(Number(session?.requestedAmount || 0) * Number(session?.exchangeRate || 1));
-  const sessionExchangeRate = (session as any)?.exchangeRate
-    ? Number((session as any).exchangeRate).toLocaleString()
-    : null;
+  const [isSimulating, setIsSimulating] = useState(false);
+
+  const handleSimulatePayment = async () => {
+    if (!session?.settlementId) return;
+    setIsSimulating(true);
+    try {
+      const updated = await fundingService.simulatePesapalPayment(session.settlementId);
+      setSession(updated as any);
+      hapticFeedback.notificationOccurred('success');
+    } catch (err: any) {
+      console.error('Failed to simulate payment:', err);
+      setError(err?.response?.data?.message || err?.message || 'Sandbox simulation failed');
+    } finally {
+      setIsSimulating(false);
+    }
+  };
+
+  // Safe display fallbacks for session card
+  const displayUsdtAmount = session?.requestedAmount || (session as any)?.expectedCryptoAmount || amountUsdt || '50';
+  const displayPayAmount = sessionPayAmount > 0
+    ? sessionPayAmount
+    : (estimatedFiatAmount || Math.round(Number(displayUsdtAmount) * (estimatedRate || 3700)));
+  const displayReference = session?.reference || session?.referenceCode || session?.settlementId || '—';
+  const displayRate = sessionExchangeRate || (estimatedRate ? estimatedRate.toLocaleString() : '3,700');
   const checkoutUrl = session?.paymentUrl || (session as any)?.payUrl;
 
   return (
@@ -547,23 +562,23 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                   <span className="text-text-tertiary">You Pay:</span>
                   <span className="font-extrabold text-usdt-green font-mono text-sm">
                     {sessionPayCurrency === 'USD'
-                      ? `$${session.requestedAmount}`
-                      : `${sessionPaySymbol} ${sessionPayAmount.toLocaleString()}`}
+                      ? `$${displayUsdtAmount}`
+                      : `${sessionPaySymbol} ${displayPayAmount.toLocaleString()}`}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="text-text-tertiary">You Receive:</span>
-                  <span className="font-mono text-text-primary font-bold">{session.requestedAmount} USDT</span>
+                  <span className="font-mono text-text-primary font-bold">{displayUsdtAmount} USDT</span>
                 </div>
-                {sessionExchangeRate && sessionPayCurrency !== 'USD' && (
+                {sessionPayCurrency !== 'USD' && (
                   <div className="flex justify-between items-center text-[11px] pt-1 border-t border-white/5">
                     <span className="text-text-tertiary">Locked Rate:</span>
-                    <span className="font-mono text-text-secondary">1 USDT = {sessionPaySymbol} {sessionExchangeRate}</span>
+                    <span className="font-mono text-text-secondary">1 USDT = {sessionPaySymbol} {displayRate}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center text-[11px] pt-1 border-t border-white/5">
                   <span className="text-text-tertiary">Reference:</span>
-                  <span className="font-mono text-purple-400 font-bold">{session.reference || session.referenceCode}</span>
+                  <span className="font-mono text-purple-400 font-bold">{displayReference}</span>
                 </div>
               </div>
 
@@ -578,6 +593,25 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                   <ExternalLink size={18} /> Open Secure Checkout
                 </a>
               ) : null}
+
+              {/* SANDBOX SIMULATION BUTTON FOR INSTANT DEPOSIT TESTING */}
+              <button
+                type="button"
+                onClick={handleSimulatePayment}
+                disabled={isSimulating}
+                className="press-feedback w-full py-3.5 rounded-2xl bg-usdt-green text-black font-extrabold text-xs shadow-lg shadow-usdt-green/20 flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 transition-all"
+              >
+                {isSimulating ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    <span>Simulating Sandbox Credit...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={16} /> ⚡ Simulate Instant Sandbox Credit
+                  </>
+                )}
+              </button>
 
               <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-text-tertiary">
                 <span className="flex items-center gap-1.5">

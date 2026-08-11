@@ -767,6 +767,36 @@ export class PesapalProvider implements SettlementProvider {
       currencySymbol: metadata.currencySymbol || null,
       exchangeRateSource: metadata.exchangeRateSource || null,
       exchangeRateTimestamp: metadata.exchangeRateTimestamp || null,
+  /**
+   * SANDBOX SIMULATION: Instantly complete settlement and credit user balance.
+   */
+  async simulatePayment(settlementId: string) {
+    const session = await this.load(settlementId);
+    const metadata = (session.providerMetadata || {}) as Record<string, any>;
+
+    const payCurrency = metadata.paymentCurrency || (session.country === 'KE' ? 'KES' : session.country === 'UG' ? 'UGX' : 'USD');
+    const payAmount = metadata.paymentAmount != null
+      ? Number(metadata.paymentAmount)
+      : new Prisma.Decimal(session.requestedAmount.toString()).mul(new Prisma.Decimal(session.exchangeRate.toString())).toDecimalPlaces(0).toNumber();
+
+    const mockLiveStatus: PesapalTransactionStatusResponse = {
+      payment_method: 'SANDBOX_SIMULATOR',
+      amount: payAmount,
+      created_date: new Date().toISOString(),
+      confirmation_code: `SANDBOX_SIM_${Date.now()}`,
+      payment_status_description: 'Completed',
+      description: 'Sandbox Payment Simulation',
+      message: 'Sandbox mock completion',
+      payment_account: '256700000000',
+      call_back_url: 'https://tetherstream.internal',
+      status_code: 1,
+      merchant_reference: session.referenceCode,
+      payment_status_code: 'COMPLETED',
+      currency: payCurrency,
+      error: { error_type: null, code: null, message: null },
+      status: '200',
     };
+
+    return this.processVerifiedSuccess(session, mockLiveStatus);
   }
 }
