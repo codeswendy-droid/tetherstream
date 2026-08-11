@@ -1,9 +1,10 @@
 [build]
-  command = "npm install && npm run build"
+  command = "pnpm --filter web build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
+  PNPM_FLAGS = "--no-frozen-lockfile"
   VITE_API_BASE_URL = "https://tetherstream-production-e99c.up.railway.app/api/v1"
   VITE_TELEGRAM_BOT_USERNAME = "titanstream_bot"
 
