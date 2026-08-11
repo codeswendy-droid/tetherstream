@@ -148,6 +148,14 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
       });
 
       setSession(response.session);
+      const url = response.session.paymentUrl || (response.session as any).payUrl;
+      if (url) {
+        try {
+          window.open(url, '_blank');
+        } catch {
+          // popup blocked, handled by UI button
+        }
+      }
     } catch (err: any) {
       console.error('Failed to create payment session:', err);
       const errMsg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || '';
@@ -174,6 +182,8 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
     }
   };
 
+  const [showEmbeddedIframe, setShowEmbeddedIframe] = useState(true);
+
   const isPendingApproval = session?.status === 'CREATED' && (session as any)?.requiresAdminApproval;
 
   // Canonical payment method & network source of truth (session metadata overrides local state)
@@ -186,23 +196,6 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
   const numInputUsdt = Number(amountUsdt) || 0;
   const estimatedRate = liveRate || (currFormat.code === 'USD' ? 1.0 : null);
   const estimatedFiatAmount = estimatedRate ? Math.round(numInputUsdt * estimatedRate) : null;
-
-  const [isSimulating, setIsSimulating] = useState(false);
-
-  const handleSimulatePayment = async () => {
-    if (!session?.settlementId) return;
-    setIsSimulating(true);
-    try {
-      const updated = await fundingService.simulatePesapalPayment(session.settlementId);
-      setSession(updated as any);
-      hapticFeedback.notificationOccurred('success');
-    } catch (err: any) {
-      console.error('Failed to simulate payment:', err);
-      setError(err?.response?.data?.message || err?.message || 'Sandbox simulation failed');
-    } finally {
-      setIsSimulating(false);
-    }
-  };
 
   // Post-session locked values (authoritative backend financial snapshot)
   const sessionPayCurrency = (session as any)?.paymentCurrency || currFormat.code;
@@ -588,36 +581,40 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                 </div>
               </div>
 
-              {/* BIG PROMINENT CHECKOUT BUTTON */}
-              {checkoutUrl ? (
-                <a
-                  href={checkoutUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="press-feedback w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-600/30"
-                >
-                  <ExternalLink size={18} /> Open Secure Checkout
-                </a>
-              ) : null}
+              {/* REAL PESAPAL SANDBOX CHECKOUT CONTROL */}
+              {checkoutUrl && (
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center justify-between">
+                    <a
+                      href={checkoutUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="press-feedback flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-600/30"
+                    >
+                      <ExternalLink size={16} /> Open in External Window
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setShowEmbeddedIframe(!showEmbeddedIframe)}
+                      className="ml-2 px-3 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-text-primary text-xs font-bold transition-all"
+                    >
+                      {showEmbeddedIframe ? 'Hide Frame' : 'Show Frame'}
+                    </button>
+                  </div>
 
-              {/* SANDBOX SIMULATION BUTTON FOR INSTANT DEPOSIT TESTING */}
-              <button
-                type="button"
-                onClick={handleSimulatePayment}
-                disabled={isSimulating}
-                className="press-feedback w-full py-3.5 rounded-2xl bg-usdt-green text-black font-extrabold text-xs shadow-lg shadow-usdt-green/20 flex items-center justify-center gap-2 hover:brightness-110 disabled:opacity-50 transition-all"
-              >
-                {isSimulating ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    <span>Simulating Sandbox Credit...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 size={16} /> ⚡ Simulate Instant Sandbox Credit
-                  </>
-                )}
-              </button>
+                  {/* REAL EMBEDDED PESAPAL SANDBOX IFRAME */}
+                  {showEmbeddedIframe && (
+                    <div className="rounded-2xl overflow-hidden border border-purple-500/30 bg-white shadow-2xl">
+                      <iframe
+                        src={checkoutUrl}
+                        title="Pesapal Real Sandbox Checkout"
+                        className="w-full h-[480px] border-0"
+                        allow="payment"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-text-tertiary">
                 <span className="flex items-center gap-1.5">
