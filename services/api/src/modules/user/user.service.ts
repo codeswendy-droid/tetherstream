@@ -33,7 +33,7 @@ export class UserService {
       where: { telegramUserId },
       include: {
         financialAccount: true,
-        userMiningState: true,
+        miningState: true,
         userPreferences: true,
         onboardingProgress: true,
       },
