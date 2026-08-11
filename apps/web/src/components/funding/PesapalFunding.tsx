@@ -204,10 +204,16 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
     }
   };
 
+  // Post-session locked values (authoritative backend financial snapshot)
+  const sessionPayCurrency = (session as any)?.paymentCurrency || currFormat.code;
+  const sessionPaySymbol = (session as any)?.currencySymbol || currFormat.symbol;
+  const rawSessionPayAmount = (session as any)?.paymentAmount != null ? Number((session as any).paymentAmount) : 0;
+  const sessionExchangeRate = (session as any)?.exchangeRate ? Number((session as any).exchangeRate).toLocaleString() : null;
+
   // Safe display fallbacks for session card
   const displayUsdtAmount = session?.requestedAmount || (session as any)?.expectedCryptoAmount || amountUsdt || '50';
-  const displayPayAmount = sessionPayAmount > 0
-    ? sessionPayAmount
+  const displayPayAmount = rawSessionPayAmount > 0
+    ? rawSessionPayAmount
     : (estimatedFiatAmount || Math.round(Number(displayUsdtAmount) * (estimatedRate || 3700)));
   const displayReference = session?.reference || session?.referenceCode || session?.settlementId || '—';
   const displayRate = sessionExchangeRate || (estimatedRate ? estimatedRate.toLocaleString() : '3,700');
