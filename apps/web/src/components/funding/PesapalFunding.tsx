@@ -207,9 +207,20 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
   const displayUsdtAmount = session?.requestedAmount || (session as any)?.expectedCryptoAmount || amountUsdt || '50';
   const displayPayAmount = rawSessionPayAmount > 0
     ? rawSessionPayAmount
-    : (estimatedFiatAmount || Math.round(Number(displayUsdtAmount) * (estimatedRate || 3700)));
-  const displayReference = session?.reference || session?.referenceCode || session?.settlementId || '—';
-  const displayRate = sessionExchangeRate || (estimatedRate ? estimatedRate.toLocaleString() : '3,700');
+    : (estimatedFiatAmount || Math.round(Number(displayUsdtAmount) * (estimatedRate || 3782)));
+  const displayReference = session?.reference || session?.referenceCode || (session as any)?.settlementId || (session as any)?.id || '—';
+  
+  const calcRate = displayPayAmount > 0 && Number(displayUsdtAmount) > 0
+    ? Math.round(displayPayAmount / Number(displayUsdtAmount))
+    : 0;
+  const displayRate = sessionPayCurrency === 'USD'
+    ? '1'
+    : calcRate > 1
+    ? calcRate.toLocaleString()
+    : estimatedRate
+    ? estimatedRate.toLocaleString()
+    : '3,782';
+
   const checkoutUrl = session?.paymentUrl || (session as any)?.payUrl;
 
   return (
@@ -615,6 +626,34 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                   )}
                 </div>
               )}
+
+              {/* SANDBOX INSTANT PAYMENT SIMULATOR */}
+              <div className="pt-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const sid = (session as any)?.settlementId || (session as any)?.id || session?.reference || '';
+                    if (!sid) return;
+                    setIsLoading(true);
+                    setError(null);
+                    try {
+                      hapticFeedback.impactOccurred('medium');
+                      const updated = await fundingService.simulatePesapalPayment(sid);
+                      setSession(updated);
+                    } catch (err: any) {
+                      console.error('Simulation failed:', err);
+                      setError(err?.response?.data?.message || err?.message || 'Sandbox simulation failed');
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  disabled={isLoading}
+                  className="press-feedback w-full py-3 rounded-xl bg-usdt-green/20 hover:bg-usdt-green/30 text-usdt-green border border-usdt-green/40 font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-usdt-green/10 disabled:opacity-50"
+                >
+                  <CheckCircle2 size={16} />
+                  <span>Simulate Instant Sandbox Payment</span>
+                </button>
+              </div>
 
               <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-text-tertiary">
                 <span className="flex items-center gap-1.5">

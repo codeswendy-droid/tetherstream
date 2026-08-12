@@ -225,10 +225,12 @@ export class PesapalProvider implements SettlementProvider {
       this.logger.log(`[PesapalProvider] Session ${session.id} requires admin approval (riskCode=${riskResult.riskCode}). Submission deferred.`);
     }
 
+    const reloaded = await this.load(session.id);
     return {
-      ...this.toProviderIndependentView(session),
-      payUrl,
-      orderTrackingId,
+      ...this.toProviderIndependentView(reloaded),
+      payUrl: payUrl || (reloaded.providerMetadata as any)?.redirectUrl || null,
+      paymentUrl: payUrl || (reloaded.providerMetadata as any)?.redirectUrl || null,
+      orderTrackingId: orderTrackingId || (reloaded.providerMetadata as any)?.orderTrackingId || null,
       requiresAdminApproval,
     };
   }
