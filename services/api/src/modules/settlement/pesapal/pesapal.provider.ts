@@ -467,7 +467,12 @@ export class PesapalProvider implements SettlementProvider {
       : new Prisma.Decimal(session.requestedAmount.toString()).mul(new Prisma.Decimal(session.exchangeRate.toString())).toDecimalPlaces(0).toNumber();
 
     this.logger.log(
-      `[PesapalProvider] Submitting order: ${pesapalAmount} ${pesapalCurrency} (ref=${session.referenceCode})`,
+    const normalizedPhone = this.normalizePhoneNumber(sessionMeta.phoneNumber, session.country);
+
+    this.logger.log(
+      `[MOBILE_MONEY_REQUEST_SUBMITTED] Submitting Mobile Money order: ` +
+      `settlementId=${session.id}, referenceCode=${session.referenceCode}, ` +
+      `amount=${pesapalAmount} ${pesapalCurrency}, country=${session.country || 'UG'}`
     );
 
     const orderPayload: PesapalOrderRequestPayload = {
@@ -479,8 +484,8 @@ export class PesapalProvider implements SettlementProvider {
       notification_id: ipnId,
       billing_address: {
         email_address: `user_${session.telegramUserId}@tetherstream.internal`,
-        phone_number: sessionMeta.phoneNumber || '0700000000',
-        country_code: session.country || 'KE',
+        phone_number: normalizedPhone,
+        country_code: session.country || 'UG',
         first_name: 'Titan',
         last_name: 'User',
       },
@@ -634,6 +639,20 @@ export class PesapalProvider implements SettlementProvider {
       EUR: 0.01,
     };
     return tolerances[currencyCode.toUpperCase()] ?? 0;
+  }
+
+  private normalizePhoneNumber(rawPhone?: string, countryCode?: string): string {
+    if (!rawPhone) return '0700000000';
+    const digits = rawPhone.replace(/[^\d]/g, '');
+    if (countryCode === 'UG' || digits.startsWith('256')) {
+      if (digits.startsWith('256') && digits.length === 12) {
+        return `0${digits.substring(3)}`;
+      }
+      if (digits.length === 9) {
+        return `0${digits}`;
+      }
+    }
+    return digits || '0700000000';
   }
 
   /**

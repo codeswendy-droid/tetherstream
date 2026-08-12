@@ -129,9 +129,13 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
       return;
     }
 
-    if (paymentMethod === 'MOBILE_MONEY' && !phoneNumber.trim()) {
-      setError('Please enter your mobile money phone number');
-      return;
+    if (paymentMethod === 'MOBILE_MONEY') {
+      const cleanPhone = phoneNumber.trim().replace(/[\s\-()]/g, '');
+      const validUgPhone = /^(?:\+?256|0)[7]\d{8}$/.test(cleanPhone);
+      if (!cleanPhone || !validUgPhone) {
+        setError('Please enter a valid Uganda mobile money phone number (e.g. 0771234567 or 0701234567)');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -575,14 +579,14 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                     ? 'Verifying Payment'
                     : activePaymentMethod === 'CARD'
                     ? 'Secure Card Checkout'
-                    : 'Mobile Money Payment'}
+                    : 'Payment Request Sent to Mobile Phone'}
                 </h3>
                 <p className="text-xs text-text-tertiary mt-1">
                   {session.status === 'VERIFYING'
-                    ? 'Payment received. Verifying transaction details...'
+                    ? 'Payment received. Verifying transaction details with Pesapal...'
                     : activePaymentMethod === 'CARD'
                     ? 'Your secure checkout page is ready. Complete your payment on the secure portal below.'
-                    : 'Payment request generated. Please approve the prompt sent to your mobile phone.'}
+                    : 'A USSD payment prompt has been sent to your mobile phone. Please approve the prompt on your phone and enter your Mobile Money PIN.'}
                 </p>
               </div>
 
