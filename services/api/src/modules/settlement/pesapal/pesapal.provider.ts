@@ -775,6 +775,7 @@ export class PesapalProvider implements SettlementProvider {
   /**
    * SANDBOX SIMULATION: Instantly complete settlement and credit user balance.
    */
+  async simulatePayment(settlementId: string) {
     if (process.env.PESAPAL_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
       throw new ForbiddenException('SANDBOX_SIMULATOR_DISABLED: Developer simulation endpoint is strictly prohibited in production.');
     }
