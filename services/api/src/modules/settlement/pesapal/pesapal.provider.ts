@@ -775,6 +775,7 @@ export class PesapalProvider implements SettlementProvider {
   /**
    * SANDBOX SIMULATION: Instantly complete settlement and credit user balance.
    */
+  async simulatePayment(settlementId: string) {
     const session = await this.prisma.settlementSession.findFirst({
       where: {
         OR: [
