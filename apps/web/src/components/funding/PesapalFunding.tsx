@@ -148,14 +148,6 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
       });
 
       setSession(response.session);
-      const url = response.session.paymentUrl || (response.session as any).payUrl;
-      if (url) {
-        try {
-          window.open(url, '_blank');
-        } catch {
-          // popup blocked, handled by UI button
-        }
-      }
     } catch (err: any) {
       console.error('Failed to create payment session:', err);
       const errMsg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || '';
@@ -565,21 +557,32 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
               <div className="w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center mx-auto relative">
                 {session.status === 'VERIFYING' ? (
                   <ShieldCheck size={24} className="animate-pulse" />
+                ) : activePaymentMethod === 'CARD' ? (
+                  <>
+                    <CreditCard size={24} className="text-purple-400" />
+                    <span className="absolute top-0 right-0 w-3 h-3 bg-usdt-green rounded-full border-2 border-control-bg animate-ping"></span>
+                  </>
                 ) : (
                   <>
-                    <RefreshCw size={24} className="animate-spin" />
-                    <span className="absolute top-0 right-0 w-3 h-3 bg-usdt-green rounded-full border-2 border-control-bg animate-pulse"></span>
+                    <Smartphone size={24} className="text-usdt-green" />
+                    <span className="absolute top-0 right-0 w-3 h-3 bg-usdt-green rounded-full border-2 border-control-bg animate-ping"></span>
                   </>
                 )}
               </div>
               <div>
                 <h3 className="text-sm font-extrabold text-text-primary">
-                  {session.status === 'VERIFYING' ? 'Verifying Payment' : 'Payment Checkout Ready'}
+                  {session.status === 'VERIFYING'
+                    ? 'Verifying Payment'
+                    : activePaymentMethod === 'CARD'
+                    ? 'Secure Card Checkout'
+                    : 'Mobile Money Payment'}
                 </h3>
                 <p className="text-xs text-text-tertiary mt-1">
                   {session.status === 'VERIFYING'
-                    ? 'Payment received. Verifying transaction details with Pesapal...'
-                    : 'Click below to complete your payment on the secure Pesapal checkout page.'}
+                    ? 'Payment received. Verifying transaction details...'
+                    : activePaymentMethod === 'CARD'
+                    ? 'Enter your Visa or Mastercard credentials below on the secure checkout.'
+                    : 'Complete your payment on your mobile phone or using the secure checkout below.'}
                 </p>
               </div>
 
@@ -609,18 +612,25 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                 </div>
               </div>
 
-              {/* REAL PESAPAL SANDBOX CHECKOUT CONTROL */}
+              {/* SECURE CHECKOUT FRAME CONTROL */}
               {checkoutUrl && (
                 <div className="space-y-3 pt-1">
                   <div className="flex items-center justify-between">
-                    <a
-                      href={checkoutUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        hapticFeedback.impactOccurred('medium');
+                        const tg = (window as any).Telegram?.WebApp;
+                        if (tg?.openLink) {
+                          tg.openLink(checkoutUrl);
+                        } else {
+                          window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+                        }
+                      }}
                       className="press-feedback flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-600/30"
                     >
-                      <ExternalLink size={16} /> Open in External Window
-                    </a>
+                      <ExternalLink size={16} /> Open Checkout in New Tab
+                    </button>
                     <button
                       type="button"
                       onClick={() => setShowEmbeddedIframe(!showEmbeddedIframe)}
@@ -630,12 +640,12 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                     </button>
                   </div>
 
-                  {/* REAL EMBEDDED PESAPAL SANDBOX IFRAME */}
+                  {/* SECURE EMBEDDED CHECKOUT IFRAME */}
                   {showEmbeddedIframe && (
                     <div className="rounded-2xl overflow-hidden border border-purple-500/30 bg-white shadow-2xl">
                       <iframe
                         src={checkoutUrl}
-                        title="Pesapal Real Sandbox Checkout"
+                        title="Secure Card Checkout"
                         className="w-full h-[480px] border-0"
                         allow="payment"
                       />
@@ -644,40 +654,44 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                 </div>
               )}
 
-              {/* SANDBOX INSTANT PAYMENT SIMULATOR */}
-              <div className="pt-2 space-y-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const sid = (session as any)?.settlementId || (session as any)?.id || session?.referenceCode || session?.reference || '';
-                    if (!sid) return;
-                    setIsLoading(true);
-                    setError(null);
-                    try {
-                      hapticFeedback.impactOccurred('medium');
-                      const updated = await fundingService.simulatePesapalPayment(sid);
-                      setSession(updated);
-                      // Trigger wallet balance sync
+              {/* SANDBOX DEVELOPER INSTANT PAYMENT SIMULATOR */}
+              {process.env.NODE_ENV !== 'production' && (
+                <div className="pt-2 space-y-2 border-t border-white/5">
+                  <div className="text-[10px] text-text-tertiary text-left font-mono">
+                    Developer Sandbox Tool: Tests internal pipeline
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const sid = (session as any)?.settlementId || (session as any)?.id || session?.referenceCode || session?.reference || '';
+                      if (!sid) return;
+                      setIsLoading(true);
+                      setError(null);
                       try {
-                        const walletStore = (await import('../../store/useWalletStore')).useWalletStore;
-                        walletStore.getState().fetchWalletBalances();
-                      } catch {
-                        // safe fallback
+                        hapticFeedback.impactOccurred('medium');
+                        const updated = await fundingService.simulatePesapalPayment(sid);
+                        setSession(updated);
+                        try {
+                          const walletStore = (await import('../../store/useWalletStore')).useWalletStore;
+                          walletStore.getState().fetchWalletBalances();
+                        } catch {
+                          // safe fallback
+                        }
+                      } catch (err: any) {
+                        console.error('Simulation failed:', err);
+                        setError(err?.response?.data?.message || err?.message || 'Sandbox simulation failed');
+                      } finally {
+                        setIsLoading(false);
                       }
-                    } catch (err: any) {
-                      console.error('Simulation failed:', err);
-                      setError(err?.response?.data?.message || err?.message || 'Sandbox simulation failed');
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
-                  disabled={isLoading}
-                  className="press-feedback w-full py-3 rounded-xl bg-usdt-green/20 hover:bg-usdt-green/30 text-usdt-green border border-usdt-green/40 font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-usdt-green/10 disabled:opacity-50"
-                >
-                  <CheckCircle2 size={16} />
-                  <span>Simulate Instant Sandbox Payment</span>
-                </button>
-              </div>
+                    }}
+                    disabled={isLoading}
+                    className="press-feedback w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-text-tertiary border border-white/10 font-bold text-[11px] flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  >
+                    <CheckCircle2 size={14} />
+                    <span>Developer: Simulate Internal Pipeline Test</span>
+                  </button>
+                </div>
+              )}
 
               <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-text-tertiary">
                 <span className="flex items-center gap-1.5">

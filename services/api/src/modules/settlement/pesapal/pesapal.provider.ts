@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   FinancialOperationType,
   Prisma,
@@ -775,7 +775,10 @@ export class PesapalProvider implements SettlementProvider {
   /**
    * SANDBOX SIMULATION: Instantly complete settlement and credit user balance.
    */
-  async simulatePayment(settlementId: string) {
+    if (process.env.PESAPAL_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('SANDBOX_SIMULATOR_DISABLED: Developer simulation endpoint is strictly prohibited in production.');
+    }
+
     const session = await this.prisma.settlementSession.findFirst({
       where: {
         OR: [
