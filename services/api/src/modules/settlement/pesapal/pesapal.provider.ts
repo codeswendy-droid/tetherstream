@@ -775,8 +775,15 @@ export class PesapalProvider implements SettlementProvider {
   /**
    * SANDBOX SIMULATION: Instantly complete settlement and credit user balance.
    */
-  async simulatePayment(settlementId: string) {
-    const session = await this.load(settlementId);
+    const session = await this.prisma.settlementSession.findFirst({
+      where: {
+        OR: [
+          { id: settlementId },
+          { referenceCode: settlementId },
+        ],
+      },
+    });
+    if (!session) throw new BadRequestException('SETTLEMENT_NOT_FOUND');
     const metadata = (session.providerMetadata || {}) as Record<string, any>;
 
     const payCurrency = metadata.paymentCurrency || (session.country === 'KE' ? 'KES' : session.country === 'UG' ? 'UGX' : 'USD');

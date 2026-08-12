@@ -204,22 +204,22 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
   const sessionExchangeRate = (session as any)?.exchangeRate ? Number((session as any).exchangeRate).toLocaleString() : null;
 
   // Safe display fallbacks for session card
-  const displayUsdtAmount = session?.requestedAmount || (session as any)?.expectedCryptoAmount || amountUsdt || '50';
-  const displayPayAmount = rawSessionPayAmount > 0
-    ? rawSessionPayAmount
-    : (estimatedFiatAmount || Math.round(Number(displayUsdtAmount) * (estimatedRate || 3782)));
-  const displayReference = session?.reference || session?.referenceCode || (session as any)?.settlementId || (session as any)?.id || '—';
+  const displayUsdtAmount = session?.requestedAmount ? session.requestedAmount.toString() : (session as any)?.expectedCryptoAmount ? (session as any).expectedCryptoAmount.toString() : amountUsdt || '50';
   
-  const calcRate = displayPayAmount > 0 && Number(displayUsdtAmount) > 0
-    ? Math.round(displayPayAmount / Number(displayUsdtAmount))
-    : 0;
+  const numericUsdt = Number(displayUsdtAmount) || 50;
+  const lockedRateNum = (session as any)?.exchangeRate ? Number((session as any).exchangeRate) : (estimatedRate || 3782);
+
+  // If rawSessionPayAmount is set and reasonably matches numericUsdt * rate, use it; otherwise compute exact product
+  const computedPayAmount = Math.round(numericUsdt * lockedRateNum);
+  const displayPayAmount = (rawSessionPayAmount > 100 && sessionPayCurrency !== 'USD')
+    ? rawSessionPayAmount
+    : (sessionPayCurrency === 'USD' ? numericUsdt : computedPayAmount);
+
+  const displayReference = session?.reference || session?.referenceCode || (session as any)?.settlementId || (session as any)?.id || '—';
+
   const displayRate = sessionPayCurrency === 'USD'
     ? '1'
-    : calcRate > 1
-    ? calcRate.toLocaleString()
-    : estimatedRate
-    ? estimatedRate.toLocaleString()
-    : '3,782';
+    : lockedRateNum.toLocaleString();
 
   const checkoutUrl = session?.paymentUrl || (session as any)?.payUrl;
 
@@ -632,7 +632,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                 <button
                   type="button"
                   onClick={async () => {
-                    const sid = (session as any)?.settlementId || (session as any)?.id || session?.reference || '';
+                    const sid = (session as any)?.settlementId || (session as any)?.id || session?.referenceCode || session?.reference || '';
                     if (!sid) return;
                     setIsLoading(true);
                     setError(null);
@@ -640,6 +640,13 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                       hapticFeedback.impactOccurred('medium');
                       const updated = await fundingService.simulatePesapalPayment(sid);
                       setSession(updated);
+                      // Trigger wallet balance sync
+                      try {
+                        const walletStore = (await import('../../store/useWalletStore')).useWalletStore;
+                        walletStore.getState().fetchWalletBalances();
+                      } catch {
+                        // safe fallback
+                      }
                     } catch (err: any) {
                       console.error('Simulation failed:', err);
                       setError(err?.response?.data?.message || err?.message || 'Sandbox simulation failed');
