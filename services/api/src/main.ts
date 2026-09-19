@@ -107,6 +107,7 @@ async function bootstrap() {
         cleanOrigin.endsWith('.workers.dev') ||
         cleanOrigin.endsWith('.netlify.app') ||
         cleanOrigin.endsWith('.railway.app') ||
+        cleanOrigin.endsWith('.railway.internal') ||
         cleanOrigin.endsWith('.ngrok-free.dev') ||
         cleanOrigin.endsWith('.ngrok.io')
       ) {
