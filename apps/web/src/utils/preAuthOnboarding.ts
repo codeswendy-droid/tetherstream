@@ -5,7 +5,11 @@ export const hasSeenPreAuthOnboarding = () => {
   if (typeof window === 'undefined') return false;
 
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('onboarding') === 'true' || urlParams.get('start') === 'true') {
+  if (
+    window.location.pathname === '/start' ||
+    urlParams.get('onboarding') === 'true' ||
+    urlParams.get('start') === 'true'
+  ) {
     return false;
   }
 
