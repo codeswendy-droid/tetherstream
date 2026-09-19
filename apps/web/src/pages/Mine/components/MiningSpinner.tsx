@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useMiningStore } from '../../../store/useMiningStore';
 import { useWalletStore } from '../../../store/useWalletStore';
-import { useQuestStore } from '../../../store/useQuestStore';
 import { useTreasuryStore } from '../../../store/useTreasuryStore';
 import { useHaptics } from '../../../hooks/useHaptics';
 import { Flame, Thermometer, ChevronLeft, ChevronRight, Lock, Clock, Sparkles, CheckCircle, Zap } from 'lucide-react';
@@ -11,6 +10,7 @@ import { useNavigationStore } from '../../../store/useNavigationStore';
 import { useCountryStore } from '../../../store/useCountryStore';
 import { useSettingsStore } from '../../../store/useSettingsStore';
 import { QuantumLoopReactor, type QuantumLoopReactorRef } from './QuantumLoopReactor';
+import { useMachineOwnershipStore } from '../../../store/useMachineOwnershipStore';
 
 interface Particle {
   id: number;
@@ -141,6 +141,7 @@ export const MiningSpinner = React.memo(() => {
   const upgradeLimits = useMiningStore((s) => s.upgradeLimits);
   const ownedTierCodes = useMiningStore((s) => s.ownedTierCodes);
   const userMachines = useMiningStore((s) => s.userMachines);
+  const ownerships = useMachineOwnershipStore((s) => s.ownerships);
 
   const { setActiveTab } = useNavigationStore();
 
@@ -234,6 +235,10 @@ export const MiningSpinner = React.memo(() => {
   const activeSpinnerIdx = isUsdt ? usdtSpinnerIdx : tonSpinnerIdx;
   const activeSpinner = activeSpinners[activeSpinnerIdx];
 
+  const currentTierCode = (activeSpinner?.tierCode || 'TS_TRIAL').toUpperCase();
+  const currentMachineRecord = ownerships[currentTierCode] || useMachineOwnershipStore.getState().getRecordByTier(currentTierCode);
+  const isMachinePaused = currentMachineRecord?.status === 'PAUSED';
+
   // DOM Refs for direct GPU-accelerated rotation updates (Phase 3 & Phase 5)
   const rotorPrimaryRef = React.useRef<HTMLDivElement>(null);
   const rotorSecondaryRef = React.useRef<HTMLDivElement>(null);
@@ -259,8 +264,8 @@ export const MiningSpinner = React.memo(() => {
       const tapSurgeFactor = 1.0 + Math.max(0, coolerMultiplier - 1.0) * 2.0;
       const revolutionsPerSec = configMultiplier * intensity * tapSurgeFactor * 2.8;
       
-      // Maintain continuous smooth rotation so spinner NEVER freezes or gets stuck
-      const speedFactor = isOverheated ? 0.35 : (isLocked ? 0.2 : 1.0);
+      // Maintain continuous smooth rotation so spinner NEVER freezes or gets stuck unless paused
+      const speedFactor = isMachinePaused ? 0 : (isOverheated ? 0.35 : (isLocked ? 0.2 : 1.0));
       const rotationSpeed = reducedMotion
         ? 0
         : (((revolutionsPerSec * speedFactor * 360) / 1000) * delta);
@@ -310,7 +315,7 @@ export const MiningSpinner = React.memo(() => {
       cancelAnimationFrame(animFrame);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [coolerMultiplier, isAnyLimitReached, isOverheated, activeSpinner.baseSpeedMultiplier, activeSpinner.promoSpinnerSpeedMultiplier, isMiningLocked, machineMode, maxMultiplier, reducedMotion, activeSpinner.id]);
+  }, [coolerMultiplier, isAnyLimitReached, isOverheated, activeSpinner.baseSpeedMultiplier, activeSpinner.promoSpinnerSpeedMultiplier, isMiningLocked, machineMode, maxMultiplier, reducedMotion, activeSpinner.id, isMachinePaused]);
 
   // Heat smoke generation when multiplier is high or overheated (Phase 8: battery optimization - skipped on low graphics)
   useEffect(() => {
@@ -399,16 +404,6 @@ export const MiningSpinner = React.memo(() => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left - rect.width / 2;
     const y = e.clientY - rect.top - rect.height / 2;
-
-    // Increment Taps category progress for Quest Store
-    useQuestStore.getState().incrementCategoryProgress('Taps', 1);
-
-    // Dynamic trust score from user actions: +1 for every 50 taps
-    const newTapsCount = tapsToday + 1;
-    if (newTapsCount % 50 === 0) {
-      useTreasuryStore.getState().adjustTrustScore(1);
-      showToast("Trust Score increased! Thank you for maintaining active compute operations. 🛡️", "info");
-    }
 
     const newParticle: Particle = {
       id: Date.now() + Math.random(),
@@ -641,7 +636,7 @@ export const MiningSpinner = React.memo(() => {
                 strokeDasharray="12, 180"
                 style={{
                   transformOrigin: 'center',
-                  animation: `spin ${Math.max(0.5, 5 - coolerMultiplier * 0.2)}s linear infinite`,
+                  animation: isMachinePaused ? 'none' : `spin ${Math.max(0.5, 5 - coolerMultiplier * 0.2)}s linear infinite`,
                 }}
               />
             </svg>
@@ -687,6 +682,21 @@ export const MiningSpinner = React.memo(() => {
             </div>
           )}
 
+          {/* Paused Machine Visual Overlay */}
+          {isMachinePaused && (
+            <div className="absolute inset-0 rounded-full bg-black/80 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-4 text-center border border-amber-500/40 animate-fade-in pointer-events-none">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center font-black text-lg mb-1 shadow-lg shadow-amber-500/20">
+                ⏸️
+              </div>
+              <span className="text-[10px] font-mono font-black text-amber-400 uppercase tracking-widest">
+                HASHING PAUSED
+              </span>
+              <span className="text-[8px] text-text-tertiary font-mono mt-0.5">
+                Resume machine to generate yield
+              </span>
+            </div>
+          )}
+
           {/* Canvas Physics Core Engine */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
             <QuantumLoopReactor
@@ -694,6 +704,7 @@ export const MiningSpinner = React.memo(() => {
               coolerMultiplier={coolerMultiplier}
               isOverheated={isOverheated}
               isLocked={isMiningLocked()}
+              isPaused={isMachinePaused}
               onDiscoveryEvent={handleDiscoveryEvent}
               tierCode={activeSpinner.tierCode}
               tierIndex={activeSpinnerIdx}
@@ -721,7 +732,7 @@ export const MiningSpinner = React.memo(() => {
                           opacity="0.3"
                           style={{
                             transformOrigin: 'center',
-                            animation: `spin ${Math.max(0.3, 3.5 - coolerMultiplier * 0.2)}s linear infinite`,
+                            animation: isMachinePaused ? 'none' : `spin ${Math.max(0.3, 3.5 - coolerMultiplier * 0.2)}s linear infinite`,
                           }}
                         />
                       </svg>

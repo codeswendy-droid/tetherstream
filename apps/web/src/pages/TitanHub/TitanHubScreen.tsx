@@ -20,28 +20,45 @@ import { MachineControlCenter } from './components/MachineControlCenter';
 import { MachineOwnersManualModal } from './components/MachineOwnersManualModal';
 import { MachineActivationModal } from './components/MachineActivationModal';
 import { MachineCertificateModal } from './components/MachineCertificateModal';
+import { MachineHealthModal } from './components/MachineHealthModal';
 import { FleetOverviewCard } from './components/FleetOverviewCard';
+import { NextBestActionCard } from '../../components/NextBestActionCard';
+import { formatCurrencyWithLocalFallback } from '../../store/useCountryStore';
 
 export const TitanHubScreen: React.FC = () => {
-  const { fetchMiningState, fetchUserMachines, baseSpeedGhs, unclaimedBalance, isMachineOwned, isOverheated, coolerMultiplier, ownedTierCodes } = useMiningStore();
-  const { fetchBalanceFromEngine } = useWalletStore();
-  const { events } = useTreasuryStore();
-  const { openGames, openShop } = useNavigationStore();
+  const fetchMiningState = useMiningStore((s) => s.fetchMiningState);
+  const fetchUserMachines = useMiningStore((s) => s.fetchUserMachines);
+  const baseSpeedGhs = useMiningStore((s) => s.baseSpeedGhs);
+  const unclaimedBalance = useMiningStore((s) => s.unclaimedBalance);
+  const isMachineOwned = useMiningStore((s) => s.isMachineOwned);
+  const isOverheated = useMiningStore((s) => s.isOverheated);
+  const coolerMultiplier = useMiningStore((s) => s.coolerMultiplier);
+  const ownedTierCodes = useMiningStore((s) => s.ownedTierCodes);
 
-  const { initializeDefaultCore, getRecordByTier, openOwnersManual, openCertificate } = useMachineOwnershipStore();
-  
+  const fetchBalanceFromEngine = useWalletStore((s) => s.fetchBalanceFromEngine);
+  const events = useTreasuryStore((s) => s.events);
+
+  const openGames = useNavigationStore((s) => s.openGames);
+  const openShop = useNavigationStore((s) => s.openShop);
+
+  const initializeDefaultCore = useMachineOwnershipStore((s) => s.initializeDefaultCore);
+  const getRecordByTier = useMachineOwnershipStore((s) => s.getRecordByTier);
+  const openOwnersManual = useMachineOwnershipStore((s) => s.openOwnersManual);
+  const openCertificate = useMachineOwnershipStore((s) => s.openCertificate);
+
   const titanState = useTitanState();
   const titanContext = useTitanContext();
-  
+
   const updateMachineStatus = useTitanStateEngine((state) => state.updateMachineStatus);
   const updateRewardStatus = useTitanStateEngine((state) => state.updateRewardStatus);
   const updateSyncStatus = useTitanStateEngine((state) => state.updateSyncStatus);
   const refreshState = useTitanStateEngine((state) => state.refreshState);
   
   const [syncStep, setSyncStep] = useState(0);
-  const [isSyncing, setIsSyncing] = useState(titanState.syncStatus !== 'COMPLETE');
+  const [isSyncing, setIsSyncing] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showShopSection, setShowShopSection] = useState(false);
+  const [showHealthModal, setShowHealthModal] = useState(false);
   const [selectedTierCode, setSelectedTierCode] = useState<string>('TS_TRIAL');
 
   const syncSteps = [
@@ -59,61 +76,80 @@ export const TitanHubScreen: React.FC = () => {
     initializeDefaultCore();
 
     const syncSequence = async () => {
-      if (titanState.syncStatus === 'COMPLETE') {
-        // Just refresh backend state silently in the background
+      // If sync already completed in this session, just refresh silently in the background
+      const alreadySynced = typeof window !== 'undefined' && sessionStorage.getItem('titan_hub_boot_synced') === 'true';
+      if (alreadySynced || titanState.syncStatus === 'COMPLETE') {
         try {
-          await Promise.all([
+          await Promise.allSettled([
             fetchMiningState(),
             fetchBalanceFromEngine(),
             fetchUserMachines(),
           ]);
         } catch (err) {
-          console.warn('[SYNC] Hydration failed:', err);
+          console.warn('[SYNC] Background refresh notice:', err);
         }
         return;
       }
 
+      setIsSyncing(true);
       updateSyncStatus('SYNCING');
-      
+
+      // Animate through sync steps (non-blocking visual only)
       for (let i = 0; i < syncSteps.length; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 250));
         setSyncStep(i);
       }
-      
-      // Parallel backend state hydration
+
+      // Parallel backend state hydration with a hard 5-second timeout
+      // so the UI never hangs on "Synchronizing Titan..." permanently.
       try {
-        await Promise.all([
-          fetchMiningState(),
-          fetchBalanceFromEngine(),
-          fetchUserMachines(),
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Sync timeout after 5s')), 5000)
+        );
+        await Promise.race([
+          Promise.allSettled([
+            fetchMiningState(),
+            fetchBalanceFromEngine(),
+            fetchUserMachines(),
+          ]),
+          timeoutPromise,
         ]);
       } catch (err) {
-        console.warn('[SYNC] Hydration failed:', err);
+        console.warn('[SYNC] Hydration failed or timed out:', err);
+      } finally {
+        // ALWAYS mark synced and dismiss the sync overlay regardless of success/failure/timeout
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('titan_hub_boot_synced', 'true');
+        }
+        updateSyncStatus('COMPLETE');
+        setIsSyncing(false);
+
+        const hasSeen = localStorage.getItem('has_seen_machine_education_v2');
+        if (!hasSeen) {
+          setShowEducationModal(true);
+        }
       }
-      
-      updateSyncStatus('COMPLETE');
-      
-      const hasSeen = localStorage.getItem('has_seen_machine_education_v2');
-      if (!hasSeen) {
-        setShowEducationModal(true);
-      }
-      
-      setIsSyncing(false);
     };
 
     syncSequence();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 2. Synchronize machine status changes to the Titan State Engine
+  // 2. Synchronize machine status changes to the Titan State Engine (without 100ms multiplier re-render loop)
+  const activeRecord = getRecordByTier(selectedTierCode);
+  const isSelectedPaused = activeRecord?.status === 'PAUSED';
+
   useEffect(() => {
+    const { activeGhs } = useMiningStore.getState().syncMachineStatus();
+    const currentCooler = useMiningStore.getState().coolerMultiplier || 1.0;
+
     updateMachineStatus(
-      isOverheated ? 'OVERHEATED' : 'RUNNING',
-      baseSpeedGhs * 10,
-      coolerMultiplier,
-      isOverheated ? 85 : 45
+      isOverheated ? 'OVERHEATED' : isSelectedPaused ? 'PAUSED' : 'RUNNING',
+      activeGhs * 10,
+      currentCooler,
+      isOverheated ? 85 : isSelectedPaused ? 30 : 45
     );
-  }, [isOverheated, baseSpeedGhs, coolerMultiplier, updateMachineStatus]);
+  }, [isOverheated, isSelectedPaused, updateMachineStatus]);
 
   // 3. Synchronize reward status changes to the Titan State Engine
   useEffect(() => {
@@ -167,7 +203,6 @@ export const TitanHubScreen: React.FC = () => {
     );
   }
 
-  const activeRecord = getRecordByTier(selectedTierCode);
   const activeCatalog = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === selectedTierCode.toUpperCase()) || MACHINE_CATALOG[0];
 
   const getMoodColor = (mood: typeof titanContext.titanMood) => {
@@ -199,6 +234,9 @@ export const TitanHubScreen: React.FC = () => {
         <BalanceDisplay />
       </div>
 
+      {/* CANONICAL NEXT BEST ACTION (Only displayed when there are active claimable rewards) */}
+      <NextBestActionCard onlyIfRewards={true} />
+
       {/* DYNAMIC PRIORITY BANNER: Unclaimed Yield Ready */}
       {unclaimedBalance > 0 && (
         <motion.div
@@ -215,7 +253,7 @@ export const TitanHubScreen: React.FC = () => {
                 <CurrencyDisplay amount={unclaimedBalance} size="sm" showCurrencyLabel={true} /> Ready to Collect
               </div>
               <div className="text-[10px] text-text-tertiary">
-                Earned by your machines.
+                Min. collection: {formatCurrencyWithLocalFallback(3.0)} • Earned by your machines.
               </div>
             </div>
           </div>
@@ -228,40 +266,13 @@ export const TitanHubScreen: React.FC = () => {
         </motion.div>
       )}
 
-      {/* SECTION 2: FLEET OVERVIEW & MACHINE SELECTOR */}
+      {/* SECTION 2: FLEET OVERVIEW & INTEGRATED MACHINE CONTROLS */}
       <FleetOverviewCard
-        onOpenShop={() => setShowShopSection(true)}
+        onOpenShop={() => openShop()}
         onSelectTier={(tier) => setSelectedTierCode(tier)}
         selectedTierCode={selectedTierCode}
         onOpenHowItWorks={() => setShowEducationModal(true)}
-      />
-
-      {/* DYNAMIC PRIORITY: Paused Machine Alert Elevates Machine Controls */}
-      {activeRecord?.status === 'PAUSED' && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-400 flex items-center justify-between"
-        >
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={18} />
-            <span className="text-xs font-black">
-              {activeRecord.nickname} is paused. Start it to continue earning.
-            </span>
-          </div>
-          <button
-            onClick={() => useMachineOwnershipStore.getState().setMachineStatus(selectedTierCode, 'RUNNING')}
-            className="py-1 px-3 rounded-xl bg-amber-500 text-app-bg font-black text-xs press-feedback"
-          >
-            Resume
-          </button>
-        </motion.div>
-      )}
-
-      {/* SECTION 3: OPERATIONAL MACHINE CONTROLS */}
-      <MachineControlCenter
-        activeTierCode={selectedTierCode}
-        onOpenShop={() => setShowShopSection(true)}
+        onOpenHealthModal={() => setShowHealthModal(true)}
       />
 
       {/* QUICK ACTIONS ROW */}
@@ -276,7 +287,7 @@ export const TitanHubScreen: React.FC = () => {
         </h3>
         <div className="grid grid-cols-4 gap-2">
           <button
-            onClick={() => setShowShopSection(!showShopSection)}
+            onClick={() => openShop()}
             className="web3-card p-2.5 rounded-xl border border-white/10 flex flex-col items-center gap-1.5 hover:border-usdt-green/30 transition-colors press-feedback"
           >
             <div className="w-8 h-8 rounded-lg bg-usdt-green/10 text-usdt-green flex items-center justify-center">
@@ -294,7 +305,7 @@ export const TitanHubScreen: React.FC = () => {
             <span className="text-[10px] font-extrabold text-text-primary">Collect</span>
           </button>
           <button 
-            onClick={() => setShowShopSection(!showShopSection)}
+            onClick={() => openShop()}
             className="web3-card p-2.5 rounded-xl border border-white/10 flex flex-col items-center gap-1.5 hover:border-ton-blue/30 transition-colors press-feedback"
           >
             <div className="w-8 h-8 rounded-lg bg-ton-blue/10 text-ton-blue flex items-center justify-center">
@@ -458,7 +469,7 @@ export const TitanHubScreen: React.FC = () => {
         </h3>
         <div className="grid grid-cols-2 gap-2">
           <button
-            onClick={() => openGames()}
+            onClick={() => openGames('crypto-roulette')}
             className="web3-card p-3 rounded-xl border border-white/10 flex flex-col items-center text-center gap-1.5 hover:border-purple-400/30 transition-colors press-feedback"
           >
             <div className="text-2xl">🎰</div>
@@ -466,15 +477,15 @@ export const TitanHubScreen: React.FC = () => {
             <div className="text-[10px] text-text-tertiary">Win up to 100 Crystals</div>
           </button>
           <button
-            onClick={() => openGames()}
+            onClick={() => openGames('hoop-masters')}
             className="web3-card p-3 rounded-xl border border-white/10 flex flex-col items-center text-center gap-1.5 hover:border-purple-400/30 transition-colors press-feedback"
           >
             <div className="text-2xl">🏀</div>
-            <div className="text-xs font-extrabold text-text-primary">Basketball</div>
+            <div className="text-xs font-extrabold text-text-primary">Titan Hoop</div>
             <div className="text-[10px] text-text-tertiary">Score shots for rewards</div>
           </button>
           <button
-            onClick={() => openGames()}
+            onClick={() => openGames('titan-core-reactor')}
             className="web3-card p-3 rounded-xl border border-white/10 flex flex-col items-center text-center gap-1.5 hover:border-purple-400/30 transition-colors press-feedback"
           >
             <div className="text-2xl">⚛️</div>
@@ -482,7 +493,7 @@ export const TitanHubScreen: React.FC = () => {
             <div className="text-[10px] text-text-tertiary">Chain reactions</div>
           </button>
           <button
-            onClick={() => openGames()}
+            onClick={() => openGames('power-grid')}
             className="web3-card p-3 rounded-xl border border-white/10 flex flex-col items-center text-center gap-1.5 hover:border-purple-400/30 transition-colors press-feedback"
           >
             <div className="text-2xl">⚡</div>
@@ -493,7 +504,7 @@ export const TitanHubScreen: React.FC = () => {
       </motion.div>
 
       {/* SECTION 6: EVENTS */}
-      {events.length > 0 && (
+      {Array.isArray(events) && events.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -560,11 +571,7 @@ export const TitanHubScreen: React.FC = () => {
                 </p>
               </div>
               <button
-                onClick={() => {
-                  setShowShopSection(true);
-                  // Smoothly scroll down to catalog catalog Item
-                  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-                }}
+                onClick={() => openShop()}
                 className="w-full py-3 rounded-2xl bg-cyan-500 text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 press-feedback"
               >
                 <ShoppingCart size={14} />
@@ -584,6 +591,11 @@ export const TitanHubScreen: React.FC = () => {
       <MachineOwnersManualModal />
       <MachineActivationModal />
       <MachineCertificateModal />
+      <MachineHealthModal
+        isOpen={showHealthModal}
+        onClose={() => setShowHealthModal(false)}
+        tierCode={selectedTierCode}
+      />
       <MachineEducationModal
         isOpen={showEducationModal}
         onClose={() => {

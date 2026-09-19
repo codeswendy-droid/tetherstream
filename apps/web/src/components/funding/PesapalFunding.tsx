@@ -41,9 +41,10 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
   paymentMethod: initialPaymentMethod,
   onCancel,
 }) => {
-  const { userCountry } = useCountryStore();
+  const selectedCountry = useCountryStore((s) => s.selectedCountry);
+  const userCountryCode = selectedCountry?.code || 'UG';
   const [paymentMethod, setPaymentMethod] = useState<'CARD' | 'MOBILE_MONEY'>(
-    initialPaymentMethod || (userCountry === 'US' ? 'CARD' : 'MOBILE_MONEY')
+    initialPaymentMethod || (userCountryCode === 'US' ? 'CARD' : 'MOBILE_MONEY')
   );
 
   // Sync initialPaymentMethod prop changes (e.g. user toggling CARD <-> MOBILE_MONEY in parent)
@@ -55,7 +56,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
   const [amountUsdt, setAmountUsdt] = useState<string>('50');
   const [paymentNetwork, setPaymentNetwork] = useState<'MTN' | 'AIRTEL'>('MTN');
   const [phoneNumber, setPhoneNumber] = useState<string>('');
-  const [country, setCountry] = useState<string>(userCountry || 'UG');
+  const [country, setCountry] = useState<string>(userCountryCode);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<SettlementSession | null>(null);
@@ -68,19 +69,19 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
 
   // Sync country when changed from selector
   useEffect(() => {
-    if (userCountry) {
-      setCountry(userCountry);
-      if (userCountry === 'US') {
+    if (userCountryCode) {
+      setCountry(userCountryCode);
+      if (userCountryCode === 'US') {
         setPaymentMethod('CARD');
       }
     }
-  }, [userCountry]);
+  }, [userCountryCode]);
 
   // Fetch live backend rate for display estimate (pre-session creation)
   useEffect(() => {
     let isMounted = true;
     const fetchRate = async () => {
-      const code = currFormat.code;
+      const code = (CURRENCY_FORMAT[country] || CURRENCY_FORMAT.US).code;
       if (code === 'USD') {
         setLiveRate(1.0);
         return;
@@ -102,7 +103,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [country, currFormat.code]);
+  }, [country]);
 
   // Session status polling hook
   useEffect(() => {
@@ -114,6 +115,14 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
       try {
         const updatedSession = await fundingService.getSessionStatus(session.settlementId);
         setSession(updatedSession);
+        if (updatedSession.status === 'COMPLETED') {
+          try {
+            const walletStore = (await import('../../store/useWalletStore')).useWalletStore;
+            walletStore.getState().fetchBalanceFromEngine();
+          } catch {
+            // safe fallback
+          }
+        }
       } catch (err) {
         console.warn('Failed to poll settlement status:', err);
       }
@@ -154,9 +163,26 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
       setSession(response.session);
     } catch (err: any) {
       console.error('Failed to create payment session:', err);
-      const errMsg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || '';
+      const rawMsg = err?.response?.data?.error?.message || err?.response?.data?.message || err?.message || '';
 
-      if (errMsg.includes('ACTIVE_SETTLEMENT_EXISTS')) {
+      if (rawMsg.includes('TOKEN_EXPIRED') || rawMsg.includes('jwt expired')) {
+        try {
+          const retryRes = await fundingService.createPesapalSession({
+            amountUsdt: numAmount,
+            country: country || 'UG',
+            paymentMethod,
+            mobileMoneyNetwork: paymentMethod === 'MOBILE_MONEY' ? paymentNetwork : undefined,
+            phoneNumber: paymentMethod === 'MOBILE_MONEY' ? phoneNumber : undefined,
+          });
+          setSession(retryRes.session);
+          setError(null);
+          return;
+        } catch (retryErr: any) {
+          console.error('Retry after token refresh failed:', retryErr);
+        }
+      }
+
+      if (rawMsg.includes('ACTIVE_SETTLEMENT_EXISTS')) {
         try {
           const history = await fundingService.getHistory();
           const active = history.find((s) =>
@@ -172,13 +198,17 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
         }
       }
 
-      setError(errMsg || 'Failed to initialize payment session');
+      const userFriendlyMsg = (rawMsg.includes('TOKEN_EXPIRED') || rawMsg.includes('jwt expired'))
+        ? 'Session expired. Please try again.'
+        : rawMsg;
+
+      setError(userFriendlyMsg || 'Failed to initialize payment session');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const [showEmbeddedIframe, setShowEmbeddedIframe] = useState(false);
+  const [showEmbeddedIframe, setShowEmbeddedIframe] = useState(true);
 
   const isPendingApproval = session?.status === 'CREATED' && (session as any)?.requiresAdminApproval;
 
@@ -249,7 +279,7 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
 
       {!session ? (
         /* Form View */
-        <div className="space-y-4">
+        <div className="space-y-4 pb-6">
           <div className="p-4 rounded-2xl glass-panel border border-white/10 space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-extrabold text-text-primary block">
@@ -397,17 +427,23 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
             </select>
           </div>
 
-          {/* Method Info */}
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-2.5 text-xs text-text-tertiary">
+          {/* Method Info & Rail Copy */}
+          <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3 text-xs text-text-tertiary">
             {activePaymentMethod === 'CARD' ? (
               <>
-                <CreditCard size={16} className="text-purple-400 shrink-0" />
-                <span>Pay securely with Visa or Mastercard</span>
+                <CreditCard size={18} className="text-purple-400 shrink-0" />
+                <div>
+                  <span className="font-extrabold text-text-primary block">Card Payment</span>
+                  <span className="text-[11px] text-text-tertiary">Pay securely with Visa or Mastercard</span>
+                </div>
               </>
             ) : (
               <>
-                <Smartphone size={16} className="text-usdt-green shrink-0" />
-                <span>Pay securely with Mobile Money ({activeNetwork === 'AIRTEL' ? 'Airtel Money' : 'MTN Mobile Money'})</span>
+                <Smartphone size={18} className="text-usdt-green shrink-0" />
+                <div>
+                  <span className="font-extrabold text-text-primary block">Mobile Money</span>
+                  <span className="text-[11px] text-text-tertiary">Pay with MTN or Airtel Mobile Money</span>
+                </div>
               </>
             )}
           </div>
@@ -429,12 +465,12 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
             {isLoading ? (
               <>
                 <div className="w-4 h-4 border-2 border-app-bg border-t-transparent rounded-full animate-spin" />
-                <span>Creating Session...</span>
+                <span>Preparing Secure Checkout...</span>
               </>
             ) : (
               <>
                 <CreditCard size={18} />
-                <span>Proceed to Checkout</span>
+                <span>Continue to Pesapal Checkout</span>
               </>
             )}
           </button>
@@ -577,16 +613,12 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                 <h3 className="text-sm font-extrabold text-text-primary">
                   {session.status === 'VERIFYING'
                     ? 'Verifying Payment'
-                    : activePaymentMethod === 'CARD'
-                    ? 'Secure Card Checkout'
-                    : 'Payment Request Sent to Mobile Phone'}
+                    : 'Pesapal Checkout Ready'}
                 </h3>
                 <p className="text-xs text-text-tertiary mt-1">
                   {session.status === 'VERIFYING'
                     ? 'Payment received. Verifying transaction details with Pesapal...'
-                    : activePaymentMethod === 'CARD'
-                    ? 'Your secure checkout page is ready. Complete your payment on the secure portal below.'
-                    : 'A USSD payment prompt has been sent to your mobile phone. Please approve the prompt on your phone and enter your Mobile Money PIN.'}
+                    : 'Your deposit order is created. Continue to Pesapal\'s secure checkout page to choose your payment option and authorize payment.'}
                 </p>
               </div>
 
@@ -616,8 +648,8 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                 </div>
               </div>
 
-              {/* SECURE CHECKOUT HANDOFF (CARD FLOW ONLY) */}
-              {checkoutUrl && activePaymentMethod === 'CARD' && (
+              {/* SECURE CHECKOUT HANDOFF */}
+              {checkoutUrl && (
                 <div className="space-y-3 pt-1">
                   <button
                     type="button"
@@ -645,56 +677,17 @@ export const PesapalFunding: React.FC<PesapalFundingProps> = ({
                     </button>
                   </div>
 
-                  {/* OPTIONAL EMBEDDED CHECKOUT IFRAME FALLBACK */}
+                  {/* EMBEDDED CHECKOUT IFRAME */}
                   {showEmbeddedIframe && (
                     <div className="rounded-2xl overflow-hidden border border-purple-500/30 bg-white shadow-2xl mt-2">
                       <iframe
                         src={checkoutUrl}
-                        title="Secure Card Checkout"
-                        className="w-full h-[480px] border-0"
+                        title="Secure Pesapal Gateway Checkout"
+                        className="w-full h-[720px] border-0"
                         allow="payment"
                       />
                     </div>
                   )}
-                </div>
-              )}
-
-              {/* SANDBOX DEVELOPER INSTANT PAYMENT SIMULATOR */}
-              {process.env.NODE_ENV !== 'production' && (
-                <div className="pt-2 space-y-2 border-t border-white/5">
-                  <div className="text-[10px] text-text-tertiary text-left font-mono">
-                    Developer Sandbox Tool: Tests internal pipeline
-                  </div>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const sid = (session as any)?.settlementId || (session as any)?.id || session?.referenceCode || session?.reference || '';
-                      if (!sid) return;
-                      setIsLoading(true);
-                      setError(null);
-                      try {
-                        hapticFeedback.impactOccurred('medium');
-                        const updated = await fundingService.simulatePesapalPayment(sid);
-                        setSession(updated);
-                        try {
-                          const walletStore = (await import('../../store/useWalletStore')).useWalletStore;
-                          walletStore.getState().fetchWalletBalances();
-                        } catch {
-                          // safe fallback
-                        }
-                      } catch (err: any) {
-                        console.error('Simulation failed:', err);
-                        setError(err?.response?.data?.message || err?.message || 'Sandbox simulation failed');
-                      } finally {
-                        setIsLoading(false);
-                      }
-                    }}
-                    disabled={isLoading}
-                    className="press-feedback w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-text-tertiary border border-white/10 font-bold text-[11px] flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                  >
-                    <CheckCircle2 size={14} />
-                    <span>Developer: Simulate Internal Pipeline Test</span>
-                  </button>
                 </div>
               )}
 

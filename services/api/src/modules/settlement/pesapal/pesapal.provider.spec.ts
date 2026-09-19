@@ -13,6 +13,7 @@ describe('PesapalProvider Unit Tests', () => {
 
   beforeEach(() => {
     mockPrisma = {
+      $transaction: jest.fn().mockImplementation((cb) => cb(mockPrisma)),
       settlementSession: {
         create: jest.fn(),
         findUnique: jest.fn(),
@@ -24,6 +25,11 @@ describe('PesapalProvider Unit Tests', () => {
       settlementEvent: {
         create: jest.fn(),
       },
+    };
+
+    mockRiskService = {
+      evaluateUserRisk: jest.fn().mockResolvedValue({ allowed: true, requiresManualReview: false }),
+      assertSessionCreationRisk: jest.fn().mockResolvedValue(undefined),
     };
 
     mockEvents = {
@@ -54,10 +60,11 @@ describe('PesapalProvider Unit Tests', () => {
       getIpnId: jest.fn().mockResolvedValue('ipn_uuid_123'),
     };
 
-    mockRiskService = {
-      // Updated to match the new risk service interface used by createSettlement
-      evaluateUserRisk: jest.fn().mockResolvedValue({ allowed: true, requiresManualReview: false }),
-      assertSessionCreationRisk: jest.fn().mockResolvedValue(undefined),
+    const mockExchangeRateService = {
+      getRate: jest.fn().mockResolvedValue({ baseRate: 130, appliedRate: 132.6, userRate: 132.6, source: 'coingecko' }),
+      lockRateForSettlement: jest.fn().mockResolvedValue({
+        baseRate: 130, appliedRate: 132.6, userRate: 132.6, rateTimestamp: new Date().toISOString(), source: 'coingecko',
+      }),
     };
 
     provider = new PesapalProvider(
@@ -66,6 +73,7 @@ describe('PesapalProvider Unit Tests', () => {
       mockOrchestrator,
       mockPesapalClient,
       mockRiskService,
+      mockExchangeRateService as any,
     );
   });
 
@@ -137,6 +145,7 @@ describe('PesapalProvider Unit Tests', () => {
         providerMetadata: {},
       };
       mockPrisma.settlementSession.create.mockResolvedValue(fakeSession);
+      mockPrisma.settlementSession.findUnique.mockResolvedValue(fakeSession);
       mockPrisma.settlementSession.update.mockResolvedValue({
         ...fakeSession,
         providerMetadata: { orderTrackingId: 'trk_999', redirectUrl: 'https://cyb3r.pesapal.com/...' },
@@ -162,6 +171,7 @@ describe('PesapalProvider Unit Tests', () => {
         providerMetadata: { requiresAdminApproval: true },
       };
       mockPrisma.settlementSession.create.mockResolvedValue(fakeSession);
+      mockPrisma.settlementSession.findUnique.mockResolvedValue(fakeSession);
 
       const res = await provider.createSettlement(telegramUserId, {
         ...baseDto, requestedAmount: '1000', expectedCryptoAmount: '1000',
@@ -310,7 +320,13 @@ describe('PesapalProvider Unit Tests', () => {
         asset: 'USDT', requestedAmount: '100', expectedCryptoAmount: '100',
         exchangeRate: '1.0', status: SettlementStatus.WAITING_FOR_PAYMENT,
         expiresAt: new Date(),
+        providerMetadata: { paymentAmount: 100, paymentCurrency: 'KES' },
       };
+
+      mockPesapalClient.getTransactionStatus.mockResolvedValue({
+        status_code: 1, payment_status_description: 'Completed',
+        amount: 100, currency: 'KES', merchant_reference: 'PSP-DUP', order_tracking_id: 'trk_1',
+      });
 
       mockPrisma.settlementSession.findFirst.mockResolvedValue(fakeSession);
       // First IPN: atomic update succeeds
@@ -337,8 +353,13 @@ describe('PesapalProvider Unit Tests', () => {
         provider: SettlementProviderId.PESAPAL, referenceCode: 'PSP-RACE',
         asset: 'USDT', requestedAmount: '100', expectedCryptoAmount: '100',
         exchangeRate: '1.0', status: SettlementStatus.WAITING_FOR_PAYMENT,
-        expiresAt: new Date(), providerMetadata: { orderTrackingId: 'trk_race' },
+        expiresAt: new Date(), providerMetadata: { orderTrackingId: 'trk_race', paymentAmount: 100, paymentCurrency: 'KES' },
       };
+
+      mockPesapalClient.getTransactionStatus.mockResolvedValue({
+        status_code: 1, payment_status_description: 'Completed',
+        amount: 100, currency: 'KES', merchant_reference: 'PSP-RACE', order_tracking_id: 'trk_race',
+      });
 
       mockPrisma.settlementSession.findFirst.mockResolvedValue(fakeSession);
       mockPrisma.settlementSession.findUnique.mockResolvedValue(fakeSession);
@@ -377,6 +398,7 @@ describe('PesapalProvider Unit Tests', () => {
         providerMetadata: { requiresAdminApproval: true },
       };
       mockPrisma.settlementSession.create.mockResolvedValue(fakeSession);
+      mockPrisma.settlementSession.findUnique.mockResolvedValue(fakeSession);
 
       // Client tries to inject approved=true via any field
       const res = await provider.createSettlement(BigInt(999), {
@@ -514,7 +536,7 @@ describe('PesapalProvider Unit Tests', () => {
   // ──────────────────────────────────────────────────────
 
   describe('Ledger Invariants', () => {
-    it('verified provider success triggers exactly one SYSTEM_ALLOCATION with correct fields', async () => {
+    it('verified provider success triggers exactly one DEPOSIT_SETTLEMENT with correct fields', async () => {
       const session = {
         id: 'sess_ledger', telegramUserId: BigInt(12345),
         provider: SettlementProviderId.PESAPAL, referenceCode: 'PSP-LEDGER',
@@ -522,6 +544,7 @@ describe('PesapalProvider Unit Tests', () => {
         exchangeRate: '1.0', country: 'KE',
         status: SettlementStatus.WAITING_FOR_PAYMENT,
         expiresAt: new Date(),
+        providerMetadata: { paymentAmount: 100, paymentCurrency: 'KES' },
       };
 
       mockPrisma.settlementSession.findFirst.mockResolvedValue(session);
@@ -541,12 +564,13 @@ describe('PesapalProvider Unit Tests', () => {
       expect(mockOrchestrator.requestOperation).toHaveBeenCalledWith(
         expect.objectContaining({
           telegramUserId: BigInt(12345),
-          operationType: 'SYSTEM_ALLOCATION',
+          operationType: 'DEPOSIT_SETTLEMENT',
           assetCode: 'USDT',
           amount: '100',
           idempotencyKey: 'pesapal_settlement_sess_ledger',
           reference: 'pesapal_settlement_sess_ledger',
-        })
+        }),
+        expect.anything(),
       );
     });
 

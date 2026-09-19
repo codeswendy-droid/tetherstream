@@ -1,10 +1,15 @@
-import { Injectable, UnauthorizedException, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger, BadRequestException, Optional } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { createHash, randomInt, timingSafeEqual } from 'crypto';
+import { IdentityProvider } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { TelegramAuthService } from './strategies/telegram-auth.service';
+import { IdentityService } from '../identity/identity.service';
+import { IdentityMasterEngineService } from '../identity/identity-master.service';
 import { UserState, AuditEventType } from '../../common/interfaces/user-state.enum';
 import { AuditService } from '../audit/audit.service';
 import { requiredEnv } from '../../common/config/env.util';
+import { BaileysService } from '../notification/baileys.service';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +19,10 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly telegramAuth: TelegramAuthService,
+    private readonly identityService: IdentityService,
+    private readonly identityMasterEngine: IdentityMasterEngineService,
     private readonly auditService: AuditService,
+    @Optional() private readonly baileysService?: BaileysService,
   ) {}
 
   async authenticate(initData: string, ipAddress?: string, userAgent?: string) {
@@ -108,13 +116,55 @@ export class AuthService {
     return true;
   }
 
+  private readonly activeNonces = new Map<string, { createdAt: number; used: boolean }>();
+
+  createTelegramNonce() {
+    const nonce = `tgn_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+    this.activeNonces.set(nonce, { createdAt: Date.now(), used: false });
+
+    const tenMinsAgo = Date.now() - 10 * 60 * 1000;
+    for (const [code, item] of this.activeNonces.entries()) {
+      if (item.createdAt < tenMinsAgo) this.activeNonces.delete(code);
+    }
+
+    return { nonce };
+  }
+
+  validateAndConsumeNonce(nonce?: string): boolean {
+    if (!nonce) {
+      throw new UnauthorizedException({ code: 'MISSING_NONCE', message: 'Authentication nonce is required.' });
+    }
+
+    const record = this.activeNonces.get(nonce);
+    if (!record) {
+      throw new UnauthorizedException({ code: 'INVALID_NONCE', message: 'Authentication nonce is invalid or expired.' });
+    }
+
+    if (record.used) {
+      throw new UnauthorizedException({ code: 'REPLAYED_NONCE', message: 'Authentication nonce has already been consumed.' });
+    }
+
+    if (Date.now() - record.createdAt > 10 * 60 * 1000) {
+      this.activeNonces.delete(nonce);
+      throw new UnauthorizedException({ code: 'EXPIRED_NONCE', message: 'Authentication nonce has expired.' });
+    }
+
+    this.activeNonces.delete(nonce);
+    return true;
+  }
+
   async authenticateWebLogin(payload: any, ipAddress?: string, userAgent?: string) {
     const traceId = this.createTraceId();
-    this.logAuth(traceId, 'web_login.request_received', `telegramPayloadId=${payload?.id ?? 'missing'}`);
+    this.logAuth(traceId, 'web_login.request_received', `telegramPayloadId=${payload?.id ?? 'missing'} nonce=${payload?.nonce || 'none'}`);
     try {
-      const parsed = this.telegramAuth.parseWebLoginPayload(payload);
+      if (!payload?.nonce) {
+        throw new UnauthorizedException({ code: 'MISSING_NONCE', message: 'Authentication nonce is required.' });
+      }
+      this.validateAndConsumeNonce(payload.nonce);
+
+      const parsed = await this.telegramAuth.parseWebLoginPayloadAsync(payload);
       this.logAuth(traceId, 'web_login.signature_verified', `telegramUserId=${parsed.telegramUserId}`);
-      return this.authenticateTelegramIdentity(parsed, 'telegram_login_widget', traceId, ipAddress, userAgent);
+      return this.authenticateTelegramIdentity(parsed, 'telegram_login_library', traceId, ipAddress, userAgent);
     } catch (error: any) {
       this.logAuthFailure(traceId, 'web_login.failed', error);
       throw error;
@@ -123,186 +173,78 @@ export class AuthService {
 
   private async authenticateTelegramIdentity(parsed: any, provider: string, traceId: string, ipAddress?: string, userAgent?: string) {
     const { telegramUserId, firstName, lastName, username, languageCode, photoUrl, startParam } = parsed;
-    const telegramUserIdBig = BigInt(telegramUserId);
+    const identifierStr = String(telegramUserId);
 
-    let user: any = null;
-    let isNewUser = false;
+    this.logAuth(traceId, 'telegram_identity_resolution.started', `telegramUserId=${identifierStr}, username=${username}, provider=${provider}`);
 
+    let identityContext;
     try {
-      user = await this.prisma.user.findUnique({
-        where: { telegramUserId: telegramUserIdBig },
+      identityContext = await this.identityMasterEngine.authenticate({
+        provider: IdentityProvider.TELEGRAM,
+        identifier: identifierStr,
+        displayName: firstName ? `${firstName} ${lastName || ''}`.trim() : `Telegram_${identifierStr}`,
+        avatarUrl: photoUrl,
+        ipAddress,
+        userAgent,
+        metadata: { traceId, username, startParam },
       });
-
-      if (!user) {
-        this.logAuth(traceId, 'identity.user_lookup', `status=new telegramUserId=${telegramUserId}`);
-        user = await this.prisma.$transaction(async (tx) => {
-          const newUser = await tx.user.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              firstName,
-              lastName,
-              telegramUsername: username,
-              languageCode: languageCode || 'en',
-              photoUrl,
-              state: UserState.NEW,
-              lastActiveAt: new Date(),
-              lastLoginAt: new Date(),
-              lastActiveIp: ipAddress,
-              loginCount: 1,
-            },
-          });
-
-          await tx.onboardingProgress.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              currentStep: 'welcome',
-              stepsCompleted: [],
-            },
-          });
-
-          await tx.financialAccount.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              status: 'ACTIVE',
-              activatedAt: new Date(),
-            },
-          });
-
-          await tx.referralCode.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              code: await this.generateUniqueReferralCode(tx),
-              metadata: { generatedAt: new Date().toISOString() },
-            },
-          });
-
-          await tx.userTrustProfile.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              trustScore: 50,
-              completedSettlements: 0,
-              failedSettlements: 0,
-              successRate: 100.0,
-              accountAgeDays: 0,
-              verificationStatus: 'UNVERIFIED',
-            },
-          });
-
-          await tx.userLevelRecord.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              currentLevel: 'NEW',
-            },
-          });
-
-          await tx.notificationPreference.create({
-            data: {
-              telegramUserId: telegramUserIdBig,
-              telegramEnabled: true,
-              inAppEnabled: true,
-              marketingEnabled: false,
-            },
-          });
-
-          await this.attachReferralIfPresent(tx, telegramUserIdBig, startParam, traceId);
-
-          await this.auditService.createWithClient(tx, {
-            telegramUserId: telegramUserIdBig,
-            eventType: AuditEventType.USER_CREATED,
-            description: `New user registered via ${provider}`,
-            ipAddress,
-            userAgent,
-            metadata: { provider, username, firstName, traceId },
-          });
-
-          return newUser;
-        });
-
-        isNewUser = true;
-      } else {
-        this.logAuth(traceId, 'identity.user_lookup', `status=existing telegramUserId=${telegramUserId}`);
-        const updateData: any = {
-          lastLoginAt: new Date(),
-          lastActiveAt: new Date(),
-          loginCount: { increment: 1 },
-        };
-        if (firstName !== undefined) updateData.firstName = firstName;
-        if (lastName !== undefined) updateData.lastName = lastName;
-        if (username !== undefined) updateData.telegramUsername = username;
-        if (photoUrl !== undefined) updateData.photoUrl = photoUrl;
-        if (ipAddress) updateData.lastActiveIp = ipAddress;
-
-        user = await this.prisma.user.update({
-          where: { telegramUserId: telegramUserIdBig },
-          data: updateData,
-        });
-
-        await this.auditService.create({
-          telegramUserId: telegramUserIdBig,
-          eventType: AuditEventType.USER_AUTHENTICATED,
-          description: `User authenticated via ${provider}`,
-          ipAddress,
-          userAgent,
-          metadata: { provider, traceId },
-        });
-      }
-    } catch (dbError: any) {
-      this.logger.warn(`[AUTH_FALLBACK] Database operation failed: ${dbError.message}. Generating resilient session for user ${telegramUserId}`);
-      user = {
-        id: `fb_${telegramUserId}`,
-        telegramUserId: telegramUserIdBig,
-        firstName: firstName || 'Titan',
-        lastName: lastName || 'User',
-        telegramUsername: username || 'titanuser',
-        state: UserState.READY,
-        languageCode: languageCode || 'en',
-        photoUrl,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      isNewUser = false;
-    }
-
-    let isReady = true;
-    let readiness = { score: 100, isEligible: true, issues: [] };
-    try {
-      const res = await this.evaluateReadiness(telegramUserIdBig);
-      isReady = res.isReady;
-      readiness = res.readiness as any;
-      if (user.state === UserState.NEW) {
-        user = await this.transitionUserState(telegramUserIdBig, UserState.AUTHENTICATED, 'Auto-transition on auth');
-      }
-    } catch (err: any) {
-      this.logger.warn(`[AUTH_FALLBACK] Readiness/state transition skipped: ${err.message}`);
+      
+      this.logAuth(traceId, 'telegram_identity_resolution.success', `userId=${identityContext.userId}, universalIdentityId=${identityContext.universalIdentityId}, telegramUserId=${identityContext.telegramUserId?.toString()}`);
+    } catch (engineErr: any) {
+      this.logger.error(`[AUTH_ENGINE] IdentityMasterEngine failed for user ${identifierStr}: ${engineErr.message}`);
+      this.logAuthFailure(traceId, 'telegram_identity_resolution.failed', engineErr);
+      // CRITICAL: Never create fallback identity - fail authentication instead
+      throw new UnauthorizedException(`Identity resolution failed for ${identifierStr}. Authentication failed to prevent account duplication.`);
     }
 
     const payload = {
-      sub: String(telegramUserId),
-      telegramUserId: Number(telegramUserId),
-      state: user.state,
-      role: 'USER',
+      sub: identityContext.universalIdentityId, // Always use canonical UniversalIdentity.id
+      userId: identityContext.userId,
+      titanUserId: identityContext.userId,
+      telegramUserId: identityContext.telegramUserId ? Number(identityContext.telegramUserId) : Number(identifierStr),
+      provider: 'TELEGRAM',
+      channelIdentityId: identityContext.channelIdentityId,
+      providerSubject: identityContext.providerSubject,
+      state: identityContext.userState,
+      role: identityContext.role,
     };
 
     const refreshSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || requiredEnv('JWT_REFRESH_SECRET', 'dev-refresh-secret');
     const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
     const refreshToken = this.jwtService.sign(
-      { sub: String(telegramUserId), type: 'refresh' },
+      { sub: identityContext.universalIdentityId, telegramUserId: payload.telegramUserId, type: 'refresh' },
       { expiresIn: '30d', secret: refreshSecret },
     );
 
-    this.logAuth(traceId, 'jwt.issued', `telegramUserId=${telegramUserId}`);
-    this.logAuth(traceId, 'auth.completed', `provider=${provider} isNewUser=${isNewUser}`);
+    this.logAuth(traceId, 'jwt.issued', `userId=${identityContext.userId} telegramUserId=${identifierStr}`);
+    this.logAuth(traceId, 'auth.completed', `provider=TELEGRAM`);
+    
+    // Log authentication to audit trail
+    if (this.auditService) {
+      await this.auditService.create({
+        telegramUserId: BigInt(identifierStr),
+        eventType: AuditEventType.USER_STATE_CHANGED,
+        description: `Authentication completed via ${provider}: userId=${identityContext.userId}, universalIdentityId=${identityContext.universalIdentityId}`,
+        metadata: {
+          provider,
+          userId: identityContext.userId,
+          universalIdentityId: identityContext.universalIdentityId,
+          telegramUserId: identifierStr,
+          assuranceLevel: identityContext.assuranceLevel,
+          ipAddress,
+          userAgent,
+        },
+      });
+    }
 
     return {
       accessToken,
       refreshToken,
-      user: this.sanitizeUser(user),
-      onboarding: {
-        currentStep: isNewUser ? 'welcome' : await this.getCurrentOnboardingStep(telegramUserIdBig),
-        isCompleted: user.state === UserState.ELIGIBLE_USER || user.state === UserState.ACTIVE_USER,
+      user: {
+        id: identityContext.userId,
+        identityId: identityContext.universalIdentityId,
+        state: identityContext.userState,
       },
-      readiness,
-      isNewUser,
       traceId,
     };
   }
@@ -402,43 +344,85 @@ export class AuthService {
         secret: refreshSecret,
       });
       if (payload.type !== 'refresh') throw new UnauthorizedException('INVALID_REFRESH_TOKEN');
-      const telegramUserId = BigInt(payload.sub);
 
-      let userState: any = UserState.READY;
-      try {
-        const user = await this.prisma.user.findUnique({
-          where: { telegramUserId },
-        });
-        if (user) userState = user.state;
-      } catch (dbErr: any) {
-        this.logger.warn(`[AUTH_FALLBACK] Database lookup failed during token refresh: ${dbErr.message}`);
+      const subStr = String(payload.sub || '');
+      const isUuid = subStr.includes('-');
+
+      let user: any = null;
+      if (isUuid) {
+        user = await this.prisma.user.findFirst({ where: { identityId: subStr } });
+      }
+      if (!user && (payload.telegramUserId || (!isUuid && subStr))) {
+        const rawId = payload.telegramUserId || subStr;
+        if (!isNaN(Number(rawId))) {
+          user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(rawId) } });
+        }
       }
 
+      if (!user) throw new UnauthorizedException('USER_NOT_FOUND');
+
+      // Rolling 14-day inactivity window check
+      const INACTIVITY_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+      const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt).getTime() : Date.now();
+      if (Date.now() - lastActive > INACTIVITY_WINDOW_MS) {
+        this.logAuth(traceId, 'refresh.expired', `Inactivity limit exceeded for user ${user.telegramUserId}`);
+        this.logAuthFailure(traceId, 'refresh.expired', new Error('14-day inactivity exceeded'));
+        throw new UnauthorizedException({ code: 'SESSION_EXPIRED', message: 'Session expired due to 14 days of inactivity. Please sign in again.' });
+      }
+
+      // Update lastActiveAt to renew rolling window
+      await this.prisma.user.update({
+        where: { telegramUserId: user.telegramUserId },
+        data: { lastActiveAt: new Date() },
+      });
+      
+      this.logAuth(traceId, 'session.renewed', `userId=${user.id}, telegramUserId=${user.telegramUserId?.toString()}`);
+      
+      // Log token refresh to audit trail
+      if (this.auditService) {
+        await this.auditService.create({
+          telegramUserId: user.telegramUserId,
+          eventType: AuditEventType.USER_STATE_CHANGED,
+          description: `Session token refreshed: userId=${user.id}, inactivityDays=${Math.floor((Date.now() - lastActive) / (24 * 60 * 60 * 1000))}`,
+          metadata: {
+            userId: user.id,
+            identityId: user.identityId,
+            telegramUserId: user.telegramUserId?.toString(),
+            lastActiveAt: user.lastActiveAt,
+            daysSinceLastActive: Math.floor((Date.now() - lastActive) / (24 * 60 * 60 * 1000)),
+          },
+        });
+      }
+
+      const canonicalId = user.identityId || subStr;
       const newPayload = {
-        sub: String(telegramUserId),
-        telegramUserId: Number(telegramUserId),
-        state: userState,
+        sub: canonicalId, // Always use UniversalIdentity.id (canonical identity)
+        titanUserId: canonicalId,
+        telegramUserId: Number(user.telegramUserId),
+        state: user.state,
         role: 'USER',
       };
 
       const newAccessToken = this.jwtService.sign(newPayload, { expiresIn: '15m' });
       const newRefreshToken = this.jwtService.sign(
-        { sub: String(telegramUserId), type: 'refresh' },
+        { sub: canonicalId, telegramUserId: Number(user.telegramUserId), type: 'refresh' },
         { expiresIn: '30d', secret: refreshSecret },
       );
 
-      this.logAuth(traceId, 'refresh.completed', `telegramUserId=${telegramUserId.toString()}`);
+      this.logAuth(traceId, 'refresh.completed', `canonicalId=${canonicalId}`);
       return { accessToken: newAccessToken, refreshToken: newRefreshToken, traceId };
     } catch (error: any) {
       this.logAuthFailure(traceId, 'refresh.failed', error);
-      throw new UnauthorizedException('TOKEN_EXPIRED');
+      throw new UnauthorizedException(error.response || 'TOKEN_EXPIRED');
     }
   }
 
-  async getProfile(telegramUserId: bigint) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { telegramUserId },
+  async getProfile(userKey: string | bigint) {
+    let user: any = null;
+
+    if (typeof userKey === 'string') {
+      user = await this.prisma.user.findUnique({
+        where: { id: userKey },
         include: {
           onboardingProgress: true,
           educationCompletions: true,
@@ -446,32 +430,138 @@ export class AuthService {
           readinessScores: true,
         },
       });
-      if (!user) throw new UnauthorizedException('USER_NOT_FOUND');
-      return {
-        user: this.sanitizeUser(user),
-        onboarding: user.onboardingProgress,
-        education: user.educationCompletions,
-        consents: user.userConsents,
-        readiness: user.readinessScores,
-      };
-    } catch (err: any) {
-      this.logger.warn(`[AUTH_FALLBACK] getProfile failed: ${err.message}`);
-      return {
-        user: {
-          telegramUserId: Number(telegramUserId),
-          telegramUsername: 'titanuser',
-          firstName: 'Titan',
-          lastName: 'User',
-          state: UserState.READY,
-          isReady: true,
-          createdAt: new Date(),
+
+      if (!user && !isNaN(Number(userKey))) {
+        const telegramUserId = BigInt(userKey);
+        user = await this.prisma.user.findUnique({
+          where: { telegramUserId },
+          include: {
+            onboardingProgress: true,
+            educationCompletions: true,
+            userConsents: true,
+            readinessScores: true,
+          },
+        });
+      }
+    } else if (typeof userKey === 'bigint') {
+      user = await this.prisma.user.findUnique({
+        where: { telegramUserId: userKey },
+        include: {
+          onboardingProgress: true,
+          educationCompletions: true,
+          userConsents: true,
+          readinessScores: true,
         },
-        onboarding: { currentStep: 'welcome', stepsCompleted: [] },
-        education: [],
-        consents: [],
-        readiness: { isReady: true, score: 100 },
-      };
+      });
     }
+
+    if (!user) throw new UnauthorizedException('USER_NOT_FOUND: User does not exist in database');
+    return {
+      user: this.sanitizeUser(user),
+      onboarding: user.onboardingProgress,
+      education: user.educationCompletions,
+      consents: user.userConsents,
+      readiness: user.readinessScores,
+    };
+  }
+
+  async verifyIdentity(userKey: string | bigint) {
+    const traceId = this.createTraceId();
+    this.logAuth(traceId, 'identity_verification.started', `userKey=${userKey}`);
+    
+    let user: any = null;
+
+    if (typeof userKey === 'string') {
+      user = await this.prisma.user.findUnique({
+        where: { id: userKey },
+        include: {
+          identity: {
+            include: {
+              channels: true,
+            },
+          },
+          financialAccount: true,
+        },
+      });
+
+      if (!user && !isNaN(Number(userKey))) {
+        const telegramUserId = BigInt(userKey);
+        user = await this.prisma.user.findUnique({
+          where: { telegramUserId },
+          include: {
+            identity: {
+              include: {
+                channels: true,
+              },
+            },
+            financialAccount: true,
+          },
+        });
+      }
+    } else if (typeof userKey === 'bigint') {
+      user = await this.prisma.user.findUnique({
+        where: { telegramUserId: userKey },
+        include: {
+          identity: {
+            include: {
+              channels: true,
+            },
+          },
+          financialAccount: true,
+        },
+      });
+    }
+
+    if (!user) {
+      this.logAuthFailure(traceId, 'identity_verification.failed', new Error('User not found'));
+      throw new UnauthorizedException('IDENTITY_VERIFICATION_FAILED: User does not exist');
+    }
+
+    // Verify canonical identity mapping
+    const userId = user.id;
+    const identityId = user.identityId;
+    const telegramUserId = user.telegramUserId;
+    
+    const isMappingConsistent = userId === identityId;
+    const hasFinancialAccount = !!user.financialAccount;
+    const hasChannels = user.identity?.channels && user.identity.channels.length > 0;
+    
+    this.logAuth(traceId, 'identity_verification.completed', `userId=${userId}, identityId=${identityId}, telegramUserId=${telegramUserId?.toString()}, mappingConsistent=${isMappingConsistent}, hasFinancialAccount=${hasFinancialAccount}, hasChannels=${hasChannels}`);
+    
+    // Log identity verification to audit trail
+    if (this.auditService) {
+      await this.auditService.create({
+        telegramUserId: telegramUserId || undefined,
+        eventType: AuditEventType.USER_STATE_CHANGED,
+        description: `Identity verification: userId=${userId}, identityId=${identityId}, mappingConsistent=${isMappingConsistent}`,
+        metadata: {
+          userId,
+          identityId,
+          telegramUserId: telegramUserId?.toString(),
+          mappingConsistent: isMappingConsistent,
+          hasFinancialAccount,
+          hasChannels,
+          channels: user.identity?.channels?.map((ch: any) => ({
+            provider: ch.provider,
+            identifier: ch.identifier,
+          })),
+        },
+      });
+    }
+
+    return {
+      verified: true,
+      userId,
+      identityId,
+      telegramUserId: telegramUserId?.toString(),
+      mappingConsistent: isMappingConsistent,
+      hasFinancialAccount,
+      hasChannels,
+      channels: user.identity?.channels?.map((ch: any) => ({
+        provider: ch.provider,
+        identifier: ch.identifier,
+      })),
+    };
   }
 
   private async evaluateReadiness(telegramUserId: bigint) {
@@ -537,8 +627,318 @@ export class AuthService {
     }
   }
 
+  // ─── WhatsApp OTP Authentication ──────────────────────────────────────────
+  private inMemoryOtpMap = new Map<string, { otpHash: string; attempts: number; verified: boolean; expiresAt: Date; createdAt: Date }>();
+
+  async requestWhatsAppOtp(phoneInput: string) {
+    const traceId = this.createTraceId();
+    this.logger.log(`[WHATSAPP_OTP:${traceId}] Starting OTP request for phone: ${phoneInput}`);
+    const phone = this.identityMasterEngine.normalizeIdentifier(IdentityProvider.WHATSAPP, phoneInput);
+    this.logger.log(`[WHATSAPP_OTP:${traceId}] Normalized phone: ${phone}`);
+    if (!phone || phone.length < 8) {
+      throw new BadRequestException('INVALID_PHONE_NUMBER');
+    }
+
+    // Rate limiting: check recent active challenges in the last 1 minute
+    const oneMinAgo = new Date(Date.now() - 60 * 1000);
+    try {
+      const recent = await this.prisma.otpChallenge.findFirst({
+        where: { phone, createdAt: { gte: oneMinAgo } },
+      });
+      if (recent) {
+        return { success: true, message: 'If this number is eligible, a verification code will be sent.' };
+      }
+    } catch {
+      const memRecent = this.inMemoryOtpMap.get(phone);
+      if (memRecent && memRecent.createdAt >= oneMinAgo && !memRecent.verified) {
+        return { success: true, message: 'If this number is eligible, a verification code will be sent.' };
+      }
+    }
+
+    // Generate cryptographically secure 6-digit OTP
+    const code = String(randomInt(100000, 1000000));
+    const otpHash = createHash('sha256').update(code).digest('hex');
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+    try {
+      await this.prisma.otpChallenge.create({
+        data: {
+          phone,
+          otpHash,
+          attempts: 0,
+          verified: false,
+          expiresAt,
+        },
+      });
+    } catch (dbErr: any) {
+      this.logger.warn(`[WHATSAPP_OTP:${traceId}] DB unreachable (${dbErr.message}). Storing OTP challenge in memory.`);
+      this.inMemoryOtpMap.set(phone, {
+        otpHash,
+        attempts: 0,
+        verified: false,
+        expiresAt,
+        createdAt: new Date(),
+      });
+    }
+
+    this.logger.log(`[WHATSAPP_OTP:${traceId}] OTP challenge created for ${phone}.`);
+
+    // Dispatch OTP over Baileys transport if available
+    if (this.baileysService) {
+      try {
+        await this.baileysService.sendOtpMessage(phone, code);
+      } catch (dispErr: any) {
+        this.logger.warn(`[WHATSAPP_OTP:${traceId}] Baileys dispatch issue: ${dispErr.message}`);
+      }
+    }
+
+    return { success: true, message: 'If this number is eligible, a verification code will be sent.' };
+  }
+
+  async verifyWhatsAppOtp(phoneInput: string, code: string, ipAddress?: string, userAgent?: string) {
+    const traceId = this.createTraceId();
+    const phone = this.identityMasterEngine.normalizeIdentifier(IdentityProvider.WHATSAPP, phoneInput);
+
+    let challenge: { id?: string; otpHash: string; attempts: number; verified: boolean; expiresAt: Date } | null = null;
+    let isMemory = false;
+
+    try {
+      challenge = await this.prisma.otpChallenge.findFirst({
+        where: { phone, verified: false, expiresAt: { gte: new Date() } },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch {
+      const mem = this.inMemoryOtpMap.get(phone);
+      if (mem && !mem.verified && mem.expiresAt >= new Date()) {
+        challenge = mem;
+        isMemory = true;
+      }
+    }
+
+    if (!challenge) {
+      throw new BadRequestException('INVALID_OR_EXPIRED_OTP');
+    }
+
+    if (challenge.attempts >= 3) {
+      throw new BadRequestException('TOO_MANY_ATTEMPTS');
+    }
+
+    const inputHash = createHash('sha256').update(code).digest('hex');
+    const isMatch = timingSafeEqual(Buffer.from(inputHash), Buffer.from(challenge.otpHash));
+
+    if (!isMatch) {
+      if (!isMemory && challenge.id) {
+        try {
+          await this.prisma.otpChallenge.update({
+            where: { id: challenge.id },
+            data: { attempts: { increment: 1 } },
+          });
+        } catch {}
+      } else {
+        challenge.attempts += 1;
+      }
+      throw new UnauthorizedException('INVALID_OTP');
+    }
+
+    // Mark challenge verified
+    if (!isMemory && challenge.id) {
+      try {
+        await this.prisma.otpChallenge.update({
+          where: { id: challenge.id },
+          data: { verified: true },
+        });
+      } catch {}
+    } else {
+      challenge.verified = true;
+    }
+
+    // Authenticate / Register provider-neutrally via IdentityMasterEngine
+    const identityContext = await this.identityMasterEngine.authenticate({
+      provider: IdentityProvider.WHATSAPP,
+      identifier: phone,
+      displayName: `WhatsApp User (${phone.slice(-4)})`,
+      metadata: { phone, verifiedAt: new Date().toISOString() },
+      ipAddress,
+    });
+
+    let user: any = await this.prisma.user.findUnique({
+      where: { id: identityContext.userId },
+      include: { onboardingProgress: true },
+    }).catch(() => null);
+
+    if (!user) {
+      this.logger.error(`[WHATSAPP_AUTH] User not found after identity resolution: userId=${identityContext.userId}, phone=${phone}`);
+      throw new UnauthorizedException('USER_NOT_FOUND: Identity resolution succeeded but user record not found in database');
+    }
+
+    const payload = {
+      sub: identityContext.universalIdentityId, // Always use canonical UniversalIdentity.id
+      userId: user.id,
+      titanUserId: user.id,
+      telegramUserId: user.telegramUserId ? Number(user.telegramUserId) : undefined,
+      provider: 'WHATSAPP',
+      state: user.state,
+      role: 'USER',
+    };
+
+    const refreshSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || requiredEnv('JWT_REFRESH_SECRET', 'dev-refresh-secret');
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const refreshToken = this.jwtService.sign(
+      { sub: identityContext.universalIdentityId, userId: user.id, telegramUserId: user.telegramUserId ? Number(user.telegramUserId) : undefined, type: 'refresh' },
+      { expiresIn: '30d', secret: refreshSecret },
+    );
+
+    const isNewUser = !user || !user.createdAt || user.state === UserState.NEW;
+    const cleanDigits = phone.replace(/\D/g, '');
+    const canonicalTitanId = `titan_wa_${cleanDigits}`;
+
+    // Send Instant WhatsApp Sign-In / Sign-Up Success Confirmation Message over Baileys
+    if (this.baileysService) {
+      try {
+        const primaryTarget = `${cleanDigits}@s.whatsapp.net`;
+        const confirmText = isNewUser
+          ? (
+              `⚡ *TITAN STREAM* — *Welcome to Titan Stream!*\n\n` +
+              `🎉 *Signup Approved & Account Created*\n` +
+              `• Status: *Active & Verified*\n` +
+              `• Phone: *${phone}*\n` +
+              `• Titan ID: *${canonicalTitanId}*\n` +
+              `• Welcome Bonus: *+50 Energy Crystals Credited*\n\n` +
+              `🌐 *Browser Authenticated*: Your browser window is now unlocked and ready to stream!\n\n` +
+              `💬 *Commands you can use anytime in this chat:*\n` +
+              `• *BALANCE* ➔ View your live USDT & Crystal balance\n` +
+              `• *MINING* ➔ Manage your active compute nodes\n` +
+              `• *REWARDS* ➔ Claim daily rewards\n` +
+              `• *HELP* ➔ View complete command directory`
+            )
+          : (
+              `⚡ *TITAN STREAM* — *Welcome Back!*\n\n` +
+              `✅ *Login Approved*\n` +
+              `• Status: *Active & Online*\n` +
+              `• Phone: *${phone}*\n` +
+              `• Titan ID: *${canonicalTitanId}*\n` +
+              `• Security: *Browser Session Authorized*\n\n` +
+              `🌐 *Browser Authenticated*: Head back to your browser screen to continue using Titan Stream!\n\n` +
+              `💬 *Commands you can use anytime in this chat:*\n` +
+              `• *BALANCE* ➔ Check your live USDT & Crystal balance\n` +
+              `• *MINING* ➔ Compute nodes status & yield\n` +
+              `• *REWARDS* ➔ Claim daily rewards\n` +
+              `• *HELP* ➔ View command directory`
+            );
+
+        await this.baileysService.sendTextMessage(primaryTarget, confirmText, 'CRITICAL');
+        this.logger.log(`[WA_OTP_CONFIRMATION_SENT] ${isNewUser ? 'Signup' : 'Login'} OTP confirmation sent to ${primaryTarget}`);
+      } catch (msgErr: any) {
+        this.logger.warn(`[WA_OTP_CONFIRMATION_WARN] Failed to send OTP confirmation to ${phone}: ${msgErr.message}`);
+      }
+    }
+
+    return {
+      accessToken,
+      refreshToken,
+      user: this.sanitizeUser(user),
+      onboarding: {
+        currentStep: user.onboardingProgress?.currentStep || 'welcome',
+        isCompleted: user.state === UserState.ELIGIBLE_USER || user.state === UserState.ACTIVE_USER || user.state === UserState.READY,
+      },
+    };
+  }
+
+  async createTokensForUser(userPayload: any, universalIdentityId?: string) {
+    const sub = universalIdentityId || userPayload.identityId || userPayload.id;
+    const payload = {
+      sub: sub, // Always use canonical UniversalIdentity.id if available
+      titanUserId: userPayload.id,
+      userId: userPayload.id,
+      telegramUserId: userPayload.telegramUserId ? Number(userPayload.telegramUserId) : undefined,
+      provider: 'WHATSAPP',
+      state: userPayload.state || UserState.READY,
+      role: 'USER',
+    };
+
+    const refreshSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || requiredEnv('JWT_REFRESH_SECRET', 'dev-refresh-secret');
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const refreshToken = this.jwtService.sign(
+      { sub: sub, userId: userPayload.id, telegramUserId: payload.telegramUserId, type: 'refresh' },
+      { expiresIn: '30d', secret: refreshSecret },
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+      user: this.sanitizeUser(userPayload),
+    };
+  }
+
+  // ─── Step-Up Authentication ──────────────────────────────────────────────
+
+  async requestStepUpChallenge(userId: string) {
+    const traceId = this.createTraceId();
+    const context = await this.identityMasterEngine.getIdentityContext(userId);
+    const channel = context.channel;
+
+    const code = String(randomInt(100000, 1000000));
+    const otpHash = createHash('sha256').update(code).digest('hex');
+
+    await this.prisma.otpChallenge.create({
+      data: {
+        phone: userId,
+        otpHash,
+        attempts: 0,
+        verified: false,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+      },
+    });
+
+    if (this.baileysService && (channel === IdentityProvider.WHATSAPP || channel === IdentityProvider.PHONE)) {
+      try {
+        await this.baileysService.sendOtpMessage(context.providerSubject, code);
+      } catch (err: any) {
+        this.logger.warn(`[STEP_UP:${traceId}] Failed to deliver step-up OTP via WhatsApp: ${err.message}`);
+      }
+    }
+
+    this.logger.log(`[STEP_UP:${traceId}] Step-up challenge generated for user ${userId}.`);
+    return { success: true, channel, expiresAt: new Date(Date.now() + 300000) };
+  }
+
+  async verifyStepUpChallenge(userId: string, code: string) {
+    const challenge = await this.prisma.otpChallenge.findFirst({
+      where: { phone: userId, verified: false, expiresAt: { gte: new Date() } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!challenge) throw new BadRequestException('INVALID_OR_EXPIRED_STEP_UP_CODE');
+
+    const inputHash = createHash('sha256').update(code).digest('hex');
+    const isMatch = timingSafeEqual(Buffer.from(inputHash), Buffer.from(challenge.otpHash));
+
+    if (!isMatch) {
+      await this.prisma.otpChallenge.update({
+        where: { id: challenge.id },
+        data: { attempts: { increment: 1 } },
+      });
+      throw new UnauthorizedException('INVALID_STEP_UP_CODE');
+    }
+
+    await this.prisma.otpChallenge.update({
+      where: { id: challenge.id },
+      data: { verified: true },
+    });
+
+    // Issue 5-minute step-up authorization token
+    const stepUpToken = this.jwtService.sign(
+      { sub: userId, type: 'step_up', purpose: 'financial_authorization' },
+      { expiresIn: '5m' },
+    );
+
+    return { stepUpToken, expiresAt: Date.now() + 5 * 60 * 1000 };
+  }
+
   private sanitizeUser(user: any) {
     return {
+      id: user.identityId || String(user.telegramUserId),
+      identityId: user.identityId || String(user.telegramUserId),
       telegramUserId: Number(user.telegramUserId),
       telegramUsername: user.telegramUsername,
       firstName: user.firstName,

@@ -11,6 +11,7 @@ import { GameProfileService } from './game-profile.service';
 import { GameLeaderboardService } from './game-leaderboard.service';
 import { GameEventService } from './game-event.service';
 import { GameDailyChallengeService } from './game-daily-challenge.service';
+import { EconomicIntelligenceService } from './economic-intelligence.service';
 import { GamesController } from './games.controller';
 import { GamesAdminController } from './games-admin.controller';
 
@@ -37,6 +38,7 @@ import { GamesAdminController } from './games-admin.controller';
     GameLeaderboardService,
     GameEventService,
     GameDailyChallengeService,
+    EconomicIntelligenceService,
   ],
   exports: [
     GameCatalogService,
@@ -47,6 +49,7 @@ import { GamesAdminController } from './games-admin.controller';
     GameEventService,
     GameRewardService,
     GameDailyChallengeService,
+    EconomicIntelligenceService,
   ],
 })
 export class GamesModule implements OnModuleInit {
@@ -59,12 +62,14 @@ export class GamesModule implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    try {
-      await this.catalogService.seedDefaults();
-      await this.eventService.seedDefaults();
-      await this.challengeService.seedDefaults();
-    } catch (err: any) {
-      this.logger.warn(`[GamesModule] Failed to seed game defaults: ${err?.message}`);
-    }
+    setImmediate(async () => {
+      try {
+        await this.catalogService.seedDefaults();
+        await this.eventService.seedDefaults();
+        await this.challengeService.seedDefaults();
+      } catch (err: any) {
+        this.logger.warn(`[GamesModule] Failed to seed game defaults: ${err?.message}`);
+      }
+    });
   }
 }

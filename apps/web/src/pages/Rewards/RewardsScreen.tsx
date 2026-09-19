@@ -2,29 +2,33 @@ import type React from 'react';
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Info, Gift, Trophy, Sparkles, Award, ChevronRight, Zap, CheckCircle2 } from 'lucide-react';
-import { useTreasuryStore } from '../../store/useTreasuryStore';
 import { useGrowthStore } from '../../store/useGrowthStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
-import { CapacityEngine } from '../Treasury/components/CapacityEngine';
+import { RewardQueue } from '../../components/rewards/RewardQueue';
 import { HeroProgress } from '../../components/rewards/HeroProgress';
 import { AchievementsCabinet } from '../../components/rewards/AchievementsCabinet';
 import { RewardHistorySection } from '../../components/rewards/RewardHistorySection';
 import { DestinationLoader } from '../../components/DestinationLoader';
+import { useMachineOwnershipStore } from '../../store/useMachineOwnershipStore';
 
 export const RewardsScreen: React.FC = () => {
-  const { fetchDashboardData } = useGrowthStore();
-  const {
-    seasonNumber,
-    seasonTitle,
-    daysRemaining,
-    seasonTargetPower,
-    seasonProgressPower,
-  } = useTreasuryStore();
+  const { dashboardData, fetchDashboardData } = useGrowthStore();
+  const seasonProgress = dashboardData?.seasonProgress || {
+    seasonNumber: 1,
+    seasonTitle: 'Treasury Expansion',
+    daysRemaining: 18,
+    seasonTargetPower: 10000,
+    seasonProgressPower: 0,
+  };
 
   const { setActiveTab } = useNavigationStore();
+  const ownerships = useMachineOwnershipStore((s) => s.ownerships);
+  const activeMachines = Object.values(ownerships || {}).filter(
+    (m) => m.status === 'RUNNING' || m.lifecycleStage === 'RUNNING',
+  );
+  const hasActiveMachine = activeMachines.length > 0;
 
   useEffect(() => {
-    useTreasuryStore.getState().fetchTreasuryState();
     fetchDashboardData();
   }, [fetchDashboardData]);
 
@@ -48,30 +52,54 @@ export const RewardsScreen: React.FC = () => {
       <HeroProgress />
 
       {/* CROSS-PAGE CONTINUITY BANNER (No Dead Ends) */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        onClick={() => setActiveTab('hub')}
-        className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-between cursor-pointer hover:border-purple-500/50 transition-colors press-feedback"
-      >
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-            <Zap size={16} />
-          </div>
-          <div>
-            <div className="text-xs font-black text-text-primary">
-              Machine Milestone Synchronized
+      {hasActiveMachine ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={() => setActiveTab('hub')}
+          className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-between cursor-pointer hover:border-purple-500/50 transition-colors press-feedback"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+              <Zap size={16} />
             </div>
-            <div className="text-[10px] text-text-secondary">
-              Your active hardware core unlocked continuous hash output. Tap to inspect Titan Hub.
+            <div>
+              <div className="text-xs font-black text-text-primary">
+                {activeMachines[0]?.nickname || 'Titan Core Prime'} • Active
+              </div>
+              <div className="text-[10px] text-text-secondary">
+                Hardware core running. Telemetry and milestones synchronized with Titan Hub.
+              </div>
             </div>
           </div>
-        </div>
-        <ChevronRight size={16} className="text-purple-400" />
-      </motion.div>
+          <ChevronRight size={16} className="text-purple-400" />
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={() => setActiveTab('shop')}
+          className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between cursor-pointer hover:border-amber-500/50 transition-colors press-feedback"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+              <Zap size={16} />
+            </div>
+            <div>
+              <div className="text-xs font-black text-text-primary">
+                No Active Hardware Core
+              </div>
+              <div className="text-[10px] text-text-secondary">
+                Acquire or activate a machine to unlock automated compute yield milestones.
+              </div>
+            </div>
+          </div>
+          <ChevronRight size={16} className="text-amber-400" />
+        </motion.div>
+      )}
 
-      {/* CAPACITY ENGINE — Daily Mission Queue (60% Main Feature) */}
-      <CapacityEngine />
+      {/* MISSIONS & CLAIM QUEUE */}
+      <RewardQueue />
 
       {/* ACHIEVEMENTS CABINET (30% Supporting Content) */}
       <motion.div
@@ -93,11 +121,11 @@ export const RewardsScreen: React.FC = () => {
           <div className="flex items-center gap-1.5">
             <Calendar size={16} className="text-gold" />
             <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">
-              Season {seasonNumber} • {seasonTitle}
+              Season {seasonProgress.seasonNumber} • {seasonProgress.seasonTitle}
             </h2>
           </div>
           <span className="text-[10px] font-bold text-gold bg-gold/10 border border-gold/20 px-2.5 py-0.5 rounded-full font-mono">
-            {daysRemaining} Days Left
+            {seasonProgress.daysRemaining} Days Left
           </span>
         </div>
 
@@ -106,7 +134,7 @@ export const RewardsScreen: React.FC = () => {
             <div>
               <div className="text-text-secondary">Season Growth Points</div>
               <div className="text-sm font-black text-text-primary font-mono mt-1">
-                {seasonProgressPower.toLocaleString()} / {seasonTargetPower.toLocaleString()}
+                {seasonProgress.seasonProgressPower.toLocaleString()} / {seasonProgress.seasonTargetPower.toLocaleString()}
               </div>
             </div>
             <div className="text-right">
@@ -120,14 +148,14 @@ export const RewardsScreen: React.FC = () => {
           <div className="w-full h-2.5 bg-control-bg rounded-full overflow-hidden p-0.5 border border-white/5">
             <div
               className="h-full bg-gradient-to-r from-gold to-gold-bright rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(255,179,0,0.4)]"
-              style={{ width: `${seasonTargetPower > 0 ? (seasonProgressPower / seasonTargetPower) * 100 : 0}%` }}
+              style={{ width: `${seasonProgress.seasonTargetPower > 0 ? (seasonProgress.seasonProgressPower / seasonProgress.seasonTargetPower) * 100 : 0}%` }}
             />
           </div>
 
           <div className="flex items-center gap-2 bg-white/[0.02] border border-white/5 rounded-xl p-3 text-xs text-text-secondary">
             <Info size={15} className="text-gold flex-shrink-0" />
             <span>
-              All your levels and trust scores carry over to the next season automatically.
+              All your levels and verified milestones carry over to the next season automatically.
             </span>
           </div>
         </div>

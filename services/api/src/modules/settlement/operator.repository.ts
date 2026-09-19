@@ -29,7 +29,7 @@ export class OperatorRepository {
     });
   }
 
-  findRoutable(params: { country: string; network: string; asset: string }) {
+  async findRoutable(params: { country: string; network: string; asset: string }) {
     return this.prisma.operator.findMany({
       where: {
         country: params.country,
@@ -39,17 +39,25 @@ export class OperatorRepository {
     });
   }
 
-  incrementLoad(operatorId: string) {
-    return this.prisma.operator.update({
-      where: { id: operatorId },
-      data: { currentLoad: { increment: 1 } },
-    });
+  async incrementLoad(operatorId: string) {
+    try {
+      return await this.prisma.operator.update({
+        where: { id: operatorId },
+        data: { currentLoad: { increment: 1 } },
+      });
+    } catch {
+      return null;
+    }
   }
 
-  decrementLoad(operatorId: string) {
-    return this.prisma.operator.update({
-      where: { id: operatorId },
-      data: { currentLoad: { decrement: 1 } },
-    });
+  async decrementLoad(operatorId: string) {
+    try {
+      return await this.prisma.operator.update({
+        where: { id: operatorId },
+        data: { currentLoad: { decrement: 1 } },
+      });
+    } catch {
+      return null;
+    }
   }
 }

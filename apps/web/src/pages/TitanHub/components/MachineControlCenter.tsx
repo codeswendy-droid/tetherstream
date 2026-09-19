@@ -1,70 +1,91 @@
 import type React from 'react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, RotateCw, Edit3, BookOpen, Award, Activity, Check, X, ShieldCheck } from 'lucide-react';
+import { Play, Pause, RotateCw, Edit3, BookOpen, Award, Activity, Check, X, RefreshCw } from 'lucide-react';
 import { useMachineOwnershipStore } from '../../../store/useMachineOwnershipStore';
 import { MACHINE_CATALOG } from '../../../data/machines';
+import { showToast } from '../../../components/Toast';
 
 interface MachineControlCenterProps {
   activeTierCode: string;
   onOpenShop?: () => void;
+  onOpenHealthModal?: () => void;
 }
 
-export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({ activeTierCode }) => {
-  const {
-    getRecordByTier,
-    setMachineStatus,
-    setMachineNickname,
-    openOwnersManual,
-    openCertificate,
-    addTimelineEvent,
-  } = useMachineOwnershipStore();
+export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({
+  activeTierCode,
+  onOpenHealthModal,
+}) => {
+  // Subscribe reactively to state in useMachineOwnershipStore
+  const ownerships = useMachineOwnershipStore((s) => s.ownerships);
+  const setMachineStatus = useMachineOwnershipStore((s) => s.setMachineStatus);
+  const setMachineNickname = useMachineOwnershipStore((s) => s.setMachineNickname);
+  const openOwnersManual = useMachineOwnershipStore((s) => s.openOwnersManual);
+  const openCertificate = useMachineOwnershipStore((s) => s.openCertificate);
+  const addTimelineEvent = useMachineOwnershipStore((s) => s.addTimelineEvent);
 
-  const record = getRecordByTier(activeTierCode);
-  const catalogItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === activeTierCode.toUpperCase()) || MACHINE_CATALOG[0];
+  const normTier = (activeTierCode || 'TS_TRIAL').trim().toUpperCase();
+  const record = ownerships[normTier] || useMachineOwnershipStore.getState().getRecordByTier(normTier);
+  const catalogItem = MACHINE_CATALOG.find((m) => m.tierCode.toUpperCase() === normTier) || MACHINE_CATALOG[0];
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [nicknameInput, setNicknameInput] = useState(record?.nickname || catalogItem.name);
-  const [isDiagnosticRunning, setIsDiagnosticRunning] = useState(false);
-  const [diagnosticResult, setDiagnosticResult] = useState<string | null>(null);
+
+  // Reboot State & Telemetry
+  const [isRebooting, setIsRebooting] = useState(false);
+  const [rebootStep, setRebootStep] = useState(0);
 
   if (!record) return null;
 
+  const rebootSteps = [
+    'Flushing SRAM memory buffers...',
+    'Calibrating hash blade frequency...',
+    'Re-establishing stratum node session...',
+    'Reboot complete!',
+  ];
+
   const handleToggleState = (targetStatus: 'RUNNING' | 'PAUSED') => {
-    setMachineStatus(activeTierCode, targetStatus);
+    setMachineStatus(normTier, targetStatus);
+    if (targetStatus === 'PAUSED') {
+      showToast(`⏸️ ${record.nickname} Paused — Hash generation on hold`, 'warning');
+    } else {
+      showToast(`▶️ ${record.nickname} Resumed — Hash rate active`, 'info');
+    }
   };
 
-  const handleRestart = () => {
-    handleToggleState('PAUSED');
-    setTimeout(() => {
-      handleToggleState('RUNNING');
-      addTimelineEvent(activeTierCode, 'Restarted', 'Machine restarted successfully.');
-    }, 800);
+  const handleRestart = async () => {
+    setIsRebooting(true);
+    setRebootStep(0);
+    setMachineStatus(normTier, 'PAUSED');
+
+    for (let i = 0; i < rebootSteps.length; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setRebootStep(i);
+    }
+
+    setMachineStatus(normTier, 'RUNNING');
+    addTimelineEvent(normTier, 'Hardware Reboot Completed', 'SRAM memory cleared, hash frequency recalibrated, stratum session restored.');
+    showToast(`🔄 ${record.nickname} Reboot Complete — 100% capacity restored`, 'info');
+    setIsRebooting(false);
   };
 
   const handleSaveName = () => {
     if (nicknameInput.trim()) {
-      setMachineNickname(activeTierCode, nicknameInput.trim());
+      setMachineNickname(normTier, nicknameInput.trim());
+      showToast(`✏️ Machine renamed to "${nicknameInput.trim()}"`, 'info');
     }
     setIsEditingName(false);
-  };
-
-  const handleRunDiagnostics = () => {
-    setIsDiagnosticRunning(true);
-    setDiagnosticResult(null);
-    setTimeout(() => {
-      setIsDiagnosticRunning(false);
-      setDiagnosticResult('All good! Your machine is healthy.');
-    }, 1200);
   };
 
   const isRunning = record.status === 'RUNNING';
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
+      key={normTier}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="web3-card rounded-2xl p-4 border border-white/10 relative overflow-hidden"
+      transition={{ duration: 0.2 }}
+      className="bg-black/40 border border-white/10 rounded-2xl p-3.5 relative overflow-hidden flex flex-col gap-3 mt-1"
     >
       {/* Subtle mood backlight based on running state */}
       <div
@@ -73,7 +94,8 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({ acti
         }`}
       />
 
-      <div className="relative flex items-center justify-between mb-3 pb-3 border-b border-white/10">
+      {/* MACHINE ACTION DRAWER HEADER */}
+      <div className="relative flex items-center justify-between pb-2.5 border-b border-white/10">
         <div>
           <div className="flex items-center gap-2">
             {isEditingName ? (
@@ -82,27 +104,27 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({ acti
                   type="text"
                   value={nicknameInput}
                   onChange={(e) => setNicknameInput(e.target.value)}
-                  className="bg-black/40 border border-usdt-green/50 text-text-primary font-black text-sm px-2 py-0.5 rounded-md focus:outline-none"
+                  className="bg-black/60 border border-usdt-green/50 text-text-primary font-black text-xs px-2 py-0.5 rounded-md focus:outline-none"
                   autoFocus
                 />
                 <button
                   onClick={handleSaveName}
                   className="p-1 text-usdt-green hover:bg-usdt-green/10 rounded-md"
                 >
-                  <Check size={14} />
+                  <Check size={13} />
                 </button>
                 <button
                   onClick={() => setIsEditingName(false)}
                   className="p-1 text-text-tertiary hover:bg-white/10 rounded-md"
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               </div>
             ) : (
               <>
-                <h3 className="text-sm font-black text-text-primary tracking-wide flex items-center gap-1.5">
-                  {record.nickname}
-                </h3>
+                <h4 className="text-xs font-black text-text-primary tracking-wide flex items-center gap-1.5">
+                  {record.nickname} Actions
+                </h4>
                 <button
                   onClick={() => {
                     setNicknameInput(record.nickname);
@@ -111,7 +133,7 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({ acti
                   className="text-text-tertiary hover:text-usdt-green p-0.5 rounded transition-colors"
                   title="Rename machine"
                 >
-                  <Edit3 size={13} />
+                  <Edit3 size={12} />
                 </button>
               </>
             )}
@@ -137,12 +159,36 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({ acti
         </div>
       </div>
 
-      {/* Primary Operational Controls */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      {/* REBOOT OVERLAY PROGRESS BAR */}
+      {isRebooting && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="p-2.5 bg-usdt-green/10 border border-usdt-green/30 rounded-xl space-y-1.5"
+        >
+          <div className="flex items-center justify-between text-xs font-mono font-bold text-usdt-green">
+            <span className="flex items-center gap-1.5">
+              <RefreshCw size={13} className="animate-spin text-usdt-green" />
+              {rebootSteps[rebootStep]}
+            </span>
+            <span>{Math.round(((rebootStep + 1) / rebootSteps.length) * 100)}%</span>
+          </div>
+          <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-usdt-green"
+              animate={{ width: `${((rebootStep + 1) / rebootSteps.length) * 100}%` }}
+            />
+          </div>
+        </motion.div>
+      )}
+
+      {/* PRIMARY OPERATIONAL CONTROLS */}
+      <div className="grid grid-cols-3 gap-2">
         {isRunning ? (
           <button
             onClick={() => handleToggleState('PAUSED')}
-            className="py-2 px-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-amber-500/25 transition-colors press-feedback"
+            disabled={isRebooting}
+            className="py-2 px-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-amber-500/25 disabled:opacity-50 transition-colors press-feedback"
           >
             <Pause size={14} />
             Pause
@@ -150,7 +196,8 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({ acti
         ) : (
           <button
             onClick={() => handleToggleState('RUNNING')}
-            className="py-2 px-3 rounded-xl bg-usdt-green/15 border border-usdt-green/30 text-usdt-green font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-usdt-green/25 transition-colors press-feedback"
+            disabled={isRebooting}
+            className="py-2 px-3 rounded-xl bg-usdt-green/15 border border-usdt-green/30 text-usdt-green font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-usdt-green/25 disabled:opacity-50 transition-colors press-feedback"
           >
             <Play size={14} />
             Start
@@ -159,38 +206,27 @@ export const MachineControlCenter: React.FC<MachineControlCenterProps> = ({ acti
 
         <button
           onClick={handleRestart}
-          className="py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-text-secondary font-extrabold text-xs flex items-center justify-center gap-1.5 hover:border-white/20 transition-colors press-feedback"
+          disabled={isRebooting}
+          className="py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-text-secondary font-extrabold text-xs flex items-center justify-center gap-1.5 hover:border-white/20 hover:text-text-primary disabled:opacity-50 transition-colors press-feedback"
         >
-          <RotateCw size={14} />
+          <RotateCw size={14} className={isRebooting ? 'animate-spin text-usdt-green' : ''} />
           Restart
         </button>
 
         <button
-          onClick={handleRunDiagnostics}
-          disabled={isDiagnosticRunning}
-          className="py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-text-secondary font-extrabold text-xs flex items-center justify-center gap-1.5 hover:border-white/20 transition-colors press-feedback"
+          onClick={onOpenHealthModal}
+          disabled={isRebooting}
+          className="py-2 px-3 rounded-xl bg-usdt-green/10 border border-usdt-green/25 text-usdt-green font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-usdt-green/20 disabled:opacity-50 transition-colors press-feedback"
         >
-          <Activity size={14} className={isDiagnosticRunning ? 'animate-spin text-ton-blue' : ''} />
+          <Activity size={14} />
           Health
         </button>
       </div>
 
-      {/* Diagnostics Alert Banner */}
-      {diagnosticResult && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="mb-3 p-2 bg-usdt-green/10 border border-usdt-green/30 rounded-xl text-[10px] font-mono text-usdt-green flex items-center gap-2"
-        >
-          <ShieldCheck size={14} className="shrink-0" />
-          <span>{diagnosticResult}</span>
-        </motion.div>
-      )}
-
-      {/* Documentation & Ownership Artifact Actions */}
+      {/* DOCUMENTATION & OWNERSHIP ARTIFACT ACTIONS */}
       <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
         <button
-          onClick={() => openOwnersManual(activeTierCode)}
+          onClick={() => openOwnersManual(normTier)}
           className="py-2 px-3 rounded-xl bg-ton-blue/10 border border-ton-blue/20 text-ton-blue font-extrabold text-xs flex items-center justify-center gap-1.5 hover:bg-ton-blue/20 transition-colors press-feedback"
         >
           <BookOpen size={14} />

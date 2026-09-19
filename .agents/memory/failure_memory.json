@@ -1,0 +1,313 @@
+[
+  {
+    "id": "fail_7ad6cb00",
+    "symptom": "AssertionError in authentication test",
+    "reproduction_steps": [
+      "pnpm test:auth"
+    ],
+    "root_cause": "AssertionError: AssertionError: Expected 200 OK but got 500 Internal Error",
+    "affected_subsystem": "services/api/src/routes/auth.ts",
+    "fix_description": "Hypothesis 2: Fix AssertionError in services/api/src/routes/auth.ts",
+    "files_touched": [
+      "services/api/src/routes/auth.ts"
+    ],
+    "regression_test": "test_regression_3076",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 2: Fix AssertionError in services/api/src/routes/auth.ts on attempt 2"
+    ],
+    "timestamp": 1788112737.7601857
+  },
+  {
+    "id": "fail_447315a3",
+    "symptom": "AssertionError in authentication test",
+    "reproduction_steps": [
+      "pnpm test:auth"
+    ],
+    "root_cause": "AssertionError: AssertionError: Expected 200 OK but got 500 Internal Error",
+    "affected_subsystem": "services/api/src/routes/auth.ts",
+    "fix_description": "Hypothesis 2: Fix AssertionError in services/api/src/routes/auth.ts",
+    "files_touched": [
+      "services/api/src/routes/auth.ts"
+    ],
+    "regression_test": "test_regression_9695",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 2: Fix AssertionError in services/api/src/routes/auth.ts on attempt 2"
+    ],
+    "timestamp": 1788112920.3817165
+  },
+  {
+    "id": "fail_796f9cff",
+    "symptom": "AssertionError in authentication test",
+    "reproduction_steps": [
+      "pnpm test:auth"
+    ],
+    "root_cause": "AssertionError: AssertionError: Expected 200 OK but got 500 Internal Error",
+    "affected_subsystem": "services/api/src/routes/auth.ts",
+    "fix_description": "Hypothesis 2: Fix AssertionError in services/api/src/routes/auth.ts",
+    "files_touched": [
+      "services/api/src/routes/auth.ts"
+    ],
+    "regression_test": "test_regression_6880",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 2: Fix AssertionError in services/api/src/routes/auth.ts on attempt 2"
+    ],
+    "timestamp": 1788112951.440646
+  },
+  {
+    "id": "fail_98dbe0e7",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_3523",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788118481.790748
+  },
+  {
+    "id": "fail_78223287",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_3219",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788118507.0560944
+  },
+  {
+    "id": "fail_348dcdd1",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_11",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788118596.9960299
+  },
+  {
+    "id": "fail_b6d04014",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_5462",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788119276.4069448
+  },
+  {
+    "id": "fail_67d002b2",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_4992",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788119679.5695713
+  },
+  {
+    "id": "fail_43736a36",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_9605",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788119712.4902115
+  },
+  {
+    "id": "fail_a6e36d87",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_8036",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788119766.4869385
+  },
+  {
+    "id": "fail_57002120",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_2678",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788119815.088465
+  },
+  {
+    "id": "fail_c09a081a",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_5676",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788119881.749384
+  },
+  {
+    "id": "fail_5cb9cfc0",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_9136",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788119929.7922482
+  },
+  {
+    "id": "fail_0184f286",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_9952",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788119955.0706182
+  },
+  {
+    "id": "fail_9b38a9ef",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_2275",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788137293.481988
+  },
+  {
+    "id": "fail_c0766e83",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_4202",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788175784.7664871
+  },
+  {
+    "id": "d101",
+    "domain": "general",
+    "symptom": "JWT token expired on refresh",
+    "root_cause": "Clock drift in token verifier",
+    "fix_applied": "Add 60s leeway",
+    "regression_test": "test_jwt_leeway"
+  },
+  {
+    "id": "fail_b21a660f",
+    "symptom": "Failing test",
+    "reproduction_steps": [
+      "pytest"
+    ],
+    "root_cause": "Execution completed with logs",
+    "affected_subsystem": "subsystem",
+    "fix_description": "Hypothesis 1: Fix UnknownError in target code",
+    "files_touched": [],
+    "regression_test": "test_regression_5275",
+    "relevant_dependencies": [],
+    "lessons_learned": [
+      "Repaired with Hypothesis 1: Fix UnknownError in target code on attempt 1"
+    ],
+    "timestamp": 1788175851.005847
+  },
+  {
+    "id": "d101",
+    "domain": "general",
+    "symptom": "JWT token expired on refresh",
+    "root_cause": "Clock drift in token verifier",
+    "fix_applied": "Add 60s leeway",
+    "regression_test": "test_jwt_leeway"
+  }
+]

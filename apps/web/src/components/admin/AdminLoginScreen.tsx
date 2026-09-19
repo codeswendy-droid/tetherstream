@@ -2,6 +2,7 @@ import type React from 'react';
 import { useState } from 'react';
 import { ShieldCheck, Key, ArrowRight, ShieldAlert } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { api } from '../../services/api';
 
 interface AdminLoginScreenProps {
   onAuthenticated: () => void;
@@ -11,23 +12,25 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onAuthentica
   const [token, setToken] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token.trim()) {
-      setError('Token is required');
+      setError('Enter a valid administrator session token.');
       return;
     }
-    // Set admin token in localStorage and call onAuthenticated
-    localStorage.setItem('admin_auth_token', token.trim());
-    onAuthenticated();
-  };
 
-  const handleDevBypass = () => {
-    // Inject the fast-path super admin dev token supported by NestJS AdminAuthGuard
-    const devToken = 'admin-token:SUPER_ADMIN:dev_super_admin';
-    localStorage.setItem('admin_auth_token', devToken);
-    localStorage.setItem('admin_role', 'SUPER_ADMIN');
-    onAuthenticated();
+    try {
+      await api.get('/admin/auth/me', {
+        headers: {
+          'X-Admin-Token': token.trim(),
+          Authorization: `Bearer ${token.trim()}`,
+        },
+      });
+      localStorage.setItem('admin_auth_token', token.trim());
+      onAuthenticated();
+    } catch {
+      setError('The administrator session is invalid, expired, or unauthorized.');
+    }
   };
 
   return (
@@ -52,20 +55,20 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onAuthentica
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="w-full space-y-4">
+        <form onSubmit={handleFormSubmit} className="w-full space-y-4">
           <div className="relative">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary">
               <Key size={16} />
             </span>
             <input
-              type="password"
-              placeholder="Enter Admin Secret / Auth Token"
+              type="text"
+              placeholder="Administrator session token"
               value={token}
               onChange={(e) => {
                 setToken(e.target.value);
                 setError(null);
               }}
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-app-bg border border-white/10 text-sm placeholder-text-tertiary focus:outline-none focus:border-usdt-green/50 font-mono transition-all"
+              className="w-full pl-10 pr-4 py-3 rounded-xl bg-app-bg border border-white/10 text-sm placeholder-text-tertiary focus:outline-none focus:border-usdt-green/50 font-mono transition-all text-text-primary"
             />
           </div>
 
@@ -85,21 +88,6 @@ export const AdminLoginScreen: React.FC<AdminLoginScreenProps> = ({ onAuthentica
             <ArrowRight size={16} />
           </motion.button>
         </form>
-
-        <div className="w-full border-t border-white/5 my-1" />
-
-        <div className="w-full space-y-2">
-          <p className="text-[10px] text-text-tertiary font-medium">
-            Deploying in development/sandbox mode? Bypasses authentication check via Fast Path.
-          </p>
-          <motion.button
-            whileTap={{ scale: 0.98 }}
-            onClick={handleDevBypass}
-            className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-text-secondary font-bold text-xs py-2.5 rounded-xl cursor-pointer transition-colors"
-          >
-            Bypass to Dev Super Admin
-          </motion.button>
-        </div>
       </motion.div>
     </div>
   );

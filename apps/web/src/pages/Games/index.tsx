@@ -25,7 +25,6 @@ import {
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useGameStore } from '../../store/useGameStore';
 import { useWalletStore } from '../../store/useWalletStore';
-import { useQuestStore } from '../../store/useQuestStore';
 import { gamesService, type GameCatalogItem, type GameEndResult, type GameStartSession } from '../../services/gamesService';
 import { showToast } from '../../components/Toast';
 import { RouletteGame } from './components/RouletteGame';
@@ -83,10 +82,9 @@ const ShimmerCard: React.FC = () => (
 );
 
 export const GamesScreen: React.FC = () => {
-  const { closeGames } = useNavigationStore();
+  const { closeGames, selectedGameId } = useNavigationStore();
   const store = useGameStore();
   const wallet = useWalletStore();
-  const { incrementProgress, incrementCategoryProgress } = useQuestStore();
 
   const [activeGame, setActiveGame] = useState<GameCatalogItem | null>(null);
   const [pendingEntry, setPendingEntry] = useState<GameCatalogItem | null>(null);
@@ -103,6 +101,16 @@ export const GamesScreen: React.FC = () => {
     store.loadLeaderboard({ period, scope });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-launch selected game from TitanHub Game Arena
+  useEffect(() => {
+    if (selectedGameId && store.games.length > 0 && !activeGame && !pendingEntry) {
+      const target = store.games.find((g) => g.gameId === selectedGameId);
+      if (target) {
+        setPendingEntry(target);
+      }
+    }
+  }, [selectedGameId, store.games, activeGame, pendingEntry]);
 
   useEffect(() => {
     if (!activeGame) return;
@@ -139,12 +147,6 @@ export const GamesScreen: React.FC = () => {
       store.refreshBalance();
       store.loadHub();
       store.loadLeaderboard({ gameId: activeGame.gameId, period, scope });
-      incrementCategoryProgress('Games', 1);
-      if (activeGame.code === 'ROULETTE' || activeGame.gameId === 'crypto-roulette') {
-        useQuestStore.getState().trackGameSpin();
-      } else if (activeGame.code === 'HOOPS' || activeGame.gameId === 'hoop-masters') {
-        useQuestStore.getState().trackHoopScore(Math.max(1, endResult.score || 1));
-      }
     }
   };
 
@@ -157,7 +159,7 @@ export const GamesScreen: React.FC = () => {
     }
   };
 
-  const activeEvents = useMemo(() => store.events.filter((e) => e.active), [store.events]);
+  const activeEvents = useMemo(() => (store.events ?? []).filter((e) => e.active), [store.events]);
   const challenge = store.dailyChallenge;
 
   const playFromChallenge = () => {

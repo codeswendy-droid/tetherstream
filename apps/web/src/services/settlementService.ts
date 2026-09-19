@@ -33,9 +33,10 @@ export interface CreateSettlementPayload {
   asset: string;
   requestedAmount: string;
   expectedCryptoAmount: string;
-  exchangeRate: string;
+  exchangeRate?: string;
   country?: string;
   mobileMoneyNetwork?: string;
+  phoneNumber?: string;
 }
 
 export interface SettlementSessionView {

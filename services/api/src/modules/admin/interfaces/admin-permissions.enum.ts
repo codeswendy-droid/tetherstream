@@ -63,6 +63,14 @@ export enum AdminPermission {
   RECONCILIATION_RUN = 'reconciliation.run',
   DISASTER_RECOVERY_MANAGE = 'disaster_recovery.manage',
   READINESS_ADMIN = 'readiness.admin',
+  ADMIN_MANAGE = 'admin.manage',
+  IDENTITY_REASSIGN = 'identity.reassign',
+  REFERRAL_READ = 'referral.read',
+  REFERRAL_MANAGE = 'referral.manage',
+  WHATSAPP_MANAGE = 'whatsapp.manage',
+  SECURITY_MANAGE = 'security.manage',
+  SESSION_MANAGE = 'session.manage',
+  PAYMENT_PROVIDER_MANAGE = 'payment_provider.manage',
 }
 
 export const ROLE_PERMISSIONS_MAP: Record<AdminRole, AdminPermission[]> = {
@@ -83,6 +91,7 @@ export const ROLE_PERMISSIONS_MAP: Record<AdminRole, AdminPermission[]> = {
     AdminPermission.ADMIN_NOTES_READ,
     AdminPermission.ADMIN_NOTES_WRITE,
     AdminPermission.USER_TIMELINE_VIEW,
+    AdminPermission.REFERRAL_READ,
     AdminPermission.FINANCIAL_VIEW,
     AdminPermission.LEDGER_VIEW,
     AdminPermission.WITHDRAWAL_APPROVE,
@@ -140,6 +149,7 @@ export const ROLE_PERMISSIONS_MAP: Record<AdminRole, AdminPermission[]> = {
     AdminPermission.FINANCIAL_EXPORT,
     AdminPermission.MERCHANT_VIEW,
     AdminPermission.USER_VIEW,
+    AdminPermission.REFERRAL_READ,
   ],
   [AdminRole.RISK_OPERATOR]: [
     AdminPermission.RISK_MANAGE,
@@ -154,6 +164,7 @@ export const ROLE_PERMISSIONS_MAP: Record<AdminRole, AdminPermission[]> = {
     AdminPermission.LEDGER_VIEW,
     AdminPermission.SETTLEMENT_VIEW,
     AdminPermission.WITHDRAWAL_REJECT,
+    AdminPermission.REFERRAL_READ,
   ],
   [AdminRole.MERCHANT_MANAGER]: [
     AdminPermission.MERCHANT_CREATE,

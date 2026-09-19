@@ -139,6 +139,7 @@ describe('ProviderRegistryService', () => {
 
     await expect(
       service.routeCreate(123n, {
+        provider: SettlementProviderId.PESAPAL,
         paymentMethod: 'MOBILE_MONEY',
         paymentNetwork: 'AIRTEL',
         asset: 'USDT',
@@ -153,6 +154,26 @@ describe('ProviderRegistryService', () => {
       123n,
       expect.objectContaining({ paymentMethod: 'MOBILE_MONEY', paymentNetwork: 'AIRTEL' }),
     );
+  });
+
+  it('rejects a local rail outside the East Africa launch region', async () => {
+    await expect(
+      service.routeCreate(123n, {
+        paymentMethod: 'MOBILE_MONEY',
+        asset: 'USDT',
+        requestedAmount: '10',
+        expectedCryptoAmount: '10',
+        country: 'GB',
+      }),
+    ).rejects.toThrow('LOCAL_PAYMENT_METHOD_NOT_AVAILABLE');
+  });
+
+  it('rejects card payments for every region', async () => {
+    await expect(
+      service.routeCreate(123n, {
+        paymentMethod: 'CARD', asset: 'USDT', requestedAmount: '10', expectedCryptoAmount: '10', country: 'UG',
+      }),
+    ).rejects.toThrow('CARD_PAYMENTS_UNAVAILABLE');
   });
 
   it('strictly routes USDT paymentMethod to USDT provider rail even if provider: PESAPAL is passed', async () => {

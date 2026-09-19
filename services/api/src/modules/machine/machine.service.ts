@@ -7,7 +7,7 @@ import { FinancialOrchestratorService } from '../financial-orchestration/financi
 import { PaymentOrderService } from '../payment-order/payment-order.service';
 import { MiningService } from '../mining/mining.service';
 import { PlatformOperationsEngineService } from '../admin/services/platform-operations-engine.service';
-import { FinancialOperationType } from '@prisma/client';
+import { FinancialOperationType, Prisma } from '@prisma/client';
 import { AuditEventType } from '../../common/interfaces/user-state.enum';
 import type { NotificationPayload } from '../notification/notification.service';
 
@@ -54,6 +54,7 @@ export interface UserMachineAsset {
   lifetimeEarnings: number;
   purchasedAt: string;
   activatedAt: string;
+  expiresAt?: string;
 }
 
 @Injectable()
@@ -188,20 +189,26 @@ export class MachineService {
     return this.catalog;
   }
 
-  async getUserMachines(telegramUserId: string): Promise<UserMachineAsset[]> {
-    let bigIntUserId: bigint;
-    try {
-      bigIntUserId = BigInt(telegramUserId);
-    } catch {
-      bigIntUserId = BigInt(0);
-    }
+  async getUserMachines(userIdOrTelegramId: string | bigint): Promise<UserMachineAsset[]> {
+    const userStr = String(userIdOrTelegramId);
+    const isUuid = userStr.includes('-');
 
     let records: any[] = [];
     try {
-      records = await this.prisma.userMachine.findMany({
-        where: { telegramUserId: bigIntUserId },
-        orderBy: { purchasedAt: 'desc' },
-      });
+      if (isUuid) {
+        const u = await this.prisma.user.findUnique({ where: { id: userStr } });
+        if (u?.telegramUserId) {
+          records = await this.prisma.userMachine.findMany({
+            where: { telegramUserId: u.telegramUserId },
+            orderBy: { purchasedAt: 'desc' },
+          });
+        }
+      } else if (/^\d+$/.test(userStr)) {
+        records = await this.prisma.userMachine.findMany({
+          where: { telegramUserId: BigInt(userStr) },
+          orderBy: { purchasedAt: 'desc' },
+        });
+      }
     } catch (err: any) {
       console.warn('[MachineService] user_machines table query error (falling back to baseline Titan Core):', err?.message);
       records = [];
@@ -210,7 +217,7 @@ export class MachineService {
     const now = new Date();
     const trialMachine: UserMachineAsset = {
       id: 'mach_free_trial',
-      telegramUserId,
+      telegramUserId: (typeof userIdOrTelegramId === 'bigint' ? userIdOrTelegramId : BigInt(0)).toString(),
       tierCode: 'TS_TRIAL',
       name: 'Titan Core',
       purchasePrice: 0.0,
@@ -218,8 +225,8 @@ export class MachineService {
       status: 'ACTIVE',
       capacityGhs: 1.0,
       lifetimeEarnings: 0.0,
-      purchasedAt: now.toISOString(),
-      activatedAt: now.toISOString(),
+      purchasedAt: new Date(0).toISOString(),
+      activatedAt: new Date(0).toISOString(),
     };
 
     const userAssets: UserMachineAsset[] = records.map((r) => ({
@@ -234,12 +241,36 @@ export class MachineService {
       lifetimeEarnings: r.lifetimeEarnings.toNumber(),
       purchasedAt: r.purchasedAt.toISOString(),
       activatedAt: r.activatedAt.toISOString(),
+      expiresAt: (r as any).expiresAt ? (r as any).expiresAt.toISOString() : undefined,
     }));
 
     return [trialMachine, ...userAssets];
   }
 
-  async fulfillMachineOwnershipAfterPayment(telegramUserId: bigint, tierCode: string, pricePaid: number) {
+  private async resolveTelegramUserId(userKey: string | bigint): Promise<bigint> {
+    if (typeof userKey === 'bigint') return userKey;
+    const userStr = String(userKey).trim();
+    if (/^\d+$/.test(userStr)) {
+      return BigInt(userStr);
+    }
+    const u = await this.prisma.user.findUnique({ where: { id: userStr } });
+    if (u?.telegramUserId) {
+      return u.telegramUserId;
+    }
+    const digits = userStr.replace(/\D/g, '');
+    if (digits.length > 0) {
+      return BigInt(digits);
+    }
+    let hash = 0;
+    for (let i = 0; i < userStr.length; i++) {
+      hash = (hash << 5) - hash + userStr.charCodeAt(i);
+      hash |= 0;
+    }
+    return BigInt(Math.abs(hash) + 100000);
+  }
+
+  async fulfillMachineOwnershipAfterPayment(userIdOrTelegramId: string | bigint, tierCode: string, pricePaid: number) {
+    const telegramUserId = await this.resolveTelegramUserId(userIdOrTelegramId);
     const tier = this.catalog.find((t) => t.tierCode === tierCode);
 
     if (this.opsEngine) {
@@ -281,102 +312,111 @@ export class MachineService {
     return createdMachine;
   }
 
-  async purchaseMachine(telegramUserId: bigint, tierCode: string, isSandbox?: boolean) {
+  async purchaseMachine(userIdOrTelegramId: string | bigint, tierCode: string, idempotencyKey: string) {
+    const telegramUserId = await this.resolveTelegramUserId(userIdOrTelegramId);
+
+    // Explicitly reject attempt to "purchase" promotional Titan Core
+    if (tierCode === 'TS_TRIAL') {
+      throw new BadRequestException('CANNOT_PURCHASE_TRIAL_MACHINE: Titan Core is a complimentary baseline asset and cannot be purchased.');
+    }
+
     const tier = this.catalog.find((t) => t.tierCode === tierCode);
     if (!tier) throw new NotFoundException(`Machine tier ${tierCode} not found`);
 
     const userIdStr = telegramUserId.toString();
 
-    // If sandbox mode is explicitly requested, fulfill machine ownership immediately
-    if (isSandbox) {
-      const createdMachine = await this.fulfillMachineOwnershipAfterPayment(telegramUserId, tier.tierCode, tier.priceUsdt);
-      const newMachineAsset: UserMachineAsset = {
-        id: createdMachine.id,
-        telegramUserId: userIdStr,
-        tierCode: createdMachine.tierCode,
-        name: createdMachine.name,
-        purchasePrice: createdMachine.purchasePrice.toNumber(),
-        currency: createdMachine.currency,
-        status: createdMachine.status as any,
-        capacityGhs: createdMachine.capacityGhs.toNumber(),
-        lifetimeEarnings: createdMachine.lifetimeEarnings.toNumber(),
-        purchasedAt: createdMachine.purchasedAt.toISOString(),
-        activatedAt: createdMachine.activatedAt.toISOString(),
-      };
-
-      return {
-        success: true,
-        requiresFunding: false,
-        machine: newMachineAsset,
-        message: `[Sandbox] Machine ${tier.name} purchased and activated successfully!`,
-      };
-    }
-
-    // Check user available balance
-    const account = await this.prisma.financialAccount.findUnique({
+    // Check user available balance (auto-create financial account if missing)
+    let account = await this.prisma.financialAccount.findUnique({
       where: { telegramUserId },
     });
-    if (!account) throw new NotFoundException('Financial account not found');
+    if (!account) {
+      account = await this.prisma.financialAccount.create({
+        data: { telegramUserId },
+      });
+    }
     const { balances } = await this.balanceService.getBalances(telegramUserId, account.id);
     const usdtBalance = balances.find((b) => b.assetCode === 'USDT');
     const availableUsdt = parseFloat(usdtBalance?.availableBalance || '0');
 
     if (availableUsdt < tier.priceUsdt) {
-      // Create a deposit payment order for missing amount so user can pay & auto-resume
-      const missingUsdt = tier.priceUsdt - availableUsdt;
-      const order = await this.paymentOrderService.createOrder(telegramUserId, {
-        type: 'MACHINE_PURCHASE',
-        amount: tier.priceUsdt,
-        currency: 'USDT',
-        paymentMethod: 'MOBILE_MONEY',
-        metadata: { targetTierCode: tierCode, missingAmount: missingUsdt },
-      });
+      // LEGACY: PaymentOrderService quarantined - use PaymentIntent instead
+      // const missingUsdt = tier.priceUsdt - availableUsdt;
+      // const order = await this.paymentOrderService.createOrder(telegramUserId, {
+      //   type: 'MACHINE_PURCHASE',
+      //   amount: tier.priceUsdt,
+      //   currency: 'USDT',
+      //   paymentMethod: 'MOBILE_MONEY',
+      //   metadata: { targetTierCode: tierCode, missingAmount: missingUsdt },
+      // });
 
+      // For now, just return insufficient balance error
+      const missingUsdt = tier.priceUsdt - availableUsdt;
       return {
         success: false,
         requiresFunding: true,
         missingAmountUsdt: missingUsdt,
-        paymentOrder: order,
-        message: `Insufficient balance. Deposit order ${order.reference} initiated.`,
+        message: `Insufficient balance. Please deposit ${missingUsdt.toFixed(2)} USDT to purchase this machine.`,
       };
     }
 
-    // Balance is sufficient: execute financial deduction via orchestrator
-    const reference = `mach_buy_${tierCode}_${Date.now()}`;
-    await this.orchestrator.requestOperation({
+    const reference = `mach_buy_${telegramUserId}_${idempotencyKey}`;
+    const existing = await this.prisma.userMachine.findUnique({ where: { purchaseReference: reference } });
+    if (existing) return { success: true, requiresFunding: false, machine: existing, message: 'Machine purchase already completed.' };
+
+    // Reserve, create, and settle inside one serializable transaction. The
+    // rules-layer balance check runs in this same transaction for all debits.
+    const activatedMachine = await this.prisma.$transaction(async (tx) => {
+      await this.orchestrator.requestOperation({
       telegramUserId,
-      operationType: FinancialOperationType.WITHDRAWAL_RESERVE,
+      operationType: FinancialOperationType.MACHINE_PURCHASE_RESERVE,
       assetCode: 'USDT',
       amount: tier.priceUsdt.toString(),
       idempotencyKey: reference,
       reference,
       metadata: { source: 'machine_purchase', tierCode, price: tier.priceUsdt },
-    });
-
-    const createdMachine = await this.prisma.userMachine.create({
+      }, tx);
+      const createdMachine = await tx.userMachine.create({
       data: {
         telegramUserId,
         tierCode: tier.tierCode,
         name: tier.name,
         purchasePrice: tier.priceUsdt,
         currency: 'USDT',
-        status: 'ACTIVE',
+        purchaseReference: reference,
+        status: 'PAYMENT_VERIFIED',
         capacityGhs: tier.capacityGhs,
       },
-    });
+      });
+      await this.orchestrator.requestOperation({
+      telegramUserId,
+      operationType: FinancialOperationType.MACHINE_PURCHASE_SETTLE,
+      assetCode: 'USDT',
+      amount: tier.priceUsdt.toString(),
+      idempotencyKey: `${reference}_settle`,
+      reference: `${reference}_settle`,
+        metadata: { source: 'machine_purchase_settle', tierCode, price: tier.priceUsdt, machineId: createdMachine.id },
+      }, tx);
+      return tx.userMachine.update({
+      where: { id: createdMachine.id },
+      data: {
+        status: 'ACTIVE',
+        activatedAt: new Date(),
+      },
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 15000, maxWait: 10000 });
 
     const newMachineAsset: UserMachineAsset = {
-      id: createdMachine.id,
+      id: activatedMachine.id,
       telegramUserId: userIdStr,
-      tierCode: createdMachine.tierCode,
-      name: createdMachine.name,
-      purchasePrice: createdMachine.purchasePrice.toNumber(),
-      currency: createdMachine.currency,
-      status: createdMachine.status as any,
-      capacityGhs: createdMachine.capacityGhs.toNumber(),
-      lifetimeEarnings: createdMachine.lifetimeEarnings.toNumber(),
-      purchasedAt: createdMachine.purchasedAt.toISOString(),
-      activatedAt: createdMachine.activatedAt.toISOString(),
+      tierCode: activatedMachine.tierCode,
+      name: activatedMachine.name,
+      purchasePrice: activatedMachine.purchasePrice.toNumber(),
+      currency: activatedMachine.currency,
+      status: activatedMachine.status as any,
+      capacityGhs: activatedMachine.capacityGhs.toNumber(),
+      lifetimeEarnings: activatedMachine.lifetimeEarnings.toNumber(),
+      purchasedAt: activatedMachine.purchasedAt.toISOString(),
+      activatedAt: activatedMachine.activatedAt.toISOString(),
     };
 
     if (this.miningService) {
@@ -393,8 +433,31 @@ export class MachineService {
       telegramUserId,
       eventType: AuditEventType.TRANSACTION_COMPLETED,
       description: `Purchased machine ${tier.name} for $${tier.priceUsdt} USDT`,
-      metadata: { machineId: createdMachine.id, tierCode: tier.tierCode, price: tier.priceUsdt },
+      metadata: { machineId: activatedMachine.id, tierCode: tier.tierCode, price: tier.priceUsdt },
     });
+
+    // Record economic contribution in analytical ledger
+    try {
+      const price = new Prisma.Decimal(tier.priceUsdt || 0);
+      const directCost = price.mul(0.70); // 30% upfront margin basis
+      const rel = await this.prisma.referralRelationship.findUnique({
+        where: { refereeId: telegramUserId },
+        select: { id: true },
+      });
+      await this.prisma.growthContribution.create({
+        data: {
+          telegramUserId,
+          referralRelationshipId: rel?.id,
+          economicEventType: 'MACHINE_PURCHASE',
+          economicEventId: activatedMachine.id,
+          grossRevenueUsdt: price,
+          directCostUsdt: directCost,
+          netContributionUsdt: price.minus(directCost),
+        },
+      });
+    } catch (e: any) {
+      console.warn('[MachineService] Failed to record GrowthContribution for machine purchase:', e?.message);
+    }
 
     return {
       success: true,
@@ -404,7 +467,8 @@ export class MachineService {
     };
   }
 
-  async repowerMachine(telegramUserId: bigint, machineId: string) {
+  async repowerMachine(userIdOrTelegramId: string | bigint, machineId: string, idempotencyKey: string) {
+    const telegramUserId = await this.resolveTelegramUserId(userIdOrTelegramId);
     const machine = await this.prisma.userMachine.findUnique({
       where: { id: machineId },
     });
@@ -415,24 +479,23 @@ export class MachineService {
     const tier = this.catalog.find((t) => t.tierCode === machine.tierCode);
     const repowerFee = tier ? tier.priceUsdt * 0.15 : 1.65;
 
-    // Record double-entry repower transaction in Ledger
-    await this.orchestrator.requestOperation({
-      telegramUserId,
-      operationType: FinancialOperationType.SYSTEM_ALLOCATION,
-      assetCode: 'USDT',
-      amount: repowerFee.toString(),
-      idempotencyKey: `repower_${machineId}_${Date.now()}`,
-      reference: `repower_${machineId}`,
-      metadata: { machineId, repowerFee },
-    });
-
-    const updated = await this.prisma.userMachine.update({
-      where: { id: machineId },
-      data: {
-        status: 'ACTIVE',
-        activatedAt: new Date(),
-      },
-    });
+    const reference = `repower_${machineId}_${idempotencyKey}`;
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await this.orchestrator.requestOperation({
+        telegramUserId, operationType: FinancialOperationType.MACHINE_REPOWER_RESERVE,
+        assetCode: 'USDT', amount: repowerFee.toString(), idempotencyKey,
+        reference, metadata: { machineId, repowerFee },
+      }, tx);
+      const activated = await tx.userMachine.update({
+        where: { id: machineId }, data: { status: 'ACTIVE', activatedAt: new Date() },
+      });
+      await this.orchestrator.requestOperation({
+        telegramUserId, operationType: FinancialOperationType.MACHINE_REPOWER_SETTLE,
+        assetCode: 'USDT', amount: repowerFee.toString(), idempotencyKey: `${idempotencyKey}:settle`,
+        reference: `${reference}:settle`, metadata: { machineId, repowerFee },
+      }, tx);
+      return activated;
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 15000, maxWait: 10000 });
 
     if (this.miningService) {
       await this.miningService.recalculateUserMiningState(telegramUserId.toString());
@@ -452,7 +515,8 @@ export class MachineService {
     };
   }
 
-  async upgradeMachineTier(telegramUserId: bigint, currentMachineId: string, targetTierCode: string) {
+  async upgradeMachineTier(userIdOrTelegramId: string | bigint, currentMachineId: string, targetTierCode: string, idempotencyKey: string) {
+    const telegramUserId = await this.resolveTelegramUserId(userIdOrTelegramId);
     const currentMachine = await this.prisma.userMachine.findUnique({
       where: { id: currentMachineId },
     });
@@ -465,31 +529,27 @@ export class MachineService {
 
     const currentTier = this.catalog.find((t) => t.tierCode === currentMachine.tierCode);
     const currentPrice = currentTier ? currentTier.priceUsdt : currentMachine.purchasePrice.toNumber();
-    const upgradeCost = Math.max(0, targetTier.priceUsdt - currentPrice);
-
-    if (upgradeCost > 0) {
+    if (targetTier.priceUsdt <= currentPrice) throw new BadRequestException('TARGET_TIER_MUST_BE_HIGHER');
+    const upgradeCost = targetTier.priceUsdt - currentPrice;
+    const reference = `upgrade_${currentMachineId}_${idempotencyKey}`;
+    const updatedMachine = await this.prisma.$transaction(async (tx) => {
       await this.orchestrator.requestOperation({
-        telegramUserId,
-        operationType: FinancialOperationType.SYSTEM_ALLOCATION,
-        assetCode: 'USDT',
-        amount: upgradeCost.toString(),
-        idempotencyKey: `upgrade_${currentMachineId}_${Date.now()}`,
-        reference: `upgrade_${currentMachineId}`,
-        metadata: { currentMachineId, targetTierCode, upgradeCost },
+        telegramUserId, operationType: FinancialOperationType.MACHINE_UPGRADE_RESERVE,
+        assetCode: 'USDT', amount: upgradeCost.toString(), idempotencyKey,
+        reference, metadata: { currentMachineId, targetTierCode, upgradeCost },
+      }, tx);
+      const upgraded = await tx.userMachine.update({
+        where: { id: currentMachineId },
+        data: { tierCode: targetTier.tierCode, name: targetTier.name, capacityGhs: targetTier.capacityGhs,
+          purchasePrice: targetTier.priceUsdt, status: 'ACTIVE', activatedAt: new Date() },
       });
-    }
-
-    const updatedMachine = await this.prisma.userMachine.update({
-      where: { id: currentMachineId },
-      data: {
-        tierCode: targetTier.tierCode,
-        name: targetTier.name,
-        capacityGhs: targetTier.capacityGhs,
-        purchasePrice: targetTier.priceUsdt,
-        status: 'ACTIVE',
-        activatedAt: new Date(),
-      },
-    });
+      await this.orchestrator.requestOperation({
+        telegramUserId, operationType: FinancialOperationType.MACHINE_UPGRADE_SETTLE,
+        assetCode: 'USDT', amount: upgradeCost.toString(), idempotencyKey: `${idempotencyKey}:settle`,
+        reference: `${reference}:settle`, metadata: { currentMachineId, targetTierCode, upgradeCost },
+      }, tx);
+      return upgraded;
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 15000, maxWait: 10000 });
 
     if (this.miningService) {
       await this.miningService.recalculateUserMiningState(telegramUserId.toString());
@@ -564,5 +624,3 @@ export class MachineService {
     return null;
   }
 }
-
-

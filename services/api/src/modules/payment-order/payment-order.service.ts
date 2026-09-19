@@ -1,11 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { NotificationService } from '../notification/notification.service';
 import { FinancialOrchestratorService } from '../financial-orchestration/financial-orchestrator.service';
 import { MachineService } from '../machine/machine.service';
-import { FinancialOperationType } from '@prisma/client';
-import { AuditEventType } from '../../common/interfaces/user-state.enum';
+import { FinancialOperationType, AuditEventType } from '@prisma/client';
+
+/**
+ * DEPRECATED: PaymentOrderService is quarantined.
+ * Use PaymentIntentService for all new payment flows.
+ * This service is retained only for historical data reference.
+ */
 
 export type PaymentOrderType = 'DEPOSIT' | 'WITHDRAWAL' | 'MACHINE_PURCHASE' | 'REFUND' | 'ADJUSTMENT';
 export type PaymentOrderStatus = 
@@ -44,8 +49,14 @@ export interface PaymentDestinationConfig {
   isActive: boolean;
 }
 
+const paymentOrderTypeFromSession = (sessionType: string, metaType?: PaymentOrderType): PaymentOrderType =>
+  metaType || (sessionType === 'PAYOUT' ? 'WITHDRAWAL' : 'DEPOSIT');
+
 @Injectable()
 export class PaymentOrderService {
+  private readonly logger = new Logger(PaymentOrderService.name);
+  private readonly QUARANTINED = true;
+
   // Configurable Command Center destinations for mobile money receiving
   private readonly defaultConfigs: PaymentDestinationConfig[] = [
     {
@@ -53,7 +64,7 @@ export class PaymentOrderService {
       network: 'MTN',
       country: 'UG',
       currency: 'UGX',
-      receivingNumber: '0771234567',
+      receivingNumber: '234654',
       receivingName: 'TitanStream Escrow UG',
       ussdTemplate: '*165*1*1*{phone}*{amount}#',
       exchangeRateUsdt: 3700,
@@ -66,7 +77,7 @@ export class PaymentOrderService {
       network: 'AIRTEL',
       country: 'UG',
       currency: 'UGX',
-      receivingNumber: '0751234567',
+      receivingNumber: '7183443',
       receivingName: 'TitanStream Escrow UG',
       ussdTemplate: '*185*9*{phone}*{amount}#',
       exchangeRateUsdt: 3700,
@@ -86,7 +97,9 @@ export class PaymentOrderService {
     private readonly orchestrator: FinancialOrchestratorService,
     @Inject(forwardRef(() => MachineService))
     private readonly machineService?: MachineService,
-  ) {}
+  ) {
+    this.logger.warn('[DEPRECATED] PaymentOrderService is quarantined. Use PaymentIntentService for all new payment flows.');
+  }
 
   getDestinationConfigs(): PaymentDestinationConfig[] {
     return this.defaultConfigs.filter((c) => c.isActive);
@@ -115,169 +128,59 @@ export class PaymentOrderService {
     return newCfg;
   }
 
-  async createOrder(telegramUserId: bigint, dto: CreatePaymentOrderDto) {
-    const orderId = `po_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-    const reference = `ORD-${Date.now().toString().slice(-6)}`;
-    const currency = dto.currency || 'USDT';
-    const network = dto.network || 'MTN';
-    const country = dto.country || 'UG';
-
-    const config = this.defaultConfigs.find((c) => c.network === network && c.country === country) || this.defaultConfigs[0];
-    
-    // Calculate local amount if currency is fiat or USDT
-    let localAmount = dto.amount;
-    let usdtAmount = dto.amount;
-
-    if (currency === 'USDT') {
-      localAmount = Math.round(dto.amount * config.exchangeRateUsdt);
-    } else {
-      usdtAmount = Number((dto.amount / config.exchangeRateUsdt).toFixed(2));
-    }
-
-    // Format USSD Code from template
-    const ussdCode = config.ussdTemplate
-      .replace('{phone}', config.receivingNumber)
-      .replace('{amount}', Math.round(localAmount).toString());
-
-    // Encode for tel: protocol (encode # as %23)
-    const telUri = `tel:${ussdCode.replace('#', '%23')}`;
-
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 mins expiry
-
-    const order = {
-      id: orderId,
-      reference,
-      telegramUserId: telegramUserId.toString(),
-      type: dto.type,
-      amount: usdtAmount,
-      localAmount,
-      currency,
-      asset: 'USDT',
-      paymentMethod: dto.paymentMethod || 'MOBILE_MONEY',
-      network,
-      country,
-      status: 'AWAITING_PAYMENT' as PaymentOrderStatus,
-      receivingNumber: config.receivingNumber,
-      receivingName: config.receivingName,
-      ussdCode,
-      telUri,
-      mobileNumber: dto.mobileNumber,
-      metadata: dto.metadata || {},
-      expiresAt: expiresAt.toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    this.orders.set(orderId, order);
-
-    await this.audit.create({
-      telegramUserId,
-      eventType: AuditEventType.TRANSACTION_CREATED,
-      description: `Created ${dto.type} payment order ${reference}`,
-      metadata: { orderId, reference, amount: usdtAmount, type: dto.type },
-    });
-
-    return order;
-  }
-
-  getOrder(orderId: string) {
-    const order = this.orders.get(orderId);
-    if (!order) throw new NotFoundException('PAYMENT_ORDER_NOT_FOUND');
-    return order;
-  }
-
-  getUserOrders(telegramUserId: string) {
-    return Array.from(this.orders.values()).filter((o) => o.telegramUserId === telegramUserId);
-  }
-
-  getAllOrders() {
-    return Array.from(this.orders.values());
-  }
-
-  async submitForVerification(orderId: string) {
-    const order = this.getOrder(orderId);
-    if (order.status !== 'AWAITING_PAYMENT') {
-      throw new BadRequestException(`Cannot submit order in status ${order.status}`);
-    }
-
-    order.status = 'AWAITING_VERIFICATION';
-    order.updatedAt = new Date().toISOString();
-    this.orders.set(orderId, order);
-
-    return order;
-  }
-
-  async approveOrder(orderId: string, adminUserId?: string) {
-    const order = this.getOrder(orderId);
-    if (order.status !== 'AWAITING_VERIFICATION' && order.status !== 'AWAITING_PAYMENT') {
-      throw new BadRequestException(`Cannot approve order in status ${order.status}`);
-    }
-
-    order.status = 'POSTING_TO_LEDGER';
-    order.updatedAt = new Date().toISOString();
-
-    const telegramUserId = BigInt(order.telegramUserId);
-    const orchestratorRef = `po_ledger_${order.reference}`;
-
-    // Map operation type
-    let opType: FinancialOperationType = FinancialOperationType.SYSTEM_ALLOCATION;
-    if (order.type === 'WITHDRAWAL') opType = FinancialOperationType.WITHDRAWAL_SETTLE;
-    else if (order.type === 'MACHINE_PURCHASE') opType = FinancialOperationType.SYSTEM_ALLOCATION;
-
-    // Post to double-entry ledger via FinancialOrchestratorService
-    await this.orchestrator.requestOperation({
-      telegramUserId,
-      operationType: opType,
-      assetCode: 'USDT',
-      amount: order.amount.toString(),
-      idempotencyKey: orchestratorRef,
-      reference: orchestratorRef,
-      metadata: { orderId: order.id, reference: order.reference, type: order.type, approvedBy: adminUserId || 'system_admin' },
-    });
-
-    if (order.type === 'MACHINE_PURCHASE' && order.metadata?.targetTierCode) {
-      const targetTierCode = order.metadata.targetTierCode as string;
-      if (this.machineService) {
-        await this.machineService.fulfillMachineOwnershipAfterPayment(telegramUserId, targetTierCode, order.amount);
+  private toBigIntUserId(userKey: string | bigint): bigint {
+    if (typeof userKey === 'bigint') return userKey;
+    const str = String(userKey || '').trim();
+    const digits = str.replace(/\D/g, '');
+    if (digits.length > 0) {
+      try {
+        return BigInt(digits);
+      } catch {
+        // safe fallback to hash
       }
     }
-
-    order.status = 'COMPLETED';
-    order.completedAt = new Date().toISOString();
-    order.updatedAt = new Date().toISOString();
-    this.orders.set(orderId, order);
-
-    // Send User Notification
-    await this.notification.createNotification({
-      userId: telegramUserId,
-      templateCode: 'PAYMENT_ORDER_APPROVED',
-      message: `Your ${order.type.toLowerCase()} of $${order.amount.toFixed(2)} USDT (Ref: ${order.reference}) has been verified and processed to your wallet.`,
-    });
-
-    await this.audit.create({
-      telegramUserId,
-      eventType: AuditEventType.TRANSACTION_COMPLETED,
-      description: `Payment order ${order.reference} approved and posted to ledger`,
-      metadata: { orderId: order.id, reference: order.reference, adminUserId },
-    });
-
-    return order;
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return BigInt(Math.abs(hash) + 100000);
   }
 
-  async rejectOrder(orderId: string, reason: string, adminUserId?: string) {
-    const order = this.getOrder(orderId);
-    order.status = 'REJECTED';
-    order.rejectionReason = reason;
-    order.updatedAt = new Date().toISOString();
-    this.orders.set(orderId, order);
+  async createOrder(userKey: bigint | string, dto: CreatePaymentOrderDto) {
+    // BLOCK: This service is quarantined
+    throw new BadRequestException('PAYMENT_ORDER_SERVICE_QUARANTINED: Use PaymentIntentService via POST /api/v1/payment-intents for all new payment flows. PaymentOrderService is deprecated and retained only for historical data reference.');
+  }
 
-    const telegramUserId = BigInt(order.telegramUserId);
-    await this.notification.createNotification({
-      userId: telegramUserId,
-      templateCode: 'PAYMENT_ORDER_REJECTED',
-      message: `Your ${order.type.toLowerCase()} order ${order.reference} was rejected: ${reason}`,
+  async getOrder(orderId: string) {
+    const session = await this.prisma.settlementSession.findFirst({
+      where: { OR: [{ id: orderId }, { referenceCode: orderId }] },
     });
+    if (!session) throw new NotFoundException('PAYMENT_ORDER_NOT_FOUND');
+    const meta = (session.providerMetadata as any) || {};
 
-    return order;
+    return {
+      id: session.id,
+      reference: session.referenceCode,
+      userId: session.telegramUserId.toString(),
+      telegramUserId: session.telegramUserId.toString(),
+      type: paymentOrderTypeFromSession(session.sessionType, meta.type),
+      amount: Number(session.requestedAmount),
+      localAmount: meta.localAmount || Number(session.requestedAmount) * Number(session.exchangeRate),
+      currency: meta.currency || 'USDT',
+      asset: session.asset,
+      paymentMethod: meta.paymentMethod || 'MOBILE_MONEY',
+      network: session.mobileMoneyNetwork,
+      country: session.country,
+      status: session.status as any,
+      receivingNumber: meta.receivingNumber || '234654',
+      receivingName: meta.receivingName || 'TitanStream Escrow',
+      ussdCode: meta.ussdCode || '*165*1*1*234654*10000#',
+      telUri: meta.telUri || 'tel:*165*1*1*234654*10000%23',
+      expiresAt: session.expiresAt.toISOString(),
+      createdAt: session.createdAt.toISOString(),
+      updatedAt: session.updatedAt.toISOString(),
+      metadata: meta.metadata || {},
+    };
   }
 }

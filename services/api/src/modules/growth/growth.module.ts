@@ -15,6 +15,9 @@ import { UserLevelService } from './user-level.service';
 import { GrowthNotificationService } from './growth-notification.service';
 import { GrowthAnalyticsService } from './growth-analytics.service';
 import { TrustCenterService } from './trust-center.service';
+import { GrowthContributionService } from './growth-contribution.service';
+import { SocialMissionService } from './social-mission.service';
+import { SocialAttributionService } from './social-attribution.service';
 import { GrowthController } from './growth.controller';
 import { GrowthAdminController } from './growth-admin.controller';
 import { GrowthAnalyticsController } from './growth-analytics.controller';
@@ -39,6 +42,9 @@ import { FraudModule } from '../fraud/fraud.module';
     GrowthNotificationService,
     GrowthAnalyticsService,
     TrustCenterService,
+    GrowthContributionService,
+    SocialMissionService,
+    SocialAttributionService,
   ],
   exports: [
     GrowthEventService,
@@ -54,6 +60,9 @@ import { FraudModule } from '../fraud/fraud.module';
     GrowthNotificationService,
     GrowthAnalyticsService,
     TrustCenterService,
+    GrowthContributionService,
+    SocialMissionService,
+    SocialAttributionService,
   ],
 })
 export class GrowthModule implements OnModuleInit {
@@ -65,6 +74,7 @@ export class GrowthModule implements OnModuleInit {
     private readonly trustProfileService: TrustProfileService,
     private readonly userLevelService: UserLevelService,
     private readonly notificationService: GrowthNotificationService,
+    private readonly contributionService: GrowthContributionService,
   ) {}
 
   async onModuleInit() {
@@ -82,7 +92,7 @@ export class GrowthModule implements OnModuleInit {
   private registerEventListeners() {
     // 1. When a user completes a settlement
     this.growthEventService.on(GrowthEventType.SETTLEMENT_COMPLETED, async (event) => {
-      const { telegramUserId, amount, provider } = event.payload || {};
+      const { telegramUserId, amount, provider, settlementId, feeAmount } = event.payload || {};
       if (!telegramUserId) return;
 
       const userId = BigInt(telegramUserId);
@@ -91,6 +101,18 @@ export class GrowthModule implements OnModuleInit {
       await this.userLevelService.evaluateUserLevel(userId);
       await this.referralService.evaluateQualification(userId);
       await this.qualificationService.recountQualifiedReferrals(userId);
+
+      // Record economic contribution in GrowthContribution analytical ledger
+      try {
+        await this.contributionService.recordSettlementContribution(
+          settlementId || `settle_${Date.now()}`,
+          userId,
+          feeAmount || (Number(amount || 0) * 0.035).toFixed(2),
+          amount || 0,
+        );
+      } catch (e: any) {
+        console.warn('Contribution logging error on SETTLEMENT_COMPLETED:', e?.message);
+      }
 
       await this.notificationService.sendNotification({
         telegramUserId: userId,

@@ -16,7 +16,10 @@ export interface CreateUserData {
 export interface UpdateUserData {
   telegramUsername?: string;
   firstName?: string;
+  displayName?: string;
   lastName?: string;
+  phoneNumber?: string;
+  connectedWhatsApp?: string;
   photoUrl?: string;
   languageCode?: string;
 }
@@ -27,6 +30,30 @@ export class UserService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
   ) {}
+
+  async findById(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        financialAccount: true,
+        miningState: true,
+        userPreferences: true,
+        onboardingProgress: true,
+      },
+    });
+  }
+
+  async findByIdentityId(identityId: string) {
+    return this.prisma.user.findFirst({
+      where: { identityId },
+      include: {
+        financialAccount: true,
+        miningState: true,
+        userPreferences: true,
+        onboardingProgress: true,
+      },
+    });
+  }
 
   async findByTelegramUserId(telegramUserId: bigint) {
     return this.prisma.user.findUnique({
@@ -40,22 +67,63 @@ export class UserService {
     });
   }
 
-  async getProfile(telegramUserId: bigint) {
-    const user = await this.findByTelegramUserId(telegramUserId);
-    if (!user) {
-      throw new NotFoundException('User not found');
+  async getProfile(userKey: string | bigint) {
+    let user: any = null;
+
+    if (typeof userKey === 'string') {
+      const trimmed = userKey.trim();
+      if (/^\d+$/.test(trimmed)) {
+        user = await this.findByTelegramUserId(BigInt(trimmed));
+      } else {
+        user = (await this.findById(trimmed)) || (await this.findByIdentityId(trimmed));
+      }
+    } else if (typeof userKey === 'bigint') {
+      user = await this.findByTelegramUserId(userKey);
     }
+
+    if (!user) {
+      throw new NotFoundException('USER_NOT_FOUND');
+    }
+
     return user;
   }
 
-  async updateProfile(telegramUserId: bigint, dto: UpdateUserData) {
-    return this.updateUser(telegramUserId, dto);
+  async updateProfile(userKey: string | bigint, dto: UpdateUserData) {
+    const user = await this.getProfile(userKey);
+    const updateData: any = {};
+    const chosenName = (dto.displayName || dto.firstName || '').trim();
+    if (chosenName) {
+      updateData.firstName = chosenName;
+    }
+    if (dto.lastName) updateData.lastName = dto.lastName.trim();
+    if (dto.photoUrl) updateData.photoUrl = dto.photoUrl;
+    if (dto.languageCode) updateData.languageCode = dto.languageCode;
+    if (dto.phoneNumber || dto.connectedWhatsApp) {
+      updateData.phoneNumber = (dto.phoneNumber || dto.connectedWhatsApp)!.trim();
+    }
+    if (dto.telegramUsername) updateData.telegramUsername = dto.telegramUsername.trim();
+
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: updateData,
+    });
+
+    return updated;
   }
 
-  async getTrustProfile(telegramUserId: bigint) {
-    return this.prisma.userTrustProfile.findUnique({
-      where: { telegramUserId },
+  async getTrustProfile(userKey: string | bigint) {
+    const user = await this.getProfile(userKey);
+    if (!user.telegramUserId) {
+      throw new NotFoundException('TRUST_PROFILE_NOT_FOUND');
+    }
+
+    const trust = await this.prisma.userTrustProfile.findFirst({
+      where: { telegramUserId: user.telegramUserId },
     });
+    if (!trust) {
+      throw new NotFoundException('TRUST_PROFILE_NOT_FOUND');
+    }
+    return trust;
   }
 
   async createUser(data: CreateUserData) {
@@ -68,8 +136,17 @@ export class UserService {
     }
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const identity = await tx.universalIdentity.create({
+        data: {
+          displayName: data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : `User_${data.telegramUserId}`,
+          avatarUrl: data.photoUrl,
+        },
+      });
+
       const user = await tx.user.create({
         data: {
+          id: identity.id,
+          identityId: identity.id,
           telegramUserId: data.telegramUserId,
           telegramUsername: data.telegramUsername,
           firstName: data.firstName,
@@ -77,6 +154,16 @@ export class UserService {
           photoUrl: data.photoUrl,
           languageCode: data.languageCode || 'en',
           state: UserState.NEW as any,
+        },
+      });
+
+      await tx.channelIdentity.create({
+        data: {
+          identityId: identity.id,
+          provider: 'TELEGRAM',
+          identifier: String(data.telegramUserId),
+          telegramId: String(data.telegramUserId),
+          verified: true,
         },
       });
 
@@ -175,11 +262,9 @@ export class UserService {
     });
   }
 
-  async deleteAccount(telegramUserId: bigint) {
-    const user = await this.findByTelegramUserId(telegramUserId);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+  async deleteAccount(userKey: string | bigint) {
+    const user = await this.getProfile(userKey);
+    const telegramUserId = user.telegramUserId || BigInt(0);
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Delete MachineOutput records (child of UserMachine)
@@ -371,5 +456,115 @@ export class UserService {
 
       return { success: true, message: 'Account deleted successfully' };
     });
+  }
+
+  private serializeUser(user: any) {
+    if (!user) return user;
+    return {
+      ...user,
+      telegramUserId: user.telegramUserId ? user.telegramUserId.toString() : null,
+    };
+  }
+
+  async updateVerifiedPhoneNumber(userIdOrTelegramId: string | bigint, rawPhone: string) {
+    const cleaned = (rawPhone || '').trim();
+    if (!cleaned || cleaned.length < 8) {
+      throw new ConflictException('INVALID_PHONE_NUMBER');
+    }
+    const coolingUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const where: any = typeof userIdOrTelegramId === 'bigint' || (typeof userIdOrTelegramId === 'string' && /^\d+$/.test(userIdOrTelegramId))
+      ? { telegramUserId: BigInt(userIdOrTelegramId) }
+      : { id: userIdOrTelegramId as string };
+
+    const user = await this.prisma.user.update({
+      where,
+      data: {
+        phoneNumber: cleaned,
+        phoneVerified: true,
+        phoneVerifiedAt: new Date(),
+        recipientCoolingUntil: coolingUntil,
+      },
+    });
+
+    try {
+      await this.auditService.create({
+        telegramUserId: user.telegramUserId,
+        eventType: AuditEventType.USER_UPDATED,
+        description: 'Verified phone number updated (Cooling period activated)',
+        metadata: { phoneNumber: cleaned, recipientCoolingUntil: coolingUntil.toISOString() },
+      });
+    } catch {
+      // ignore
+    }
+
+    return this.serializeUser(user);
+  }
+
+  async updateVerifiedUsdtAddress(userIdOrTelegramId: string | bigint, address: string) {
+    const cleaned = (address || '').trim();
+    if (!cleaned || cleaned.length < 10) {
+      throw new ConflictException('INVALID_USDT_ADDRESS');
+    }
+    const coolingUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const where: any = typeof userIdOrTelegramId === 'bigint' || (typeof userIdOrTelegramId === 'string' && /^\d+$/.test(userIdOrTelegramId))
+      ? { telegramUserId: BigInt(userIdOrTelegramId) }
+      : { id: userIdOrTelegramId as string };
+
+    const user = await this.prisma.user.update({
+      where,
+      data: {
+        verifiedUsdtAddress: cleaned,
+        usdtAddressVerified: true,
+        usdtAddressVerifiedAt: new Date(),
+        recipientCoolingUntil: coolingUntil,
+      },
+    });
+
+    try {
+      await this.auditService.create({
+        telegramUserId: user.telegramUserId,
+        eventType: AuditEventType.USER_UPDATED,
+        description: 'Verified USDT address updated (Cooling period activated)',
+        metadata: { verifiedUsdtAddress: cleaned, recipientCoolingUntil: coolingUntil.toISOString() },
+      });
+    } catch {
+      // ignore
+    }
+
+    return this.serializeUser(user);
+  }
+
+  async updateWithdrawalPhoneNumber(userIdOrTelegramId: string | bigint, rawPhone: string) {
+    const cleaned = (rawPhone || '').trim().replace(/\s+/g, '');
+    if (!cleaned || cleaned.length < 8) {
+      throw new ConflictException('INVALID_PHONE_NUMBER');
+    }
+    const coolingUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const where: any = typeof userIdOrTelegramId === 'bigint' || (typeof userIdOrTelegramId === 'string' && /^\d+$/.test(userIdOrTelegramId))
+      ? { telegramUserId: BigInt(userIdOrTelegramId) }
+      : { id: userIdOrTelegramId as string };
+
+    const user = await this.prisma.user.update({
+      where,
+      data: {
+        withdrawalPhoneNumber: cleaned,
+        withdrawalPhoneVerified: true,
+        withdrawalPhoneVerifiedAt: new Date(),
+        recipientCoolingUntil: coolingUntil,
+      },
+    });
+
+    try {
+      await this.auditService.create({
+        telegramUserId: user.telegramUserId,
+        eventType: AuditEventType.USER_UPDATED,
+        description: 'Mobile Money Withdrawal Number updated (24h cooling period activated)',
+        metadata: { withdrawalPhoneNumber: cleaned, recipientCoolingUntil: coolingUntil.toISOString() },
+      });
+    } catch {
+      // ignore
+    }
+
+    return this.serializeUser(user);
   }
 }

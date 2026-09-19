@@ -5,13 +5,19 @@ import {
   type ReferralSummary,
   type RewardItem,
   type QualificationStatus,
+  type NextBestAction,
+  type SocialMission,
+  type UserValueBank,
 } from '../services/growthService';
 
 interface GrowthState {
   profile: GrowthProfile | null;
   referrals: ReferralSummary | null;
   rewards: RewardItem[];
+  socialMissions: SocialMission[];
+  valueBank: UserValueBank | null;
   qualification: QualificationStatus | null;
+  nextBestAction: NextBestAction | null;
   dashboardData: any | null;
   trustCenterData: any | null;
   isLoading: boolean;
@@ -20,16 +26,22 @@ interface GrowthState {
   fetchGrowthProfile: () => Promise<void>;
   fetchReferrals: () => Promise<void>;
   fetchRewards: () => Promise<void>;
+  fetchSocialMissions: () => Promise<void>;
+  fetchValueBank: () => Promise<void>;
+  participateInSocialMission: (id: string) => Promise<any>;
+  claimSocialVirtualReward: (id: string) => Promise<any>;
   fetchQualification: () => Promise<void>;
+  fetchNextBestAction: () => Promise<void>;
   fetchDashboardData: () => Promise<void>;
   fetchTrustCenterData: () => Promise<void>;
 }
 
-export const useGrowthStore = create<GrowthState>((set) => ({
+export const useGrowthStore = create<GrowthState>((set, get) => ({
   profile: null,
   referrals: null,
   rewards: [],
   qualification: null,
+  nextBestAction: null,
   dashboardData: null,
   trustCenterData: null,
   isLoading: false,
@@ -72,6 +84,59 @@ export const useGrowthStore = create<GrowthState>((set) => ({
     }
   },
 
+  fetchNextBestAction: async () => {
+    try {
+      const data = await growthService.getNextBestAction();
+      set({ nextBestAction: data });
+    } catch (err: any) {
+      console.warn('Failed to load next best action:', err?.message);
+    }
+  },
+
+  socialMissions: [],
+  valueBank: null,
+
+  fetchSocialMissions: async () => {
+    try {
+      const data = await growthService.getSocialMissions();
+      set({ socialMissions: data });
+    } catch (err: any) {
+      console.warn('Failed to load social missions:', err?.message);
+    }
+  },
+
+  fetchValueBank: async () => {
+    try {
+      const data = await growthService.getUserValueBank();
+      set({ valueBank: data });
+    } catch (err: any) {
+      console.warn('Failed to load value bank:', err?.message);
+    }
+  },
+
+  participateInSocialMission: async (id: string) => {
+    try {
+      const res = await growthService.participateInSocialMission(id);
+      await get().fetchSocialMissions();
+      return res;
+    } catch (err: any) {
+      console.warn('Failed to participate in social mission:', err?.message);
+      throw err;
+    }
+  },
+
+  claimSocialVirtualReward: async (id: string) => {
+    try {
+      const res = await growthService.claimSocialVirtualReward(id);
+      await get().fetchSocialMissions();
+      await get().fetchValueBank();
+      return res;
+    } catch (err: any) {
+      console.warn('Failed to claim social virtual reward:', err?.message);
+      throw err;
+    }
+  },
+
   fetchDashboardData: async () => {
     try {
       const data = await growthService.getDashboard();
@@ -90,3 +155,4 @@ export const useGrowthStore = create<GrowthState>((set) => ({
     }
   },
 }));
+

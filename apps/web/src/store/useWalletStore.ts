@@ -1,8 +1,11 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { financialService, type TransactionRecord } from '../services/financialService';
 import { settlementService, type SettlementSessionView } from '../services/settlementService';
 import { gamesService } from '../services/gamesService';
 import { useTreasuryStore } from './useTreasuryStore';
+import { useGrowthStore } from './useGrowthStore';
+import { useReferralStore } from './useReferralStore';
 import { useUserNotificationStore } from './useUserNotificationStore';
 import { useMiningStore } from './useMiningStore';
 import { useGameStore } from './useGameStore';
@@ -39,6 +42,7 @@ interface WalletState {
   transactions: TransactionRecord[];
   
   // Status
+  hasFetchedBalanceOnce: boolean;
   isLoadingBalance: boolean;
   isLoadingSettlements: boolean;
   isLoadingTransactions: boolean;
@@ -55,7 +59,9 @@ interface WalletState {
   cancelSession: (settlementId: string) => Promise<void>;
 }
 
-export const useWalletStore = create<WalletState>((set, get) => ({
+export const useWalletStore = create<WalletState>()(
+  persist(
+    (set, get) => ({
   // PRODUCTION: All balances start at zero. Populated from Balance Engine on mount.
   usdtBalance: 0,
   tonBalance: 0,
@@ -73,6 +79,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   settlementHistory: [],
   transactions: [],
 
+  hasFetchedBalanceOnce: false,
   isLoadingBalance: false,
   isLoadingSettlements: false,
   isLoadingTransactions: false,
@@ -80,12 +87,16 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
   updateBalance: (updates) => {
     set((state) => {
-      const next = { ...state, ...updates };
-      if (typeof updates.usdtBalance === 'number') {
-        import('./useQuestStore').then(({ useQuestStore }) => {
-          useQuestStore.getState().syncBalanceProgress(updates.usdtBalance!);
-        }).catch(() => undefined);
+      let changed = false;
+      for (const key in updates) {
+        if ((state as any)[key] !== (updates as any)[key]) {
+          changed = true;
+          break;
+        }
       }
+      if (!changed) return state;
+
+      const next = { ...state, ...updates };
       return next;
     });
   },
@@ -99,13 +110,18 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       actionTab: 'wallet',
     });
     get().fetchBalanceFromEngine().catch(() => undefined);
+    get().fetchTransactions().catch(() => undefined);
+    useTreasuryStore.getState().fetchTreasuryState().catch(() => undefined);
+    useGrowthStore.getState().fetchGrowthProfile().catch(() => undefined);
+    useGrowthStore.getState().fetchQualification().catch(() => undefined);
+    useReferralStore.getState().fetchReferrals().catch(() => undefined);
   },
 
   /**
    * Fetch derived balances strictly from the Balance Engine (GET /financial/balance)
    */
   fetchBalanceFromEngine: async () => {
-    if (get().usdtBalance === 0) {
+    if (!get().hasFetchedBalanceOnce && get().usdtBalance === 0) {
       set({ isLoadingBalance: true, error: null });
     }
     try {
@@ -143,12 +159,14 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
       // Crystal balance lives in the Game Economy Service (own ledger)
       let crystalsVal = get().crystalsBalance;
-      if (typeof data.crystalsBalance === 'number') {
+      if (data && typeof data.crystalsBalance === 'number') {
         crystalsVal = data.crystalsBalance;
-      } else {
+      } else if (data) {
         try {
           const crystalData = await gamesService.getBalance();
-          crystalsVal = crystalData.balance;
+          if (crystalData && typeof crystalData.balance === 'number') {
+            crystalsVal = crystalData.balance;
+          }
         } catch (crystalErr) {
           // Game Economy offline — keep last known value
         }
@@ -183,11 +201,12 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         lifetimeWithdrawals: wthTotal,
         totalRewards: rwdTotal,
         activeMachines: (useMiningStore.getState().activeMachinesCount || 1),
+        hasFetchedBalanceOnce: true,
         isLoadingBalance: false,
       });
     } catch (err: any) {
       console.warn('Balance Engine offline or unauthenticated, falling back gracefully:', err?.message);
-      set({ isLoadingBalance: false });
+      set({ hasFetchedBalanceOnce: true, isLoadingBalance: false });
     }
   },
 
@@ -216,7 +235,8 @@ export const useWalletStore = create<WalletState>((set, get) => ({
    * Fetch transactions from Ledger / Transaction Service (GET /financial/transactions)
    */
   fetchTransactions: async (limit = 20, offset = 0) => {
-    if (get().transactions.length === 0) {
+    const txs = Array.isArray(get().transactions) ? get().transactions : [];
+    if (txs.length === 0) {
       set({ isLoadingTransactions: true, error: null });
     }
     try {
@@ -248,12 +268,11 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       if (session.status === 'COMPLETED') {
         get().fetchBalanceFromEngine();
         get().fetchSettlementHistory();
-        
-        const depVal = parseFloat(session.expectedCryptoAmount || '0');
-        if (depVal > 0) {
-          useTreasuryStore.getState().adjustTreasuryStats('DEPOSIT', depVal);
-          useTreasuryStore.getState().adjustTrustScore(3);
-        }
+        get().fetchTransactions();
+        useTreasuryStore.getState().fetchTreasuryState();
+        useGrowthStore.getState().fetchGrowthProfile();
+        useGrowthStore.getState().fetchQualification();
+        useReferralStore.getState().fetchReferrals();
       }
       return session;
     } catch (err: any) {
@@ -274,4 +293,19 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       console.error('Failed to cancel session:', err);
     }
   },
-}));
+}),
+    {
+      name: 'wallet-storage',
+      partialize: (state) => ({
+        usdtBalance: state.usdtBalance,
+        tonBalance: state.tonBalance,
+        crystalsBalance: state.crystalsBalance,
+        referralEarnedUsdt: state.referralEarnedUsdt,
+        referralEarnedTon: state.referralEarnedTon,
+        lifetimeDeposits: state.lifetimeDeposits,
+        lifetimeWithdrawals: state.lifetimeWithdrawals,
+        activeMachines: state.activeMachines,
+      }),
+    }
+  )
+);

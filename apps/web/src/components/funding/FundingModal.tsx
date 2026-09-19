@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Smartphone, CreditCard, ChevronRight, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
+import { X, Smartphone, ChevronRight, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
 import { settlementService } from '../../services/settlementService';
-import { PesapalFunding } from './PesapalFunding';
+import { MobileMoneyFunding } from './MobileMoneyFunding';
 import { UsdtFunding } from './UsdtFunding';
 import { useTelegram } from '../../context/TelegramContext';
+import { supportsLocalPaymentRails, useCountryStore } from '../../store/useCountryStore';
 
 interface FundingModalProps {
   isOpen: boolean;
@@ -12,12 +13,12 @@ interface FundingModalProps {
 }
 
 export interface FundingOption {
-  id: 'MOBILE_MONEY' | 'CARD' | 'USDT';
+  id: 'MOBILE_MONEY' | 'USDT';
   name: string;
   displayName: string;
   description: string;
   provider: string;
-  paymentMethod: 'MOBILE_MONEY' | 'CARD' | 'USDT';
+  paymentMethod: 'MOBILE_MONEY' | 'USDT';
   icon: React.ReactNode;
   badge: string;
 }
@@ -32,16 +33,6 @@ const FUNDING_OPTIONS: FundingOption[] = [
     paymentMethod: 'MOBILE_MONEY',
     icon: <Smartphone size={22} className="text-usdt-green" />,
     badge: 'Airtel / MTN',
-  },
-  {
-    id: 'CARD',
-    name: 'Card',
-    displayName: 'Card',
-    description: 'Pay securely with Visa or Mastercard',
-    provider: 'INTERNAL',
-    paymentMethod: 'CARD',
-    icon: <CreditCard size={22} className="text-purple-400" />,
-    badge: 'Visa / Mastercard',
   },
   {
     id: 'USDT',
@@ -61,6 +52,8 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
   const [error, setError] = useState<string | null>(null);
 
   const { hapticFeedback } = useTelegram();
+  const selectedCountry = useCountryStore((state) => state.selectedCountry);
+  const hasLocalPaymentRails = supportsLocalPaymentRails(selectedCountry?.code);
 
   useEffect(() => {
     if (isOpen) {
@@ -75,7 +68,7 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
     setError(null);
     try {
       // Probes backend providers health/capabilities
-      await settlementService.getProviders({ asset: 'USDT' });
+      await settlementService.getProviders({ asset: 'USDT', country: selectedCountry?.code || 'GLOBAL' });
     } catch (err: any) {
       console.warn('API provider capabilities load warning:', err?.message);
     } finally {
@@ -87,13 +80,13 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 select-none overflow-y-auto">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 pb-24 sm:pb-8 select-none overflow-y-auto">
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-          className="w-full max-w-md bg-app-bg border border-white/10 rounded-3xl p-5 shadow-2xl max-h-[85vh] sm:max-h-[90vh] overflow-y-auto my-auto"
+          className="w-full max-w-md bg-app-bg border border-white/10 rounded-3xl p-4 sm:p-5 pb-6 shadow-2xl max-h-[80vh] sm:max-h-[88vh] overflow-y-auto my-auto"
         >
           {/* Top Bar */}
           <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
@@ -133,9 +126,7 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
 
               {/* Render Selected Method Workflow */}
               {selectedOption.id === 'MOBILE_MONEY' ? (
-                <PesapalFunding paymentMethod="MOBILE_MONEY" onCancel={onClose} />
-              ) : selectedOption.id === 'CARD' ? (
-                <PesapalFunding paymentMethod="CARD" onCancel={onClose} />
+                <MobileMoneyFunding onCancel={onClose} />
               ) : (
                 <UsdtFunding onCancel={onClose} />
               )}
@@ -160,7 +151,7 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
               ) : (
                 /* Funding Options List */
                 <div className="space-y-3">
-                  {FUNDING_OPTIONS.map((item) => (
+                  {FUNDING_OPTIONS.filter((item) => item.id === 'USDT' || hasLocalPaymentRails).map((item) => (
                     <button
                       key={item.id}
                       onClick={() => {
@@ -196,7 +187,7 @@ export const FundingModal: React.FC<FundingModalProps> = ({ isOpen, onClose }) =
                   {/* Operational Footer Info */}
                   <div className="p-3 rounded-2xl bg-white/5 border border-dashed border-white/10 flex items-center gap-2.5 text-xs text-text-tertiary">
                     <Sparkles size={16} className="text-amber-400 shrink-0" />
-                    <span>All deposits processed securely with real-time audit trail.</span>
+                    <span>{hasLocalPaymentRails ? 'Use USDT or local payment rails. Every deposit has a real-time audit trail.' : 'Global accounts use USDT on TRON (TRC-20). Every deposit has a real-time audit trail.'}</span>
                   </div>
                 </div>
               )}

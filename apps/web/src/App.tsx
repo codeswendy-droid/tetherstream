@@ -1,38 +1,79 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/admin/AdminLayout';
-import { MineScreen } from './pages/Mine';
-import { FriendsScreen } from './pages/Friends';
 import { BoostScreen } from './pages/Boost';
-import { TreasuryScreen } from './pages/Treasury';
 import { SplashScreen } from './pages/Splash';
 import { WalletScreen } from './pages/Wallet/WalletScreen';
-import { GrowthScreen } from './pages/Growth/GrowthScreen';
 import { GrowScreen } from './pages/Grow/GrowScreen';
 import { TitanHubScreen } from './pages/TitanHub/TitanHubScreen';
 import { RewardsScreen } from './pages/Rewards/RewardsScreen';
 import { ProfileScreen } from './pages/Profile/ProfileScreen';
 import { MachineOwnersManualModal } from './pages/TitanHub/components/MachineOwnersManualModal';
 import { MachineCertificateModal } from './pages/TitanHub/components/MachineCertificateModal';
-import { OverviewPage } from './pages/admin/overview';
-import { OrdersPage } from './pages/admin/orders';
-import { OperationsPage } from './pages/admin/operations';
-import { LiquidityPage } from './pages/admin/liquidity';
-import { TreasuryPage } from './pages/admin/treasury';
-import { PaymentRailsPage } from './pages/admin/payment-rails';
-import { WithdrawalsPage } from './pages/admin/withdrawals';
-import { UsersPage } from './pages/admin/users';
-import { RiskPage } from './pages/admin/risk';
-import { AutomationPage } from './pages/admin/automation';
-import { RevenuePage } from './pages/admin/revenue';
-import { NotificationsPage } from './pages/admin/notifications';
-import { AuditPage } from './pages/admin/audit';
-import { HealthPage } from './pages/admin/health';
-import { SettingsPage } from './pages/admin/settings';
-import { AdminSupportPage } from './pages/admin/support';
-import { GamesAdminPage } from './pages/admin/games';
+import { DestinationLoader } from './components/DestinationLoader';
+
+// Resilient lazy loader with auto-retry and chunk recovery
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  factory: () => Promise<any>,
+  exportName?: string,
+  retries = 2
+) {
+  return lazy(async () => {
+    for (let i = 0; i <= retries; i++) {
+      try {
+        const module = await factory();
+        const component = exportName ? (module[exportName] || module.default) : (module.default || Object.values(module)[0]);
+        if (sessionStorage.getItem('retry-lazy-refreshed')) {
+          sessionStorage.removeItem('retry-lazy-refreshed');
+        }
+        return { default: component };
+      } catch (error: any) {
+        if (i === retries) {
+          const hasRefreshed = sessionStorage.getItem('retry-lazy-refreshed');
+          if (!hasRefreshed) {
+            sessionStorage.setItem('retry-lazy-refreshed', 'true');
+            window.location.reload();
+            return new Promise(() => {}); // prevent throw while reload starts
+          }
+          sessionStorage.removeItem('retry-lazy-refreshed');
+          throw error;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 300 * (i + 1)));
+      }
+    }
+    return factory();
+  });
+}
+
+// Lazy-loaded Admin Pages (Code-split with resilient chunk retry)
+const OverviewPage = lazyWithRetry(() => import('./pages/admin/overview'), 'OverviewPage');
+const OrdersPage = lazyWithRetry(() => import('./pages/admin/orders'), 'OrdersPage');
+const OperationsPage = lazyWithRetry(() => import('./pages/admin/operations'), 'OperationsPage');
+const OperationsHqPage = lazyWithRetry(() => import('./pages/admin/operations-hq'), 'OperationsHqPage');
+const IntelligencePage = lazyWithRetry(() => import('./pages/admin/intelligence'), 'IntelligencePage');
+const ReadinessPage = lazyWithRetry(() => import('./pages/admin/readiness'), 'ReadinessPage');
+const LiquidityPage = lazyWithRetry(() => import('./pages/admin/liquidity'), 'LiquidityPage');
+const TreasuryPage = lazyWithRetry(() => import('./pages/admin/treasury'), 'TreasuryPage');
+const FinancialControlCenterPage = lazyWithRetry(() => import('./pages/admin/financial'), 'FinancialControlCenterPage');
+const MachineControlCenterPage = lazyWithRetry(() => import('./pages/admin/machines'), 'MachineControlCenterPage');
+const PaymentRailsPage = lazyWithRetry(() => import('./pages/admin/payment-rails'), 'PaymentRailsPage');
+const WithdrawalsPage = lazyWithRetry(() => import('./pages/admin/withdrawals'), 'WithdrawalsPage');
+const UsersPage = lazyWithRetry(() => import('./pages/admin/users'), 'UsersPage');
+const AdminSupportPage = lazyWithRetry(() => import('./pages/admin/support'), 'AdminSupportPage');
+const GamesAdminPage = lazyWithRetry(() => import('./pages/admin/games'), 'GamesAdminPage');
+const RiskPage = lazyWithRetry(() => import('./pages/admin/risk'), 'RiskPage');
+const AutomationPage = lazyWithRetry(() => import('./pages/admin/automation'), 'AutomationPage');
+const RevenuePage = lazyWithRetry(() => import('./pages/admin/revenue'), 'RevenuePage');
+const NotificationsPage = lazyWithRetry(() => import('./pages/admin/notifications'), 'NotificationsPage');
+const AuditPage = lazyWithRetry(() => import('./pages/admin/audit'), 'AuditPage');
+const HealthPage = lazyWithRetry(() => import('./pages/admin/health'), 'HealthPage');
+const SettingsPage = lazyWithRetry(() => import('./pages/admin/settings'), 'SettingsPage');
+const GrowthAdminPage = lazyWithRetry(() => import('./pages/admin/growth'), 'GrowthAdminPage');
+const WhatsappAdminPage = lazyWithRetry(() => import('./pages/admin/whatsapp'), 'WhatsappAdminPage');
+const MerchantsAdminPage = lazyWithRetry(() => import('./pages/admin/merchants'), 'MerchantsAdminPage');
+
 import { useNavigationStore } from './store/useNavigationStore';
 import { useMissionRunnerStore } from './store/useMissionRunnerStore';
 import { useMiningStore } from './store/useMiningStore';
@@ -44,48 +85,57 @@ import { ClaimSuccessModal } from './components/rewards/ClaimSuccessModal';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import type { MissionItem } from './services/growthService';
 import { useAuthStore, detectUserCountry } from './store/useAuthStore';
-import { useCountryStore, SUPPORTED_COUNTRIES } from './store/useCountryStore';
+import { supportsLocalPaymentRails, useCountryStore, SUPPORTED_COUNTRIES } from './store/useCountryStore';
 import { useSettingsStore } from './store/useSettingsStore';
 import { AuthGate } from './components/AuthGate';
 import { OnboardingOverlay } from './components/OnboardingOverlay';
 import { CountrySelector } from './components/CountrySelector';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { FinancialControlCenterPage } from './pages/admin/financial';
-import { MachineControlCenterPage } from './pages/admin/machines';
-import { OperationsHqPage } from './pages/admin/operations-hq';
-import { IntelligencePage } from './pages/admin/intelligence';
-import { ReadinessPage } from './pages/admin/readiness';
+import { StepUpModal } from './components/StepUpModal';
+import { ReferralLanding } from './pages/ReferralLanding';
+import { CloudServices } from './pages/CloudServices';
+import { LegalModal } from './components/legal/LegalModal';
+import { CookieConsentBanner } from './components/legal/CookieConsentBanner';
+import { PreAuthOnboarding } from './components/PreAuthOnboarding';
+import { hasSeenPreAuthOnboarding } from './utils/preAuthOnboarding';
 
 // ─── Admin Routes (accessible without user auth) ─────────────────────────────
 
 function AdminRoutes() {
   return (
-    <Routes>
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<OverviewPage />} />
-        <Route path="orders" element={<OrdersPage />} />
-        <Route path="operations" element={<OperationsPage />} />
-        <Route path="operations-hq" element={<OperationsHqPage />} />
-        <Route path="intelligence" element={<IntelligencePage />} />
-        <Route path="readiness" element={<ReadinessPage />} />
-        <Route path="liquidity" element={<LiquidityPage />} />
-        <Route path="treasury" element={<TreasuryPage />} />
-        <Route path="financial" element={<FinancialControlCenterPage />} />
-        <Route path="machines" element={<MachineControlCenterPage />} />
-        <Route path="payment-rails" element={<PaymentRailsPage />} />
-        <Route path="withdrawals" element={<WithdrawalsPage />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="support" element={<AdminSupportPage />} />
-        <Route path="games" element={<GamesAdminPage />} />
-        <Route path="risk" element={<RiskPage />} />
-        <Route path="automation" element={<AutomationPage />} />
-        <Route path="revenue" element={<RevenuePage />} />
-        <Route path="notifications" element={<NotificationsPage />} />
-        <Route path="audit" element={<AuditPage />} />
-        <Route path="health" element={<HealthPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-      </Route>
-    </Routes>
+    <ErrorBoundary>
+      <Suspense fallback={<DestinationLoader destination="wallet" />}>
+        <Routes>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<OverviewPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="operations" element={<OperationsPage />} />
+            <Route path="operations-hq" element={<OperationsHqPage />} />
+            <Route path="intelligence" element={<IntelligencePage />} />
+            <Route path="readiness" element={<ReadinessPage />} />
+            <Route path="liquidity" element={<LiquidityPage />} />
+            <Route path="treasury" element={<TreasuryPage />} />
+            <Route path="financial" element={<FinancialControlCenterPage />} />
+            <Route path="machines" element={<MachineControlCenterPage />} />
+            <Route path="payment-rails" element={<PaymentRailsPage />} />
+            <Route path="withdrawals" element={<WithdrawalsPage />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="support" element={<AdminSupportPage />} />
+            <Route path="games" element={<GamesAdminPage />} />
+            <Route path="risk" element={<RiskPage />} />
+            <Route path="automation" element={<AutomationPage />} />
+            <Route path="revenue" element={<RevenuePage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="audit" element={<AuditPage />} />
+            <Route path="health" element={<HealthPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="growth" element={<GrowthAdminPage />} />
+            <Route path="whatsapp" element={<WhatsappAdminPage />} />
+            <Route path="merchants" element={<MerchantsAdminPage />} />
+          </Route>
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -110,8 +160,6 @@ function MainApp() {
           useMiningStore.getState().fetchMiningState(),
           useTreasuryStore.getState().fetchTreasuryState(),
         ]);
-        const { useQuestStore } = await import('./store/useQuestStore');
-        useQuestStore.getState().checkDailyLoginStreak();
       } catch (err) {
         console.warn('[SYNC] Periodic background synchronization notice:', err);
       }
@@ -163,9 +211,10 @@ function MainApp() {
         </div>
       </div>
 
-      {/* Global Hardware Modals */}
+      {/* Global Hardware & Security Modals */}
       <MachineOwnersManualModal />
       <MachineCertificateModal />
+      <StepUpModal />
 
       {/* Profile Slide-Over Drawer */}
       <AnimatePresence>
@@ -210,6 +259,7 @@ function MainApp() {
 
 export function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const [showPreAuthOnboarding, setShowPreAuthOnboarding] = useState(() => !hasSeenPreAuthOnboarding());
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const onboardingComplete = useAuthStore((s) => s.onboardingComplete);
@@ -239,18 +289,44 @@ export function App() {
           const match = SUPPORTED_COUNTRIES.find((c) => c.code === code || (code === 'EU' && c.code === 'EU'));
           if (match) {
             selectCountry(match.code);
-            setCurrencyPreference(match.code !== 'US', match.name, match.currencyCode, match.currencySymbol, match.exchangeRate);
+            setCurrencyPreference(supportsLocalPaymentRails(match.code), match.name, match.currencyCode, match.currencySymbol, match.exchangeRate);
             markCountrySelected();
             localStorage.setItem('has_chosen_currency', 'true');
           }
         }
       });
     }
-  }, [isAuthenticated, isCountrySet, setDetectedCountry, selectCountry, setCurrencyPreference, markCountrySelected]);
+  }, [isAuthenticated, isCountrySet]);
 
   // 1. Splash screen (always first)
   if (showSplash) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
+
+  // Public marketing landing page. /home is the canonical shareable entrypoint;
+  // /cloud-services remains as a backwards-compatible alias.
+  const isLandingRoute = typeof window !== 'undefined' && (
+    window.location.pathname === '/home' || window.location.pathname === '/cloud-services'
+  );
+  if (isLandingRoute) {
+    return (
+      <ErrorBoundary>
+        <CloudServices />
+      </ErrorBoundary>
+    );
+  }
+
+  // 1.6 Referral landing route (/ref/:code) - captured prior to auth gate
+  const isRefRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/ref/');
+  if (isRefRoute) {
+    return (
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/ref/:code" element={<ReferralLanding />} />
+          <Route path="*" element={<ReferralLanding />} />
+        </Routes>
+      </ErrorBoundary>
+    );
   }
 
   // 2. Admin routes bypass AuthGate entirely (operator access)
@@ -260,7 +336,11 @@ export function App() {
     window.location.search.includes('admin=true')
   );
   if (isAdminRoute) {
-    return <AdminRoutes />;
+    return (
+      <ErrorBoundary>
+        <AdminRoutes />
+      </ErrorBoundary>
+    );
   }
 
   // 3. AuthGate wraps the entire authenticated experience.
@@ -268,6 +348,9 @@ export function App() {
   //    Only renders children when auth is confirmed.
   return (
     <ErrorBoundary>
+      {!isAuthenticated && showPreAuthOnboarding && (
+        <PreAuthOnboarding onComplete={() => setShowPreAuthOnboarding(false)} />
+      )}
       <AuthGate>
         {/* 4. Onboarding overlay (new users) */}
         {!onboardingComplete ? (
@@ -283,30 +366,14 @@ export function App() {
         ) : (
           /* 6. Fully authenticated, onboarded, country set → full app */
           <Routes>
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<OverviewPage />} />
-              <Route path="orders" element={<OrdersPage />} />
-              <Route path="operations" element={<OperationsPage />} />
-              <Route path="liquidity" element={<LiquidityPage />} />
-              <Route path="treasury" element={<TreasuryPage />} />
-              <Route path="financial" element={<FinancialControlCenterPage />} />
-              <Route path="payment-rails" element={<PaymentRailsPage />} />
-              <Route path="withdrawals" element={<WithdrawalsPage />} />
-              <Route path="users" element={<UsersPage />} />
-              <Route path="support" element={<AdminSupportPage />} />
-              <Route path="games" element={<GamesAdminPage />} />
-              <Route path="risk" element={<RiskPage />} />
-              <Route path="automation" element={<AutomationPage />} />
-              <Route path="revenue" element={<RevenuePage />} />
-              <Route path="notifications" element={<NotificationsPage />} />
-              <Route path="audit" element={<AuditPage />} />
-              <Route path="health" element={<HealthPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
+            <Route path="/admin/*" element={<AdminRoutes />} />
             <Route path="*" element={<MainApp />} />
           </Routes>
         )}
       </AuthGate>
+      {/* Global Legal & Privacy Components */}
+      <LegalModal />
+      <CookieConsentBanner />
     </ErrorBoundary>
   );
 }

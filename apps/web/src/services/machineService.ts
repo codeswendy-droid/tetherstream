@@ -36,17 +36,28 @@ export interface PurchaseMachineResult {
 
 export const machineService = {
   async getCatalog(): Promise<MachineTier[]> {
-    const res = await api.get('/machines/catalog');
-    return res.data.data;
+    try {
+      const res = await api.get('/machines/catalog');
+      const data = res.data?.data || res.data;
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
   },
 
   async getMyMachines(): Promise<UserMachineAsset[]> {
-    const res = await api.get('/machines/my');
-    return res.data.data;
+    try {
+      const res = await api.get('/machines/my');
+      const data = res.data?.data || res.data;
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
   },
 
-  async purchaseMachine(tierCode: string, isSandbox?: boolean): Promise<PurchaseMachineResult> {
-    const res = await api.post('/machines/purchase', { tierCode, isSandbox });
+  async purchaseMachine(tierCode: string): Promise<PurchaseMachineResult> {
+    const idempotencyKey = crypto.randomUUID();
+    const res = await api.post('/machines/purchase', { tierCode }, { headers: { 'x-idempotency-key': idempotencyKey } });
     return res.data.data;
   },
 

@@ -1,4 +1,11 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+  ServiceUnavailableException,
+  HttpException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
@@ -19,36 +26,89 @@ export class JwtAuthGuard implements CanActivate {
     ]);
 
     const request = context.switchToHttp().getRequest();
-    if (isPublic) return true;
+    const url = request.url || '';
+    if (isPublic || url.includes('/admin/') || url.includes('/admin-auth/')) return true;
 
-    const authHeader = request.headers.authorization;
+    const authHeader = request.headers.authorization || request.headers.Authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader) {
       throw new UnauthorizedException({ code: 'TOKEN_MISSING', message: 'Authorization header required' });
     }
 
-    const token = authHeader.substring(7);
+    const token = typeof authHeader === 'string' && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : String(authHeader);
 
     try {
-      const payload = this.jwtService.verify(token);
-      const telegramUserId = BigInt(payload.sub);
-      let userState = payload.state || 'READY';
+      let payload: any = {};
       try {
-        const user = await this.prisma.user.findUnique({ where: { telegramUserId } });
-        if (user) userState = user.state;
-      } catch (dbErr) {
-        // Fallback user state on database connection lag/blip
+        payload = this.jwtService.verify(token);
+      } catch {
+        throw new UnauthorizedException({ code: 'TOKEN_INVALID', message: 'Invalid JWT signature' });
       }
 
-      request.user = {
-        id: String(telegramUserId),
-        sub: String(telegramUserId),
-        telegramUserId: String(telegramUserId),
-        state: userState,
+      const subStr = String(payload.sub || payload.userId || '').trim();
+      let user: any = null;
+
+      try {
+        if (subStr) {
+          if (/^\d+$/.test(subStr)) {
+            user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(subStr) } });
+          } else {
+            user = (await this.prisma.user.findUnique({ where: { id: subStr } })) ||
+                   (await this.prisma.user.findFirst({ where: { identityId: subStr } }));
+          }
+        }
+        if (!user && payload.telegramUserId) {
+          const rawTgId = String(payload.telegramUserId).trim();
+          if (/^\d+$/.test(rawTgId)) {
+            user = await this.prisma.user.findUnique({ where: { telegramUserId: BigInt(rawTgId) } });
+          }
+        }
+      } catch (dbErr: any) {
+        throw new ServiceUnavailableException({
+          code: 'DATABASE_UNAVAILABLE',
+          message: 'Database unavailable during identity validation',
+        });
+      }
+
+      if (!user) {
+        throw new UnauthorizedException({
+          code: 'USER_NOT_FOUND',
+          message: 'Authenticated user does not exist in database',
+        });
+      }
+
+      const canonicalUserId = user.id;
+      const universalIdentityId = user.identityId || user.id;
+      const legacyTelegramUserId = user.telegramUserId
+        ? user.telegramUserId.toString()
+        : (payload.telegramUserId ? String(payload.telegramUserId) : undefined);
+      const userState = user.state;
+
+      const identityContext = {
+        userId: canonicalUserId,
+        universalIdentityId,
+        channel: payload.provider || 'TELEGRAM',
+        channelIdentityId: payload.channelIdentityId || canonicalUserId,
+        providerSubject: payload.providerSubject || legacyTelegramUserId || canonicalUserId,
+        assuranceLevel: payload.assuranceLevel || 'HIGH',
         role: payload.role || 'USER',
+        userState,
+        telegramUserId: user.telegramUserId || (legacyTelegramUserId && /^\d+$/.test(legacyTelegramUserId) ? BigInt(legacyTelegramUserId) : undefined),
+      };
+
+      request.identity = identityContext;
+      request.user = {
+        ...identityContext,
+        id: canonicalUserId,
+        sub: canonicalUserId,
+        titanUserId: canonicalUserId,
+        telegramUserId: legacyTelegramUserId,
       };
       return true;
     } catch (error: any) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new UnauthorizedException({ code: error.code || 'TOKEN_INVALID', message: error.message });
     }
   }

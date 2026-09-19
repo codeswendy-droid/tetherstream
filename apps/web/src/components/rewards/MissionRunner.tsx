@@ -80,27 +80,38 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
     return () => clearInterval(poll);
   }, [isOpen, fetchMissions]);
 
-  // Auto-claim the instant the requirement is met (fires exactly once).
+  // Auto-claim the instant the requirement is met (fires exactly once per mission).
   useEffect(() => {
     if (!isOpen || !liveMission || autoClaimed) return;
-    if (!liveMission.eligible || liveMission.status === 'CLAIM_PENDING') return;
+    if (!liveMission.eligible || liveMission.status === 'CLAIM_PENDING' || liveMission.status === 'CLAIMED') return;
     if (claimedForRef.current === liveMission.id) return;
 
     claimedForRef.current = liveMission.id;
     setAutoClaimed(true);
     hapticFeedback.notificationOccurred('success');
-    autoClaim(liveMission.id).then((res) => {
-      if (res.success && res.reward) {
-        showToast(`Mission complete — ${Number(res.reward?.amount)?.toFixed(2)} USDT claimed!`, 'success');
-        onClaimed({ ...liveMission, status: 'CLAIMED' });
-        onClose();
-      } else {
-        setAutoClaimed(false);
-        claimedForRef.current = null;
-        showToast(res.error || 'Auto-claim failed. Tap Claim to retry.', 'error');
-      }
-    });
-  }, [isOpen, liveMission, autoClaimed, autoClaim, onClaimed, onClose, hapticFeedback]);
+    autoClaim(liveMission.id)
+      .then((res) => {
+        if (res.success && res.reward) {
+          showToast(`Mission complete — ${Number(res.reward?.amount)?.toFixed(2)} USDT claimed!`, 'success');
+          onClaimed({ ...liveMission, status: 'CLAIMED' });
+          onClose();
+        } else if (res.error) {
+          showToast(res.error, 'error');
+        }
+      })
+      .catch((err: any) => {
+        console.warn('Auto-claim error:', err);
+      });
+  }, [
+    isOpen,
+    liveMission?.id,
+    liveMission?.eligible,
+    liveMission?.status,
+    autoClaimed,
+    autoClaim,
+    onClaimed,
+    onClose,
+  ]);
 
   if (!isOpen || !liveMission) return null;
 
@@ -111,7 +122,9 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
   const isEligible = !!liveMission.eligible;
   const isProcessing = isEligible && (liveMission.status === 'CLAIM_PENDING' || (claimingId === liveMission.id && isClaiming));
   const tab = requirement?.actionTab || 'rewards';
-  const shareText = `🚀 TITAN MISSION 🚀\nI'm completing the "${liveMission.ruleName}" on Titan Stream — ${liveMission.amount} ${liveMission.assetCode} on the line!\nJoin me: https://t.me/tetherstream_bot`;
+  const missionAmt = liveMission.amount ?? liveMission.rewardAmount ?? '0.50';
+  const missionAsset = liveMission.assetCode || 'USDT';
+  const shareText = `🚀 TITAN MISSION 🚀\nI'm completing the "${liveMission.ruleName || liveMission.title || 'Mission'}" on Titan Stream — ${missionAmt} ${missionAsset} on the line!\nJoin me: https://t.me/tetherstream_bot`;
 
   const handleNavigate = () => {
     hapticFeedback.impactOccurred('light');
@@ -206,7 +219,7 @@ export const MissionRunner: React.FC<MissionRunnerProps> = ({ mission, isOpen, o
           <div className="mt-3 flex items-center justify-between bg-control-bg/40 border border-white/5 rounded-xl px-3 py-2">
             <span className="text-[10px] text-text-secondary">{liveMission.description}</span>
             <span className="text-xs font-black font-mono text-usdt-green flex-shrink-0 ml-2">
-              +{Number(liveMission.amount)?.toFixed(2)} {liveMission.assetCode}
+              +{Number(liveMission.amount ?? liveMission.rewardAmount ?? 0.50).toFixed(2)} {liveMission.assetCode || 'USDT'}
             </span>
           </div>
 

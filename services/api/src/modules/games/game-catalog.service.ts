@@ -43,8 +43,8 @@ const DEFAULT_GAMES: DefaultGameSeed[] = [
   {
     gameId: 'crypto-roulette',
     code: 'ROULETTE',
-    name: 'Crypto Roulette',
-    description: 'Spin the wheel for instant crystal and USDT prizes. Outcomes are decided server-side.',
+    name: 'Titan Vault Wheel',
+    description: 'Spin the high-torque titanium vault wheel for instant crystal multipliers and direct USDT prizes.',
     category: 'chance',
     icon: '🎡',
     accentColor: '#00e676',
@@ -67,22 +67,25 @@ const DEFAULT_GAMES: DefaultGameSeed[] = [
         machineBoostChance: 0.01,
       },
       sectors: [
-        { label: '5 💎', type: 'CRYSTALS', value: 5, weight: 25, premium: false },
-        { label: '2 💎', type: 'CRYSTALS', value: 2, weight: 40, premium: false },
-        { label: '10 💎', type: 'CRYSTALS', value: 10, weight: 15, premium: false },
-        { label: '25 💎', type: 'CRYSTALS', value: 25, weight: 5, premium: true },
-        { label: '100 💎', type: 'CRYSTALS', value: 100, weight: 0.5, premium: true },
-        { label: '₮0.05', type: 'USDT', value: 0.05, weight: 10, premium: false },
-        { label: '₮0.25', type: 'USDT', value: 0.25, weight: 3, premium: true },
-        { label: '₮1.00', type: 'USDT', value: 1, weight: 0.25, premium: true },
-        { label: '⚡×1.5 Boost', type: 'BOOST', value: 1.5, weight: 1.25, premium: false },
+        { label: '₮50.00 GRAND', type: 'USDT', value: 50.0, weight: 0, premium: true },
+        { label: '15 💎 LUCKY', type: 'CRYSTALS', value: 15, weight: 20, premium: false },
+        { label: '₮25.00 MEGA', type: 'USDT', value: 25.0, weight: 0, premium: true },
+        { label: '10 💎 WIN', type: 'CRYSTALS', value: 10, weight: 25, premium: false },
+        { label: '₮10.00 TITAN', type: 'USDT', value: 10.0, weight: 0, premium: true },
+        { label: '⚡×2.0 BOOST', type: 'BOOST', value: 2.0, weight: 5, premium: true },
+        { label: '₮1.00 JACKPOT', type: 'USDT', value: 1.0, weight: 1, premium: true },
+        { label: '50 💎 BIG POT', type: 'CRYSTALS', value: 50, weight: 4, premium: true },
+        { label: '₮0.50 HIGH', type: 'USDT', value: 0.50, weight: 3, premium: true },
+        { label: '100 💎 MEGA', type: 'CRYSTALS', value: 100, weight: 1, premium: true },
+        { label: '₮0.25 VAULT', type: 'USDT', value: 0.25, weight: 8, premium: true },
+        { label: '⚡×1.5 BOOST', type: 'BOOST', value: 1.5, weight: 18, premium: false },
       ],
     },
   },
   {
     gameId: 'hoop-masters',
     code: 'HOOPS',
-    name: 'Hoop Masters',
+    name: 'Titan Hoop',
     description: 'Swipe to launch. Chain baskets to build combo streaks and earn crystals.',
     category: 'skill',
     icon: '🏀',
@@ -331,18 +334,64 @@ export class GameCatalogService {
   }
 
   async getEnabledGames(): Promise<GameCatalog[]> {
-    return this.prisma.gameCatalog.findMany({
-      where: { enabled: true },
-      orderBy: { createdAt: 'asc' },
-    });
+    try {
+      const items = await this.prisma.gameCatalog.findMany({
+        where: { enabled: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (items && items.length > 0) return items;
+    } catch (err: any) {
+      this.logger.warn(`[GameCatalog] Database query failed, using in-memory catalog fallback: ${err?.message}`);
+    }
+
+    return DEFAULT_GAMES.map((g, idx) => ({
+      id: `game_${idx + 1}`,
+      gameId: g.gameId,
+      code: g.code,
+      name: g.name,
+      description: g.description,
+      category: g.category,
+      icon: g.icon,
+      accentColor: g.accentColor,
+      crystalCost: g.crystalCost,
+      dailyLimit: g.dailyLimit,
+      estimatedDurationSec: g.estimatedDurationSec,
+      difficulty: g.difficulty,
+      enabled: true,
+      rewardConfig: g.rewardConfig as any,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
   }
 
   async getGame(gameId: string): Promise<GameCatalog> {
-    const game = await this.prisma.gameCatalog.findUnique({ where: { gameId } });
-    if (!game || !game.enabled) {
+    try {
+      const game = await this.prisma.gameCatalog.findUnique({ where: { gameId } });
+      if (game && game.enabled) return game;
+    } catch {}
+
+    const seed = DEFAULT_GAMES.find((g) => g.gameId === gameId);
+    if (!seed) {
       throw new NotFoundException({ code: 'GAME_NOT_FOUND', message: 'Game is not available.' });
     }
-    return game;
+    return {
+      id: `game_${seed.gameId}`,
+      gameId: seed.gameId,
+      code: seed.code,
+      name: seed.name,
+      description: seed.description,
+      category: seed.category,
+      icon: seed.icon,
+      accentColor: seed.accentColor,
+      crystalCost: seed.crystalCost,
+      dailyLimit: seed.dailyLimit,
+      estimatedDurationSec: seed.estimatedDurationSec,
+      difficulty: seed.difficulty,
+      enabled: true,
+      rewardConfig: seed.rewardConfig as any,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
   }
 
   async getGameStrict(gameId: string): Promise<GameCatalog | null> {
@@ -350,10 +399,32 @@ export class GameCatalogService {
   }
 
   async listGames(includeDisabled = false): Promise<GameCatalog[]> {
-    return this.prisma.gameCatalog.findMany({
-      where: includeDisabled ? {} : { enabled: true },
-      orderBy: { createdAt: 'asc' },
-    });
+    try {
+      const items = await this.prisma.gameCatalog.findMany({
+        where: includeDisabled ? {} : { enabled: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (items && items.length > 0) return items;
+    } catch {}
+
+    return DEFAULT_GAMES.map((g, idx) => ({
+      id: `game_${idx + 1}`,
+      gameId: g.gameId,
+      code: g.code,
+      name: g.name,
+      description: g.description,
+      category: g.category,
+      icon: g.icon,
+      accentColor: g.accentColor,
+      crystalCost: g.crystalCost,
+      dailyLimit: g.dailyLimit,
+      estimatedDurationSec: g.estimatedDurationSec,
+      difficulty: g.difficulty,
+      enabled: true,
+      rewardConfig: g.rewardConfig as any,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
   }
 
   async upsertGame(data: {

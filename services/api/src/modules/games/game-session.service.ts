@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, Optional, Inject } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CrystalTransactionType, GameCatalog, GameSession, GameSessionStatus, Prisma } from '@prisma/client';
 import { GameCatalogService } from './game-catalog.service';
@@ -11,6 +11,7 @@ import { GameDailyChallengeService } from './game-daily-challenge.service';
 import { AchievementService } from '../growth/achievement.service';
 import { EndSessionDto } from './dto/games.dto';
 import { GrowthNotificationService } from '../growth/growth-notification.service';
+import { EventBusService } from '../automation/event-bus.service';
 import type { GameSessionStats } from './game-types';
 
 /**
@@ -37,20 +38,25 @@ export class GameSessionService {
     private readonly challenges: GameDailyChallengeService,
     private readonly achievements: AchievementService,
     private readonly notificationService: GrowthNotificationService,
+    @Optional() @Inject(EventBusService) private readonly eventBus?: EventBusService,
   ) {}
 
   async countPlaysToday(telegramUserId: bigint, gameId: string, client: Prisma.TransactionClient | PrismaService = this.prisma): Promise<number> {
     const dayStart = new Date();
     dayStart.setHours(0, 0, 0, 0);
 
-    return client.gameSession.count({
-      where: {
-        telegramUserId,
-        gameId,
-        createdAt: { gte: dayStart },
-        status: { in: [GameSessionStatus.STARTED, GameSessionStatus.COMPLETED] },
-      },
-    });
+    try {
+      return await client.gameSession.count({
+        where: {
+          telegramUserId,
+          gameId,
+          createdAt: { gte: dayStart },
+          status: { in: [GameSessionStatus.STARTED, GameSessionStatus.COMPLETED] },
+        },
+      });
+    } catch {
+      return 0;
+    }
   }
 
   /**
@@ -105,6 +111,21 @@ export class GameSessionService {
     );
 
     const session = await this.prisma.gameSession.findUnique({ where: { id: sessionId } });
+
+    if (this.eventBus) {
+      this.eventBus.publish({
+        type: 'GameSessionStarted',
+        correlationId: session?.reference || `session_${sessionId}`,
+        actorId: telegramUserId.toString(),
+        payload: {
+          telegramUserId: telegramUserId.toString(),
+          gameId,
+          sessionId,
+          crystalCost: session?.crystalCost ?? 0,
+        },
+      });
+    }
+
     return this.toStartView(game, session!);
   }
 
@@ -289,6 +310,25 @@ export class GameSessionService {
           this.logger.warn(`[GameSession] Achievement notification failed: ${err?.message}`);
         }
       }
+    }
+
+    if (this.eventBus) {
+      this.eventBus.publish({
+        type: 'GameSessionCompleted',
+        correlationId: finalSession?.reference || `session_${sessionId}`,
+        actorId: telegramUserId.toString(),
+        payload: {
+          telegramUserId: telegramUserId.toString(),
+          gameId,
+          sessionId,
+          score: body.score,
+          status: finalSession?.status ?? (verdict.ok ? 'COMPLETED' : 'REJECTED'),
+          crystalsEarned,
+          usdtEarned,
+          isNewPersonalBest,
+          challengeCompleted: challengeResult?.completed ?? false,
+        },
+      });
     }
 
     return this.toEndView(game, finalSession!, {

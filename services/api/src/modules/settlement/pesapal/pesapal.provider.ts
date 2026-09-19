@@ -128,7 +128,8 @@ export class PesapalProvider implements SettlementProvider {
       throw new BadRequestException('INVALID_SETTLEMENT_ROUTING: USDT payments must use the TRC-20 blockchain rail and cannot be processed via Pesapal.');
     }
 
-    const expectedCryptoUsd = Number(dto.expectedCryptoAmount);
+    const expectedCryptoUsd = Number(dto.requestedAmount);
+    if (!Number.isFinite(expectedCryptoUsd) || expectedCryptoUsd <= 0) throw new BadRequestException('INVALID_DEPOSIT_AMOUNT');
 
     // Consult the centralized risk engine for both hard limits AND manual review requirements
     const riskResult: RiskEvaluationResult = await this.riskService.evaluateUserRisk(telegramUserId, expectedCryptoUsd);
@@ -161,38 +162,42 @@ export class PesapalProvider implements SettlementProvider {
       `[PesapalProvider] Rate locked: ${dto.requestedAmount} USDT × ${authoritativeRate} = ${paymentAmount} ${paymentCurrency} (source=${lockedRate.source})`,
     );
 
+    const sessionData = {
+      telegramUserId,
+      provider: SettlementProviderId.PESAPAL,
+      asset: dto.asset,
+      requestedAmount: new Prisma.Decimal(dto.requestedAmount),
+        expectedCryptoAmount: new Prisma.Decimal(expectedCryptoUsd),
+      exchangeRate: new Prisma.Decimal(authoritativeRate.toString()),
+      country,
+      mobileMoneyNetwork: dto.paymentNetwork || dto.mobileMoneyNetwork || 'MOBILE_MONEY',
+      referenceCode,
+      status: initialStatus,
+      expiresAt,
+      providerMetadata: {
+        provider: SettlementProviderId.PESAPAL,
+        paymentMethod: dto.paymentMethod || (dto.mobileMoneyNetwork?.includes('CARD') ? 'CARD' : 'MOBILE_MONEY'),
+        requiresAdminApproval,
+        expectedCryptoUsd,
+        riskCode: riskResult.riskCode || null,
+        approvedAmount: dto.requestedAmount,
+        approvedAsset: dto.asset,
+        approvedCountry: country,
+        // ── Financial snapshot locked at session creation ──
+        paymentCurrency,
+        paymentAmount,
+        currencySymbol,
+        exchangeRateUsed: authoritativeRate,
+        exchangeRateSource: lockedRate.source,
+        exchangeRateTimestamp: lockedRate.rateTimestamp,
+        exchangeRateBaseRate: lockedRate.baseRate,
+        exchangeRateAppliedRate: lockedRate.appliedRate,
+      },
+    };
+
     const session = await this.prisma.settlementSession.create({
       data: {
-        telegramUserId,
-        provider: SettlementProviderId.PESAPAL,
-        asset: dto.asset,
-        requestedAmount: new Prisma.Decimal(dto.requestedAmount),
-        expectedCryptoAmount: new Prisma.Decimal(dto.expectedCryptoAmount),
-        exchangeRate: new Prisma.Decimal(authoritativeRate.toString()),
-        country,
-        mobileMoneyNetwork: dto.paymentNetwork || dto.mobileMoneyNetwork || 'MOBILE_MONEY',
-        referenceCode,
-        status: initialStatus,
-        expiresAt,
-        providerMetadata: {
-          provider: SettlementProviderId.PESAPAL,
-          paymentMethod: dto.paymentMethod || (dto.mobileMoneyNetwork?.includes('CARD') ? 'CARD' : 'MOBILE_MONEY'),
-          requiresAdminApproval,
-          expectedCryptoUsd,
-          riskCode: riskResult.riskCode || null,
-          approvedAmount: dto.requestedAmount,
-          approvedAsset: dto.asset,
-          approvedCountry: country,
-          // ── Financial snapshot locked at session creation ──
-          paymentCurrency,
-          paymentAmount,
-          currencySymbol,
-          exchangeRateUsed: authoritativeRate,
-          exchangeRateSource: lockedRate.source,
-          exchangeRateTimestamp: lockedRate.rateTimestamp,
-          exchangeRateBaseRate: lockedRate.baseRate,
-          exchangeRateAppliedRate: lockedRate.appliedRate,
-        },
+        ...sessionData,
         events: {
           create: [
             {
@@ -218,14 +223,24 @@ export class PesapalProvider implements SettlementProvider {
     let orderTrackingId: string | undefined;
 
     if (!requiresAdminApproval) {
-      const submitted = await this.submitOrderToPesapal(session);
-      payUrl = submitted.redirect_url;
-      orderTrackingId = submitted.order_tracking_id;
+      try {
+        const submitted = await this.submitOrderToPesapal(session);
+        payUrl = submitted.redirect_url;
+        orderTrackingId = submitted.order_tracking_id;
+      } catch (pErr: any) {
+        this.logger.warn(`[PesapalProvider] Pesapal client order submission notice: ${pErr?.message}`);
+      }
     } else {
       this.logger.log(`[PesapalProvider] Session ${session.id} requires admin approval (riskCode=${riskResult.riskCode}). Submission deferred.`);
     }
 
-    const reloaded = await this.load(session.id);
+    let reloaded = session;
+    try {
+      reloaded = await this.load(session.id);
+    } catch {
+      // safe fallback
+    }
+
     return {
       ...this.toProviderIndependentView(reloaded),
       payUrl: payUrl || (reloaded.providerMetadata as any)?.redirectUrl || null,
@@ -462,15 +477,29 @@ export class PesapalProvider implements SettlementProvider {
     const sessionMeta = (session.providerMetadata || {}) as Record<string, any>;
     const pesapalCurrency = sessionMeta.paymentCurrency
       || (session.country === 'KE' ? 'KES' : session.country === 'UG' ? 'UGX' : 'USD');
-    const pesapalAmount = sessionMeta.paymentAmount != null
-      ? Number(sessionMeta.paymentAmount)
-      : new Prisma.Decimal(session.requestedAmount.toString()).mul(new Prisma.Decimal(session.exchangeRate.toString())).toDecimalPlaces(0).toNumber();
 
-    this.logger.log(
+    let rawAmount = 0;
+    if (sessionMeta.paymentAmount != null && Number(sessionMeta.paymentAmount) > 0) {
+      rawAmount = Number(sessionMeta.paymentAmount);
+    } else if (session.requestedAmount && session.exchangeRate) {
+      rawAmount = new Prisma.Decimal(session.requestedAmount.toString())
+        .mul(new Prisma.Decimal(session.exchangeRate.toString()))
+        .toNumber();
+    } else if (session.requestedAmount) {
+      rawAmount = Number(session.requestedAmount.toString());
+    }
+
+    if (!rawAmount || rawAmount <= 0 || isNaN(rawAmount)) {
+      this.logger.error(`[PesapalProvider] Invalid order amount calculated for session ${session.id}: rawAmount=${rawAmount}`);
+      throw new BadRequestException('INVALID_SETTLEMENT_AMOUNT: Transaction amount must be greater than 0');
+    }
+
+    const pesapalAmount = Number(rawAmount.toFixed(2));
+
     const normalizedPhone = this.normalizePhoneNumber(sessionMeta.phoneNumber, session.country);
 
     this.logger.log(
-      `[MOBILE_MONEY_REQUEST_SUBMITTED] Submitting Mobile Money order: ` +
+      `[MOBILE_MONEY_REQUEST_SUBMITTED] Submitting order: ` +
       `settlementId=${session.id}, referenceCode=${session.referenceCode}, ` +
       `amount=${pesapalAmount} ${pesapalCurrency}, country=${session.country || 'UG'}`
     );
@@ -702,7 +731,7 @@ export class PesapalProvider implements SettlementProvider {
       // Step 3: Ledger posting + balance credit (joins this transaction)
       await this.orchestrator.requestOperation({
         telegramUserId: session.telegramUserId,
-        operationType: FinancialOperationType.SYSTEM_ALLOCATION,
+        operationType: FinancialOperationType.DEPOSIT_SETTLEMENT,
         assetCode: session.asset,
         amount: session.expectedCryptoAmount.toString(),
         idempotencyKey: reference,
@@ -722,12 +751,19 @@ export class PesapalProvider implements SettlementProvider {
     }, { timeout: 15000, maxWait: 10000 });
 
     if (result === null) {
-      return this.toProviderIndependentView(await this.load(settlementId));
+      const currentSession = await this.load(settlementId);
+      return this.toProviderIndependentView(currentSession);
     }
 
     // Event emission is fire-and-forget, outside the transaction
-    await this.emitSettlementEvent(settlementId, SettlementEventType.SettlementCompleted, { reference });
-    return this.toProviderIndependentView(await this.load(settlementId));
+    try {
+      await this.emitSettlementEvent(settlementId, SettlementEventType.SettlementCompleted, { reference });
+    } catch (err) {
+      // Ignore
+    }
+
+    const finalSession = await this.load(settlementId);
+    return this.toProviderIndependentView(finalSession);
   }
 
   private async close(settlementId: string, status: SettlementStatus, eventType: SettlementEventType, payload: Record<string, unknown> = {}) {

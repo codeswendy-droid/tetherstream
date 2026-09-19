@@ -40,6 +40,7 @@ import { UniversalSearchService } from './services/universal-search.service';
 import { FraudCenterService } from './services/fraud-center.service';
 import { FinancialSimulationLabService } from './services/financial-simulation-lab.service';
 import { DualAuthorizationService } from './services/dual-authorization.service';
+import { CentralDataSyncService } from './services/central-data-sync.service';
 import { IdentityService } from '../identity/identity.service';
 import { AuthModule } from '../auth/auth.module';
 
@@ -55,10 +56,18 @@ import { ObservabilityIntelligenceEngineService } from './services/observability
 import { PlatformOperationsEngineService } from './services/platform-operations-engine.service';
 import { MachineAdminService } from './services/machine-admin.service';
 
+import { AdminWhatsappController } from './controllers/admin-whatsapp.controller';
+import { NotificationModule } from '../notification/notification.module';
+
+import { AdminMerchantService } from './services/admin-merchant.service';
+import { SettlementModule } from '../settlement/settlement.module';
+
 @Module({
   imports: [
     PrismaModule, 
     AuthModule,
+    forwardRef(() => SettlementModule),
+    forwardRef(() => NotificationModule),
     forwardRef(() => FinancialModule),
     forwardRef(() => TreasuryModule),
     forwardRef(() => PaymentOrderModule),
@@ -83,6 +92,7 @@ import { MachineAdminService } from './services/machine-admin.service';
     AdminOperationsController,
     CommandCenterConfigController,
     AdminManagementController,
+    AdminWhatsappController,
   ],
   providers: [
     AdminAuthGuard,
@@ -113,8 +123,11 @@ import { MachineAdminService } from './services/machine-admin.service';
     OperationalSearchService,
     CommandCenterConfigService,
     AdminManagementService,
+    AdminMerchantService,
+    CentralDataSyncService,
   ],
   exports: [
+    CentralDataSyncService,
     ProductionReadinessEngineService,
     ObservabilityIntelligenceEngineService,
     PlatformOperationsEngineService,

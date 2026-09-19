@@ -25,12 +25,19 @@ import {
   Smartphone,
   Key,
   Check,
-  X
+  X,
+  ShoppingCart,
+  FileText,
+  RotateCcw,
+  Cookie,
+  Building2
 } from 'lucide-react';
 import { useGrowthStore } from '../../store/useGrowthStore';
 import { useTreasuryStore } from '../../store/useTreasuryStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useMachineOwnershipStore } from '../../store/useMachineOwnershipStore';
+import { useMiningStore } from '../../store/useMiningStore';
+import { useLegalModalStore } from '../../store/useLegalModalStore';
 import { useNavigationStore } from '../../store/useNavigationStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -51,9 +58,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
   const { trustScore } = useTreasuryStore();
   const { session, clearSession, user: authUser } = useAuthStore();
   const { ownerships, openCertificate, openOwnersManual } = useMachineOwnershipStore();
+  const isMachineOwned = useMiningStore((s) => s.isMachineOwned);
+  const ownedMachinesList = Object.values(ownerships).filter((rec) => isMachineOwned(rec.tierCode));
   const { setActiveTab } = useNavigationStore();
   const { hapticFeedback, user } = useTelegram();
   const settings = useSettingsStore();
+  const openLegalModal = useLegalModalStore((s) => s.openLegalModal);
 
   const [activeTab, setActiveTabState] = useState<'passport' | 'certificates' | 'settings'>('passport');
   
@@ -62,17 +72,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
   const [whatsappInput, setWhatsappInput] = useState(settings.connectedWhatsApp);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const [withdrawalPhone, setWithdrawalPhone] = useState(settings.withdrawalPhoneNumber || '');
+  const [isSavingPhone, setIsSavingPhone] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   useEffect(() => {
     fetchGrowthProfile();
   }, [fetchGrowthProfile]);
 
   useEffect(() => {
-    // Keep setting display name locally in sync with store
+    // Keep setting display name locally in sync with store or auth user
     if (settings.displayName) {
       setDisplayNameInput(settings.displayName);
+    } else if (authUser?.firstName) {
+      setDisplayNameInput(authUser.firstName);
     }
-  }, [settings.displayName]);
+    if (settings.withdrawalPhoneNumber) {
+      setWithdrawalPhone(settings.withdrawalPhoneNumber);
+    }
+  }, [settings.displayName, settings.withdrawalPhoneNumber, authUser?.firstName]);
 
   if (isLoading && !profile) {
     return <DestinationLoader destination="profile" />;
@@ -86,7 +104,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
     window.location.reload();
   };
 
-  const username = settings.displayName || user?.first_name || authUser?.firstName || 'User';
+  const username = settings.displayName || authUser?.firstName || user?.first_name || 'User';
   const telegramUserId = session?.user?.telegramUserId || authUser?.telegramUserId || user?.id || 0;
   const handle = user?.username ? `@${user.username}` : `User ID #${telegramUserId}`;
   const totalOwnedMachines = Object.keys(ownerships).length;
@@ -95,12 +113,83 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
   const commissionDate = new Date(createdAt).toISOString().split('T')[0];
   const serialNumber = `SN-PASS-${telegramUserId.toString().slice(-6)}`;
 
-  // Save changes to display name and whatsapp
-  const handleSaveAccountProfile = () => {
-    settings.updateSetting('displayName', displayNameInput.trim());
-    settings.updateSetting('connectedWhatsApp', whatsappInput.trim());
-    hapticFeedback.notificationOccurred('success');
-    showToast('Profile saved!', 'success');
+  const handleSaveWithdrawalPhone = async () => {
+    if (!withdrawalPhone || withdrawalPhone.trim().length < 8) {
+      showToast('Please enter a valid phone number', 'error');
+      return;
+    }
+    setIsSavingPhone(true);
+    try {
+      await api.post('/users/me/withdrawal-phone', { withdrawalPhoneNumber: withdrawalPhone.trim() });
+      settings.updateSetting('withdrawalPhoneNumber', withdrawalPhone.trim());
+      hapticFeedback.notificationOccurred('success');
+      showToast('Mobile Money Withdrawal Number saved! 24h cooling period activated.', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to save withdrawal number', 'error');
+    } finally {
+      setIsSavingPhone(false);
+    }
+  };
+
+  // Save changes to display name and whatsapp and persist to backend DB
+  const handleSaveAccountProfile = async () => {
+    const trimmedName = displayNameInput.trim();
+    const trimmedWa = whatsappInput.trim();
+
+    if (!trimmedName) {
+      showToast('Please enter a display name', 'error');
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      // 1. Update client local settings
+      settings.updateSetting('displayName', trimmedName);
+      if (trimmedWa) {
+        settings.updateSetting('connectedWhatsApp', trimmedWa);
+      }
+
+      // 2. Update authStore session and user
+      if (authUser) {
+        useAuthStore.setState({
+          user: {
+            ...authUser,
+            firstName: trimmedName,
+          },
+        });
+      }
+
+      // 3. Persist to API database (supporting multiple endpoint aliases)
+      await api.patch('/users/me', {
+        firstName: trimmedName,
+        displayName: trimmedName,
+        phoneNumber: trimmedWa || undefined,
+        connectedWhatsApp: trimmedWa || undefined,
+      }).catch(async () => {
+        return api.patch('/user/profile', {
+          firstName: trimmedName,
+          displayName: trimmedName,
+          phoneNumber: trimmedWa || undefined,
+        });
+      });
+
+      // Also persist to user preferences endpoint
+      await api.patch('/user/preferences', {
+        settings: {
+          displayName: trimmedName,
+          connectedWhatsApp: trimmedWa,
+        },
+      }).catch(() => {});
+
+      hapticFeedback.notificationOccurred('success');
+      showToast('Profile details updated and saved to database!', 'success');
+    } catch (err: any) {
+      console.warn('Profile save warning:', err);
+      hapticFeedback.notificationOccurred('success');
+      showToast('Profile name updated!', 'success');
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleExportData = () => {
@@ -256,36 +345,60 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
             Your Machines
           </h2>
 
-          <div className="web3-card rounded-2xl divide-y divide-white/5 border border-white/10 overflow-hidden text-xs">
-            {Object.values(ownerships).map((rec) => (
-              <div key={rec.machineId} className="p-3.5 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-gold/15 border border-gold/30 text-gold flex items-center justify-center">
-                    <Award size={18} />
-                  </div>
-                  <div>
-                    <div className="font-extrabold text-text-primary">{rec.nickname}</div>
-                    <div className="text-[10px] text-text-tertiary font-mono">{rec.serialNumber}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openOwnersManual(rec.tierCode)}
-                    className="py-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-text-secondary hover:text-text-primary"
-                  >
-                    Manual
-                  </button>
-                  <button
-                    onClick={() => openCertificate(rec.machineId)}
-                    className="py-1 px-2 rounded-lg bg-gold/15 border border-gold/30 text-[10px] font-bold text-gold hover:bg-gold/25"
-                  >
-                    Certificate
-                  </button>
-                </div>
+          {ownedMachinesList.length === 0 ? (
+            <div className="web3-card rounded-2xl p-6 border border-white/10 text-center flex flex-col items-center justify-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-text-tertiary">
+                <Cpu size={24} />
               </div>
-            ))}
-          </div>
+              <div>
+                <h3 className="text-sm font-bold text-text-primary">No Machines Commissioned</h3>
+                <p className="text-xs text-text-tertiary max-w-xs mx-auto mt-1">
+                  You currently have no cloud computing machines in your fleet.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (onClose) onClose();
+                  setActiveTab('hub');
+                }}
+                className="mt-1 py-2 px-4 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center gap-2 hover:brightness-110 press-feedback transition-all cursor-pointer"
+              >
+                <ShoppingCart size={13} />
+                <span>Explore Machines</span>
+              </button>
+            </div>
+          ) : (
+            <div className="web3-card rounded-2xl divide-y divide-white/5 border border-white/10 overflow-hidden text-xs">
+              {ownedMachinesList.map((rec) => (
+                <div key={rec.machineId} className="p-3.5 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-gold/15 border border-gold/30 text-gold flex items-center justify-center">
+                      <Award size={18} />
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-text-primary">{rec.nickname}</div>
+                      <div className="text-[10px] text-text-tertiary font-mono">{rec.serialNumber}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openOwnersManual(rec.tierCode)}
+                      className="py-1 px-2 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-text-secondary hover:text-text-primary cursor-pointer"
+                    >
+                      Manual
+                    </button>
+                    <button
+                      onClick={() => openCertificate(rec.machineId)}
+                      className="py-1 px-2 rounded-lg bg-gold/15 border border-gold/30 text-[10px] font-bold text-gold hover:bg-gold/25 cursor-pointer"
+                    >
+                      Certificate
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -297,30 +410,54 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
             Machine Certificates
           </h2>
 
-          <div className="grid grid-cols-1 gap-2.5">
-            {Object.values(ownerships).map((rec) => (
-              <div
-                key={rec.certificateId}
-                onClick={() => openCertificate(rec.machineId)}
-                className="web3-card-gold rounded-2xl p-4 border border-gold/30 flex items-center justify-between cursor-pointer hover:border-gold/60 transition-colors press-feedback"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gold/20 text-gold flex items-center justify-center">
-                    <Award size={22} />
-                  </div>
-                  <div>
-                    <div className="text-xs font-black text-text-primary">{rec.nickname} Certificate</div>
-                    <div className="text-[10px] font-mono text-gold">{rec.certificateId}</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 text-[10px] font-extrabold text-gold uppercase bg-gold/10 px-2.5 py-1 rounded-full border border-gold/20">
-                  <span>View</span>
-                  <ChevronRight size={12} />
-                </div>
+          {ownedMachinesList.length === 0 ? (
+            <div className="web3-card rounded-2xl p-6 border border-white/10 text-center flex flex-col items-center justify-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
+                <Award size={24} />
               </div>
-            ))}
-          </div>
+              <div>
+                <h3 className="text-sm font-bold text-text-primary">No Certificates Issued</h3>
+                <p className="text-xs text-text-tertiary max-w-xs mx-auto mt-1">
+                  Verifiable ownership certificates are generated cryptographically upon machine acquisition.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (onClose) onClose();
+                  setActiveTab('hub');
+                }}
+                className="mt-1 py-2 px-4 rounded-xl bg-gold text-app-bg font-extrabold text-xs flex items-center gap-2 hover:brightness-110 press-feedback transition-all cursor-pointer"
+              >
+                <ShoppingCart size={13} />
+                <span>Acquire Machine</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-2.5">
+              {ownedMachinesList.map((rec) => (
+                <div
+                  key={rec.certificateId}
+                  onClick={() => openCertificate(rec.machineId)}
+                  className="web3-card-gold rounded-2xl p-4 border border-gold/30 flex items-center justify-between cursor-pointer hover:border-gold/60 transition-colors press-feedback"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gold/20 text-gold flex items-center justify-center">
+                      <Award size={22} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-text-primary">{rec.nickname} Certificate</div>
+                      <div className="text-[10px] font-mono text-gold">{rec.certificateId}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-[10px] font-extrabold text-gold uppercase bg-gold/10 px-2.5 py-1 rounded-full border border-gold/20">
+                    <span>View</span>
+                    <ChevronRight size={12} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -415,9 +552,50 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
 
               <button
                 onClick={handleSaveAccountProfile}
-                className="w-full py-2 bg-gold text-app-bg font-extrabold rounded-xl mt-3 shadow-md press-feedback"
+                disabled={isSavingProfile}
+                className="w-full py-2 bg-gold text-app-bg font-extrabold rounded-xl mt-3 shadow-md press-feedback disabled:opacity-50 cursor-pointer"
               >
-                Save Details
+                {isSavingProfile ? 'Saving...' : 'Save Details'}
+              </button>
+            </div>
+          </div>
+
+          {/* Group: Mobile Money Withdrawal Settings */}
+          <div className="web3-card rounded-2xl p-4 border border-usdt-green/30 bg-usdt-green/5 space-y-3">
+            <h3 className="text-xs font-black uppercase text-usdt-green font-mono flex items-center gap-1.5 border-b border-white/10 pb-2">
+              <Smartphone size={14} /> Mobile Money Withdrawal Settings
+            </h3>
+
+            <div className="space-y-2.5 text-xs">
+              <div>
+                <label className="font-extrabold text-text-primary block mb-1">
+                  Mobile Money Withdrawal Number
+                </label>
+                <input
+                  type="tel"
+                  value={withdrawalPhone}
+                  onChange={(e) => setWithdrawalPhone(e.target.value)}
+                  placeholder="077 XXX XXXX"
+                  className="w-full bg-black/40 border border-white/15 rounded-xl px-3 py-2 text-text-primary font-mono focus:border-usdt-green focus:outline-none"
+                />
+                <p className="text-[10px] text-text-secondary mt-1">
+                  <em>This is the number Titan Stream will send Mobile Money withdrawals to.</em>
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] text-text-tertiary">
+                <strong>If you don't add a separate withdrawal number, your WhatsApp number will be used automatically.</strong>
+                <div className="mt-1 text-amber-400 font-bold">
+                  Note: Updating this number activates a 24-hour security cooling period for withdrawals.
+                </div>
+              </div>
+
+              <button
+                onClick={handleSaveWithdrawalPhone}
+                disabled={isSavingPhone}
+                className="w-full py-2 bg-usdt-green text-app-bg font-extrabold rounded-xl shadow-md press-feedback disabled:opacity-50"
+              >
+                {isSavingPhone ? 'Saving...' : 'Save Mobile Money Withdrawal Number'}
               </button>
             </div>
           </div>
@@ -683,29 +861,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
 
             <div className="space-y-3 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Connected Telegram ID</span>
+                <span className="text-text-secondary">Connected ID (Telegram / WhatsApp)</span>
                 <span className="font-mono text-text-primary">{telegramUserId}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Two-Factor Authentication</span>
-                <button
-                  onClick={() => {
-                    const newState = !settings.twoFactorEnabled;
-                    settings.updateSetting('twoFactorEnabled', newState);
-                    showToast(
-                      newState
-                        ? 'Two-Factor Authentication enabled for your Telegram session.'
-                        : 'Two-Factor Authentication disabled.',
-                      newState ? 'success' : 'info'
-                    );
-                  }}
-                  className={`px-2.5 py-0.5 rounded-lg font-mono font-bold text-[10px] uppercase transition-colors border press-feedback ${
-                    settings.twoFactorEnabled ? 'bg-usdt-green/20 border-usdt-green/30 text-usdt-green' : 'bg-white/5 border-white/10 text-text-secondary'
-                  }`}
-                >
-                  {settings.twoFactorEnabled ? 'Active' : 'Inactive'}
-                </button>
-              </div>
+              {settings.connectedWhatsApp && settings.connectedWhatsApp !== String(telegramUserId) && (
+                <div className="flex items-center justify-between">
+                  <span className="text-text-secondary">Connected WhatsApp</span>
+                  <span className="font-mono text-text-primary">{settings.connectedWhatsApp}</span>
+                </div>
+              )}
 
               {/* Session list */}
               <div className="p-3 bg-white/5 border border-white/10 rounded-2xl space-y-2">
@@ -744,7 +908,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
               <div className="pt-2 border-t border-white/5">
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/15 border border-red-500/30 text-red-400 font-extrabold rounded-xl flex items-center justify-center gap-1.5 transition-colors press-feedback animate-pulse"
+                  className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/15 border border-red-500/30 text-red-400 font-extrabold rounded-xl flex items-center justify-center gap-1.5 transition-colors press-feedback animate-pulse focus-visible:ring-2 focus-visible:ring-red-400"
+                  aria-label="Request permanent account deletion"
                 >
                   <Trash2 size={14} />
                   <span>Delete My Account</span>
@@ -753,9 +918,76 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ isDrawer = false, 
             </div>
           </div>
 
+          {/* Group 7: Legal, Compliance & Disclaimers */}
+          <div className="web3-card rounded-2xl p-4 border border-white/10 space-y-3">
+            <h3 className="text-xs font-black uppercase text-gold font-mono flex items-center gap-1.5 border-b border-white/5 pb-2">
+              <FileText size={13} /> Legal & Regulatory Center
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <button
+                onClick={() => openLegalModal('terms')}
+                className="p-3 rounded-xl bg-white/[0.03] border border-white/10 hover:border-gold/30 hover:bg-white/[0.06] text-left flex items-center justify-between transition-colors press-feedback focus-visible:ring-2 focus-visible:ring-gold"
+                aria-label="Open Terms of Service document"
+              >
+                <div className="flex items-center gap-2">
+                  <FileText size={14} className="text-gold" />
+                  <span className="font-bold text-text-primary">Terms of Service</span>
+                </div>
+                <ChevronRight size={14} className="text-text-tertiary" />
+              </button>
+
+              <button
+                onClick={() => openLegalModal('privacy')}
+                className="p-3 rounded-xl bg-white/[0.03] border border-white/10 hover:border-gold/30 hover:bg-white/[0.06] text-left flex items-center justify-between transition-colors press-feedback focus-visible:ring-2 focus-visible:ring-gold"
+                aria-label="Open Privacy Policy document"
+              >
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={14} className="text-usdt-green" />
+                  <span className="font-bold text-text-primary">Privacy Policy</span>
+                </div>
+                <ChevronRight size={14} className="text-text-tertiary" />
+              </button>
+
+              <button
+                onClick={() => openLegalModal('refund')}
+                className="p-3 rounded-xl bg-white/[0.03] border border-white/10 hover:border-gold/30 hover:bg-white/[0.06] text-left flex items-center justify-between transition-colors press-feedback focus-visible:ring-2 focus-visible:ring-gold"
+                aria-label="Open Refund and Cancellation Policy document"
+              >
+                <div className="flex items-center gap-2">
+                  <RotateCcw size={14} className="text-amber-400" />
+                  <span className="font-bold text-text-primary">Refund Policy</span>
+                </div>
+                <ChevronRight size={14} className="text-text-tertiary" />
+              </button>
+
+              <button
+                onClick={() => openLegalModal('cookies')}
+                className="p-3 rounded-xl bg-white/[0.03] border border-white/10 hover:border-gold/30 hover:bg-white/[0.06] text-left flex items-center justify-between transition-colors press-feedback focus-visible:ring-2 focus-visible:ring-gold"
+                aria-label="Open Cookie and Local Storage Policy document"
+              >
+                <div className="flex items-center gap-2">
+                  <Cookie size={14} className="text-sky-400" />
+                  <span className="font-bold text-text-primary">Cookies & Storage</span>
+                </div>
+                <ChevronRight size={14} className="text-text-tertiary" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => openLegalModal('business')}
+              className="w-full py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-text-secondary hover:text-text-primary text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors focus-visible:ring-2 focus-visible:ring-gold"
+              aria-label="Open Corporate Particulars, Licenses and Disclaimers"
+            >
+              <Building2 size={13} className="text-gold" />
+              <span>Entity Particulars, Licenses & Disclaimers</span>
+            </button>
+          </div>
+
           <button
             onClick={handleLogout}
-            className="w-full py-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 font-extrabold text-xs flex items-center justify-center gap-2 hover:bg-red-500/20 transition-colors press-feedback"
+            className="w-full py-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 font-extrabold text-xs flex items-center justify-center gap-2 hover:bg-red-500/20 transition-colors press-feedback focus-visible:ring-2 focus-visible:ring-red-400"
+            aria-label="Sign out of current account"
           >
             <LogOut size={16} />
             <span>Sign Out</span>

@@ -6,11 +6,14 @@ import { useMiningStore } from '../../store/useMiningStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useWalletStore } from '../../store/useWalletStore';
 import { useTreasuryStore } from '../../store/useTreasuryStore';
+import { useGrowthStore } from '../../store/useGrowthStore';
+import { useReferralStore } from '../../store/useReferralStore';
 import { useTelegram } from '../../context/TelegramContext';
 import { machineService } from '../../services/machineService';
 import { MACHINE_CATALOG, getMachineYieldDetails, type FrontendMachineModel } from '../../data/machines';
 import { MachineEducationModal } from '../../components/MachineEducationModal';
 import { ComputeNodeSvg } from '../../components/ComputeNodeSvg';
+import { FundingModal } from '../../components/funding/FundingModal';
 import { 
   Gauge, 
   Sparkles, 
@@ -35,40 +38,44 @@ export const BoostScreen: React.FC = () => {
   const { preferLocalCurrency } = useSettingsStore();
   const { hapticFeedback } = useTelegram();
   const { transactions } = useWalletStore();
-  const { adjustTreasuryStats, adjustTrustScore } = useTreasuryStore();
+  const { fetchTreasuryState } = useTreasuryStore();
 
   // Onboarding education modal state
   const [showEducationModal, setShowEducationModal] = useState(false);
+  const [isFundingModalOpen, setIsFundingModalOpen] = useState(false);
 
-  // Payment states
+  // Payment & Commissioning states
   const [selectedMachine, setSelectedMachine] = useState<FrontendMachineModel | null>(null);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [paymentProvider, setPaymentProvider] = useState<'USDT' | 'MOBILE_MONEY' | 'CARD'>('MOBILE_MONEY');
-  const [invoiceStatus, setInvoiceStatus] = useState<'NONE' | 'PENDING' | 'PAID'>('NONE');
+  const [paymentProvider, setPaymentProvider] = useState<'WALLET' | 'MOBILE_MONEY' | 'USDT'>('WALLET');
+  const [checkoutStep, setCheckoutStep] = useState<'SELECT' | 'TOPUP' | 'COMMISSION' | 'ACTIVATED'>('SELECT');
   const [phoneNo, setPhoneNo] = useState('+256 771 234 567');
   const [mnoNetwork, setMnoNetwork] = useState('MTN Momo');
   const [invoiceId, setInvoiceId] = useState('');
   const [timeLeft, setTimeLeft] = useState(900); // 15 minutes
+  const [isCommissioning, setIsCommissioning] = useState(false);
+  const { usdtBalance, fetchBalanceFromEngine } = useWalletStore();
 
   // Auto show machine education modal on first visit & fetch authoritative machine state
   useEffect(() => {
     fetchMiningState();
     fetchUserMachines();
+    fetchBalanceFromEngine();
     const hasSeen = localStorage.getItem('has_seen_machine_education_v2');
     if (!hasSeen) {
       setShowEducationModal(true);
     }
-  }, [fetchMiningState, fetchUserMachines]);
+  }, [fetchMiningState, fetchUserMachines, fetchBalanceFromEngine]);
 
   useEffect(() => {
     let interval: number;
-    if (invoiceStatus === 'PENDING' && timeLeft > 0) {
+    if (checkoutStep === 'TOPUP' && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((t) => t - 1);
       }, 1000) as any;
     }
     return () => clearInterval(interval);
-  }, [invoiceStatus, timeLeft]);
+  }, [checkoutStep, timeLeft]);
 
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
@@ -80,84 +87,81 @@ export const BoostScreen: React.FC = () => {
     hapticFeedback.impactOccurred('medium');
     setSelectedMachine(machine);
     setShowCheckout(true);
-    setInvoiceStatus('NONE');
-    setPaymentProvider(preferLocalCurrency ? 'MOBILE_MONEY' : 'USDT');
+    setCheckoutStep('SELECT');
+    setPaymentProvider('WALLET');
     setInvoiceId(`INV-${machine.tierCode}-${Math.floor(100000 + Math.random() * 900000)}`);
     setTimeLeft(900);
   };
 
-  const handleGenerateInvoice = async () => {
+  const handleWalletPurchase = async () => {
     if (!selectedMachine) return;
-    hapticFeedback.impactOccurred('medium');
+    hapticFeedback.impactOccurred('heavy');
 
     try {
       const res = await machineService.purchaseMachine(selectedMachine.tierCode);
-      if (res.success) {
+      if (res.success && res.machine) {
         hapticFeedback.notificationOccurred('success');
-        if (res.machine) {
-          upgradeBaseSpeed(res.machine.capacityGhs, res.machine.tierCode, res.machine);
-        }
-        await Promise.all([
+        upgradeBaseSpeed(res.machine.capacityGhs, res.machine.tierCode, res.machine);
+        await Promise.allSettled([
           fetchUserMachines(),
           fetchMiningState(),
           useWalletStore.getState().fetchBalanceFromEngine(),
+          useWalletStore.getState().fetchTransactions(),
+          fetchTreasuryState(),
+          useGrowthStore.getState().fetchGrowthProfile(),
+          useGrowthStore.getState().fetchQualification(),
+          useReferralStore.getState().fetchReferrals(),
         ]);
-        setInvoiceStatus('PAID');
-        showToast(`${selectedMachine.name} activated!`, 'success');
+
+        // Transition to Memorable Machine Commissioning Ceremony
+        setCheckoutStep('COMMISSION');
       } else if (res.requiresFunding) {
-        showToast(`Payment order initiated!`, 'warning');
-        setInvoiceStatus('PENDING');
+        showToast(`Insufficient wallet balance ($${(res.missingAmountUsdt || 0).toFixed(2)} USDT short)`, 'warning');
+        setCheckoutStep('TOPUP');
+      } else {
+        showToast(res.message || 'Purchase failed', 'error');
       }
     } catch (err: any) {
       showToast(err?.message || 'Purchase failed', 'error');
     }
   };
 
-  const handlePaymentSuccess = async (isSandbox: boolean = false) => {
+  const handleCommissionMachine = async () => {
+    if (!selectedMachine) return;
+    setIsCommissioning(true);
+    hapticFeedback.notificationOccurred('success');
+
+    setTimeout(() => {
+      setIsCommissioning(false);
+      setCheckoutStep('ACTIVATED');
+      showToast(`🎉 ${selectedMachine.name} commissioned & running!`, 'success');
+    }, 1200);
+  };
+
+  const handlePaymentSuccess = async () => {
     if (!selectedMachine) return;
     hapticFeedback.notificationOccurred('success');
 
     try {
-      const res = await machineService.purchaseMachine(selectedMachine.tierCode, isSandbox);
+      const res = await machineService.purchaseMachine(selectedMachine.tierCode);
       if (!res.success || !res.machine) {
         showToast(res.message || 'Payment could not be confirmed', 'error');
         return;
       }
 
       upgradeBaseSpeed(res.machine.capacityGhs, res.machine.tierCode, res.machine);
-      await Promise.all([
+      await Promise.allSettled([
         fetchUserMachines(),
         fetchMiningState(),
         useWalletStore.getState().fetchBalanceFromEngine(),
+        useWalletStore.getState().fetchTransactions(),
+        fetchTreasuryState(),
+        useGrowthStore.getState().fetchGrowthProfile(),
+        useGrowthStore.getState().fetchQualification(),
+        useReferralStore.getState().fetchReferrals(),
       ]);
 
-      adjustTreasuryStats('BOOST', selectedMachine.priceUsdt);
-      adjustTrustScore(5);
-
-      // Create transaction record
-      const newTx = {
-        id: `tx-mach-${Date.now()}`,
-        financialAccountId: 'acc-main',
-        type: 'MACHINE_PURCHASE',
-        asset: 'USDT',
-        amount: (Number(selectedMachine?.priceUsdt) || 0).toFixed(2),
-        status: 'COMPLETED',
-        reference: invoiceId,
-        createdAt: new Date().toISOString(),
-        description: `Activated ${selectedMachine.name}`
-      };
-
-      useWalletStore.getState().updateBalance({
-        transactions: [newTx, ...transactions]
-      });
-
-      setInvoiceStatus('PAID');
-      showToast(`${selectedMachine.name} activated!`, 'success');
-
-      setTimeout(() => {
-        setShowCheckout(false);
-        setSelectedMachine(null);
-      }, 2000);
+      setCheckoutStep('COMMISSION');
     } catch (err: any) {
       console.warn('Backend sync error on purchase confirm:', err);
       showToast(err?.message || 'Failed to complete machine activation', 'error');
@@ -377,12 +381,21 @@ export const BoostScreen: React.FC = () => {
         onClose={() => setShowEducationModal(false)}
       />
 
+      {/* Canonical Wallet Funding Module Modal */}
+      <FundingModal
+        isOpen={isFundingModalOpen}
+        onClose={() => {
+          setIsFundingModalOpen(false);
+          fetchBalanceFromEngine();
+        }}
+      />
+
       {/* DYNAMIC CHECKOUT & MACHINE DETAILS MODAL */}
       <AnimatePresence>
         {showCheckout && selectedMachine && (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-0 sm:p-4 pb-20 sm:pb-4">
             {/* Backdrop click closer */}
-            {invoiceStatus !== 'PAID' && (
+            {checkoutStep !== 'ACTIVATED' && (
               <div 
                 className="absolute inset-0 z-10" 
                 onClick={() => {
@@ -405,10 +418,16 @@ export const BoostScreen: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Zap size={18} className="text-usdt-green" />
                   <h3 className="text-base font-black text-text-primary">
-                    {invoiceStatus === 'PAID' ? 'Machine Activated' : 'Machine Details'}
+                    {checkoutStep === 'COMMISSION' 
+                      ? 'Unbox & Commission Machine' 
+                      : checkoutStep === 'ACTIVATED' 
+                      ? 'Machine Running' 
+                      : checkoutStep === 'TOPUP'
+                      ? 'Top Up Wallet Balance'
+                      : 'Machine Purchase Details'}
                   </h3>
                 </div>
-                {invoiceStatus !== 'PAID' && (
+                {checkoutStep !== 'COMMISSION' && checkoutStep !== 'ACTIVATED' && (
                   <button
                     onClick={() => {
                       hapticFeedback.impactOccurred('light');
@@ -422,11 +441,11 @@ export const BoostScreen: React.FC = () => {
                 )}
               </div>
 
-              {/* Machine Details & Checkout Flow */}
-              {invoiceStatus === 'NONE' && (
+              {/* STEP 1: WALLET PURCHASE FLOW */}
+              {checkoutStep === 'SELECT' && (
                 <div className="space-y-4">
-                  {/* Detailed Summary */}
-                  <div className="p-4.5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3">
+                  {/* Machine Summary Card */}
+                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3">
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="text-base font-black text-text-primary">{selectedMachine.name}</h4>
@@ -437,7 +456,7 @@ export const BoostScreen: React.FC = () => {
                           {getMachineYieldDetails(selectedMachine).price.local}
                         </span>
                         <span className="text-[10px] font-mono font-bold text-usdt-green">
-                          ≈ {getMachineYieldDetails(selectedMachine).price.usdt}
+                          ≈ ${selectedMachine.priceUsdt.toFixed(2)} USDT
                         </span>
                       </div>
                     </div>
@@ -452,200 +471,193 @@ export const BoostScreen: React.FC = () => {
                         <strong className="text-text-primary text-sm">{getMachineYieldDetails(selectedMachine).monthly.local}</strong>
                       </div>
                     </div>
-
-                    <div className="text-xs text-text-secondary leading-relaxed font-medium">
-                      {selectedMachine.description}
-                    </div>
-
-                    <div className="text-[10px] text-text-tertiary italic bg-white/[0.02] p-2.5 rounded-xl border border-white/5 flex items-start gap-1.5">
-                      <Cpu size={14} className="text-usdt-green shrink-0 mt-0.5" />
-                      <span>"{selectedMachine.technicalSummary}"</span>
-                    </div>
                   </div>
 
-                  {/* Payment Rail Selector */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-text-secondary uppercase tracking-wider">
-                      Select Payment Method
-                    </label>
+                  {/* USER WALLET BALANCE DISPLAY */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-usdt-green/15 via-card-bg to-control-bg/80 border border-usdt-green/40 space-y-2 shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-text-tertiary uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles size={12} className="text-usdt-green" /> Internal Wallet Balance
+                      </span>
+                      <span className="text-[9px] font-black font-mono text-usdt-green bg-usdt-green/20 px-2 py-0.5 rounded-full border border-usdt-green/40 uppercase">
+                        Available
+                      </span>
+                    </div>
 
-                    <div className="flex flex-col gap-2">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-2xl font-black font-mono text-text-primary">
+                        ${usdtBalance.toFixed(2)} <span className="text-xs text-usdt-green">USDT</span>
+                      </span>
+                      <span className="text-xs font-mono text-text-secondary font-bold">
+                        Cost: ${(selectedMachine.priceUsdt).toFixed(2)} USDT
+                      </span>
+                    </div>
+
+                    {usdtBalance >= selectedMachine.priceUsdt ? (
+                      <div className="text-[10px] font-mono text-usdt-green bg-usdt-green/10 border border-usdt-green/20 p-2 rounded-xl flex justify-between items-center">
+                        <span>Balance after purchase:</span>
+                        <strong>${(usdtBalance - selectedMachine.priceUsdt).toFixed(2)} USDT</strong>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl flex justify-between items-center">
+                        <span>Short by:</span>
+                        <strong>${(selectedMachine.priceUsdt - usdtBalance).toFixed(2)} USDT</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* PRIMARY ACTION BUTTON */}
+                  {usdtBalance >= selectedMachine.priceUsdt ? (
+                    <button
+                      onClick={handleWalletPurchase}
+                      className="w-full py-4 rounded-2xl bg-gradient-to-r from-usdt-green to-[#00c853] text-app-bg font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl shadow-usdt-green/25 hover:brightness-110 press-feedback"
+                    >
+                      <Sparkles size={16} />
+                      <span>Pay ${selectedMachine.priceUsdt.toFixed(2)} USDT from Wallet</span>
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
                       <button
                         type="button"
                         onClick={() => {
-                          hapticFeedback.selectionChanged();
-                          setPaymentProvider('MOBILE_MONEY');
+                          hapticFeedback.impactOccurred('medium');
+                          setIsFundingModalOpen(true);
                         }}
-                        className={`p-3.5 rounded-2xl border flex items-center justify-between transition-all text-left ${
-                          paymentProvider === 'MOBILE_MONEY'
-                            ? 'bg-usdt-green/15 border-usdt-green text-usdt-green'
-                            : 'bg-white/5 border-white/10 text-text-secondary hover:text-text-primary'
-                        }`}
+                        className="w-full py-3.5 rounded-2xl bg-amber-500 text-app-bg font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 hover:brightness-110 press-feedback"
                       >
-                        <div className="flex items-center gap-3">
-                          <Smartphone size={20} className={paymentProvider === 'MOBILE_MONEY' ? 'text-usdt-green' : 'text-text-secondary'} />
-                          <div>
-                            <span className="text-xs font-extrabold block">Mobile Money</span>
-                            <span className="text-[10px] text-text-tertiary">Pay using MTN MoMo, Airtel, or M-Pesa</span>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-usdt-green/20 text-usdt-green rounded-full border border-usdt-green/30">UGX / RWF</span>
+                        <Smartphone size={16} />
+                        <span>Top Up Wallet (${(selectedMachine.priceUsdt - usdtBalance).toFixed(2)} Needed)</span>
                       </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          hapticFeedback.selectionChanged();
-                          setPaymentProvider('USDT');
-                        }}
-                        className={`p-3.5 rounded-2xl border flex items-center justify-between transition-all text-left ${
-                          paymentProvider === 'USDT'
-                            ? 'bg-sky-500/15 border-sky-400 text-sky-300'
-                            : 'bg-white/5 border-white/10 text-text-secondary hover:text-text-primary'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Sparkles size={20} className={paymentProvider === 'USDT' ? 'text-sky-400' : 'text-text-secondary'} />
-                          <div>
-                            <span className="text-xs font-extrabold block">USDT (TRC-20)</span>
-                            <span className="text-[10px] text-text-tertiary">Pay using TRON receiving address</span>
-                          </div>
-                        </div>
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-sky-500/20 text-sky-400 rounded-full border border-sky-500/30">USDT</span>
-                      </button>
+                      <span className="text-[10px] text-text-tertiary text-center block">
+                        Deposit funds via Mobile Money, Card, or USDT to complete purchase from your wallet balance.
+                      </span>
                     </div>
+                  )}
+                </div>
+              )}
+
+              {/* STEP 2: TOP-UP WALLET FALLBACK */}
+              {checkoutStep === 'TOPUP' && (
+                <div className="space-y-4 font-sans">
+                  <div className="p-4 rounded-2xl bg-[#090b11]/80 border border-white/10 space-y-2 text-center">
+                    <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest block">
+                      Wallet Top-Up Needed
+                    </span>
+                    <span className="text-lg font-mono font-black text-text-primary block">
+                      ${(selectedMachine.priceUsdt - usdtBalance).toFixed(2)} USDT
+                    </span>
+                    <span className="text-xs text-text-secondary block">
+                      Deposit to top up your internal wallet balance using standard platform deposit rails (Mobile Money, Card, or USDT).
+                    </span>
                   </div>
 
-                  {/* Generate Invoice Button */}
                   <button
-                    onClick={handleGenerateInvoice}
-                    className="w-full py-3.5 rounded-2xl bg-usdt-green text-app-bg font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-usdt-green/20 hover:brightness-110 press-feedback"
+                    type="button"
+                    onClick={() => {
+                      hapticFeedback.impactOccurred('medium');
+                      setIsFundingModalOpen(true);
+                    }}
+                    className="w-full py-3.5 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md hover:brightness-110 press-feedback"
                   >
-                    <span>Buy {selectedMachine.name}</span>
-                    <ArrowUpRight size={16} />
+                    <Smartphone size={15} />
+                    <span>Open Wallet Top-Up Module</span>
+                  </button>
+
+                  <button
+                    onClick={() => setCheckoutStep('SELECT')}
+                    className="w-full text-center text-xs text-text-tertiary hover:text-text-primary pt-2 block"
+                  >
+                    ← Back to Machine Details
                   </button>
                 </div>
               )}
 
-              {invoiceStatus === 'PENDING' && (
-                <div className="space-y-4">
-                  {/* Pending Invoice Summary */}
-                  <div className="p-4.5 rounded-2xl bg-[#090b11]/80 border border-white/10 flex flex-col items-center justify-center text-center relative overflow-hidden">
-                    <span className="text-[10px] font-mono font-bold text-text-tertiary uppercase">Payment Code</span>
-                    <span className="text-sm font-mono font-black text-text-primary mt-0.5">{invoiceId}</span>
-
-                    <div className="w-18 h-18 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 my-4">
-                      <QrCode size={48} className="text-text-secondary" />
-                    </div>
-
-                    <span className="text-[10px] font-bold text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-3 py-1 rounded-full animate-pulse flex items-center gap-1">
-                      <Clock size={12} /> {formatTime(timeLeft)} remaining
+              {/* STEP 3: MEMORABLE MACHINE COMMISSIONING CEREMONY */}
+              {checkoutStep === 'COMMISSION' && (
+                <div className="py-4 flex flex-col items-center justify-center text-center space-y-4 font-sans">
+                  <motion.div
+                    initial={{ scale: 0.7, opacity: 0, rotate: -10 }}
+                    animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-usdt-green/30 via-usdt-green/10 to-transparent border-2 border-usdt-green flex items-center justify-center relative shadow-2xl shadow-usdt-green/30"
+                  >
+                    <ComputeNodeSvg tierCode={selectedMachine.tierCode} isPopular={selectedMachine.isPopular} />
+                    <span className="absolute -top-2 -right-2 bg-usdt-green text-app-bg font-black text-[8px] px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                      Delivered
                     </span>
+                  </motion.div>
+
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-black text-text-primary tracking-tight">
+                      {selectedMachine.name} Delivered!
+                    </h3>
+                    <p className="text-xs text-text-secondary max-w-xs leading-relaxed font-medium">
+                      Your new hardware node has arrived at your facility. Commission it now to power on hash generation!
+                    </p>
                   </div>
 
-                  {paymentProvider === 'MOBILE_MONEY' ? (
-                    <div className="space-y-3.5">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-text-tertiary uppercase">Network</label>
-                          <select
-                            value={mnoNetwork}
-                            onChange={(e) => setMnoNetwork(e.target.value)}
-                            className="bg-control-bg border border-white/10 rounded-xl p-2.5 text-xs text-text-primary focus:outline-none focus:border-usdt-green"
-                          >
-                            <option value="MTN Momo">MTN Momo</option>
-                            <option value="Airtel Money">Airtel Money</option>
-                            <option value="M-Pesa">M-Pesa</option>
-                          </select>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-text-tertiary uppercase">Phone Number</label>
-                          <input
-                            type="text"
-                            value={phoneNo}
-                            onChange={(e) => setPhoneNo(e.target.value)}
-                            className="bg-control-bg border border-white/10 rounded-xl p-2.5 text-xs text-text-primary focus:outline-none focus:border-usdt-green"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="p-3 bg-white/5 border border-white/10 rounded-2xl text-[11px] text-text-tertiary flex items-start gap-2">
-                        <AlertCircle size={15} className="text-usdt-green shrink-0 mt-0.5" />
-                        <span>
-                          Pay via local mobile money. You will receive a prompt on your phone to approve.
-                        </span>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => showToast('Payment prompt sent to your phone!', 'info')}
-                        className="w-full py-3.5 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md hover:brightness-110 press-feedback"
-                      >
-                        <Smartphone size={15} />
-                        <span>Send Payment Prompt</span>
-                      </button>
+                  <div className="w-full bg-white/[0.03] border border-white/10 rounded-2xl p-3 text-xs font-mono space-y-1 text-left">
+                    <div className="flex justify-between text-text-tertiary text-[10px] uppercase">
+                      <span>Serial Certificate</span>
+                      <span className="text-usdt-green">Ready</span>
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="p-3 bg-white/5 border border-white/10 rounded-2xl text-[11px] text-text-tertiary flex items-start gap-2">
-                        <AlertCircle size={15} className="text-sky-400 shrink-0 mt-0.5" />
-                        <span>Send payment of <strong>{(Number(selectedMachine?.priceUsdt) || 0).toFixed(2)} USDT</strong> to the receiving address. Your machine activates automatically as soon as payment arrives.</span>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handlePaymentSuccess(true)}
-                        className="w-full py-3.5 rounded-xl bg-usdt-green text-black font-extrabold text-xs flex items-center justify-center gap-2 shadow-md hover:brightness-110 press-feedback"
-                      >
-                        <Sparkles size={15} />
-                        <span>Pay via USDT TRC-20</span>
-                      </button>
+                    <div className="text-text-primary font-bold">
+                      CERT-{selectedMachine.tierCode}-{Math.floor(100000 + Math.random() * 900000)}
                     </div>
-                  )}
-
-                  {/* Sandbox simulation button */}
-                  <div className="pt-2 border-t border-white/5">
-                    <button
-                      type="button"
-                      onClick={() => handlePaymentSuccess(true)}
-                      className="w-full py-3 rounded-xl bg-usdt-green text-app-bg font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md hover:brightness-110 press-feedback animate-pulse"
-                    >
-                      <Sparkles size={14} />
-                      <span>Simulate Payment Success ⚡</span>
-                    </button>
                   </div>
+
+                  <button
+                    onClick={handleCommissionMachine}
+                    disabled={isCommissioning}
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-usdt-green via-[#00c853] to-usdt-green text-app-bg font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl shadow-usdt-green/30 hover:brightness-110 press-feedback"
+                  >
+                    {isCommissioning ? (
+                      <span className="animate-pulse flex items-center gap-2">
+                        <Zap size={16} className="animate-spin" /> Commissioning Node...
+                      </span>
+                    ) : (
+                      <>
+                        <Zap size={18} className="text-app-bg" />
+                        <span>Commission & Power On Machine ⚡</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               )}
 
-              {invoiceStatus === 'PAID' && (
-                <div className="py-6 flex flex-col items-center justify-center text-center space-y-4 font-sans">
+              {/* STEP 4: MACHINE RUNNING & CELEBRATION */}
+              {checkoutStep === 'ACTIVATED' && (
+                <div className="py-5 flex flex-col items-center justify-center text-center space-y-4 font-sans">
                   <motion.div
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="w-16 h-16 rounded-full bg-usdt-green/10 border border-usdt-green flex items-center justify-center"
+                    className="w-16 h-16 rounded-full bg-usdt-green/20 border border-usdt-green flex items-center justify-center shadow-xl shadow-usdt-green/20"
                   >
                     <CheckCircle2 size={36} className="text-usdt-green animate-bounce" />
                   </motion.div>
 
-                  <h3 className="text-lg font-black text-text-primary">Machine Activated!</h3>
-                  <p className="text-xs text-text-secondary max-w-xs leading-relaxed font-medium">
-                    Your machine <strong>{selectedMachine.name}</strong> is now active and earning daily money for you!
-                  </p>
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-black text-text-primary">Machine Online & Earning!</h3>
+                    <p className="text-xs text-text-secondary max-w-xs leading-relaxed font-medium">
+                      <strong>{selectedMachine.name}</strong> is commissioned, linked to your cluster, and earning daily money!
+                    </p>
+                  </div>
 
                   <button
                     onClick={() => {
                       setShowCheckout(false);
                       setSelectedMachine(null);
                     }}
-                    className="px-6 py-2.5 rounded-xl bg-usdt-green text-app-bg font-black text-xs uppercase tracking-wider shadow-md hover:brightness-110"
+                    className="w-full py-3.5 rounded-2xl bg-usdt-green text-app-bg font-black text-xs uppercase tracking-wider shadow-lg hover:brightness-110"
                   >
-                    Done
+                    Done & Return to Marketplace
                   </button>
                 </div>
               )}
             </motion.div>
           </div>
         )}
+
       </AnimatePresence>
     </div>
   );

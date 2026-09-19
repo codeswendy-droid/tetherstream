@@ -7,7 +7,7 @@ import { useWalletStore } from '../../store/useWalletStore';
 import type { MissionItem } from '../../services/growthService';
 import { ClaimSuccessModal } from './ClaimSuccessModal';
 
-export const REWARD_TYPE_META: Record<string, { icon: string; color: string }> = {
+const REWARD_TYPE_META: Record<string, { icon: string; color: string }> = {
   REFERRAL: { icon: '👥', color: 'text-sky-400' },
   MILESTONE: { icon: '🏆', color: 'text-amber-400' },
   LOYALTY: { icon: '🎁', color: 'text-purple-400' },
@@ -17,7 +17,7 @@ export const REWARD_TYPE_META: Record<string, { icon: string; color: string }> =
 const CATEGORY_LABEL: Record<string, string> = {
   referral: 'Referral',
   settlement: 'Settlement',
-  machine: 'Mining',
+  machine: 'Machine',
   profile: 'Profile',
   campaign: 'Campaign',
 };
@@ -48,7 +48,8 @@ export const RewardQueue: React.FC<RewardQueueProps> = ({ compact = false }) => 
     useWalletStore.getState().fetchBalanceFromEngine();
   };
 
-  const claimableCount = missions.filter((m) => m.eligible).length;
+  const safeMissions = (Array.isArray(missions) ? missions : []).filter((m) => m.status !== 'CLAIMED');
+  const claimableCount = safeMissions.filter((m) => m.eligible).length;
 
   return (
     <>
@@ -59,16 +60,16 @@ export const RewardQueue: React.FC<RewardQueueProps> = ({ compact = false }) => 
             <h2 className="text-xs font-black uppercase text-text-primary tracking-widest">MISSIONS</h2>
           </div>
           <span className="text-[10px] font-mono font-bold text-usdt-green bg-usdt-green/10 border border-usdt-green/20 px-2 py-0.5 rounded-full">
-            {isLoading ? 'Syncing…' : `${claimableCount} ready · ${missions.length} total`}
+            {isLoading ? 'Syncing…' : `${claimableCount} ready · ${safeMissions.length} total`}
           </span>
         </div>
 
-        {isLoading && missions.length === 0 ? (
+        {isLoading && safeMissions.length === 0 ? (
           <div className="flex items-center justify-center gap-2 py-6 text-text-tertiary text-xs">
             <Loader2 size={14} className="animate-spin" />
             <span>Loading missions…</span>
           </div>
-        ) : missions.length === 0 ? (
+        ) : safeMissions.length === 0 ? (
           <div className="text-center py-6 px-4">
             <div className="text-2xl mb-2">🏗️</div>
             <div className="text-xs font-bold text-text-primary">No missions available right now</div>
@@ -79,7 +80,7 @@ export const RewardQueue: React.FC<RewardQueueProps> = ({ compact = false }) => 
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <AnimatePresence mode="popLayout">
-              {missions.map((mission, idx) => {
+              {safeMissions.map((mission, idx) => {
                 const pct = mission.progressPercent ?? (mission.requirement
                   ? Math.min(100, (mission.requirement.current / Math.max(1, mission.requirement.required)) * 100)
                   : 100);
@@ -116,14 +117,16 @@ export const RewardQueue: React.FC<RewardQueueProps> = ({ compact = false }) => 
                         )}
                         <span
                           className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded-full border ${
-                            processing
-                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                              : mission.eligible
-                                ? 'bg-usdt-green/20 text-usdt-green border-usdt-green/30'
-                                : 'bg-white/5 text-text-tertiary border-white/10'
+                            mission.status === 'CLAIMED'
+                              ? 'bg-white/5 text-text-tertiary border-white/10'
+                              : processing
+                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                                : mission.eligible
+                                  ? 'bg-usdt-green/20 text-usdt-green border-usdt-green/30'
+                                  : 'bg-white/5 text-text-tertiary border-white/10'
                           }`}
                         >
-                          {processing ? 'Processing' : mission.eligible ? 'Ready' : 'In Progress'}
+                          {mission.status === 'CLAIMED' ? 'Claimed ✓' : processing ? 'Processing' : mission.eligible ? 'Ready' : 'In Progress'}
                         </span>
                       </div>
                     </div>
@@ -142,45 +145,53 @@ export const RewardQueue: React.FC<RewardQueueProps> = ({ compact = false }) => 
                             ? `${mission.requirement.current}/${mission.requirement.required} ${mission.requirement.unit}`
                             : '—'}
                         </span>
-                        <span className={mission.eligible ? 'text-usdt-green font-bold' : 'text-sky-400 font-bold'}>{pct}%</span>
+                        <span className={mission.status === 'CLAIMED' || mission.eligible ? 'text-usdt-green font-bold' : 'text-sky-400 font-bold'}>{pct}%</span>
                       </div>
                       <div className="mt-1 w-full h-1 bg-control-bg rounded-full overflow-hidden">
                         <motion.div
-                          className={`h-full rounded-full ${mission.eligible ? 'bg-usdt-green' : 'bg-sky-400'}`}
+                          className={`h-full rounded-full ${mission.status === 'CLAIMED' || mission.eligible ? 'bg-usdt-green' : 'bg-sky-400'}`}
                           initial={{ width: 0 }}
                           animate={{ width: `${pct}%` }}
                           transition={{ duration: 0.6, ease: 'easeOut' }}
                         />
                       </div>
-                      <div className="mt-1 text-[8px] text-text-tertiary font-mono">{mission.estimatedRemaining}</div>
+                      <div className="mt-1 text-[8px] text-text-tertiary font-mono">
+                        {mission.status === 'CLAIMED' ? 'Claimed' : mission.estimatedRemaining}
+                      </div>
                     </div>
 
                     {/* CTA */}
-                    <button
-                      disabled={processing}
-                      onClick={() => openRunner(mission)}
-                      className={`mt-2.5 w-full py-1.5 rounded-xl text-[10px] font-extrabold press-feedback shadow-sm flex items-center justify-center gap-1 ${
-                        processing
-                          ? 'bg-control-bg/40 text-text-tertiary cursor-not-allowed'
-                          : mission.eligible
-                            ? 'bg-usdt-green text-app-bg hover:brightness-110'
-                            : 'bg-sky-500/15 border border-sky-500/30 text-sky-400 hover:brightness-110'
-                      }`}
-                    >
-                      {processing ? (
-                        <>
-                          <Loader2 size={10} className="animate-spin" /> Processing…
-                        </>
-                      ) : mission.eligible ? (
-                        <>
-                          <Rocket size={10} /> Claim <ChevronRight size={10} />
-                        </>
-                      ) : (
-                        <>
-                          <Target size={10} /> Run Mission <ChevronRight size={10} />
-                        </>
-                      )}
-                    </button>
+                    {mission.status === 'CLAIMED' ? (
+                      <div className="mt-2.5 w-full py-1.5 rounded-xl text-[10px] font-bold bg-white/5 border border-white/10 text-text-tertiary flex items-center justify-center gap-1 cursor-default">
+                        Claimed ✓
+                      </div>
+                    ) : (
+                      <button
+                        disabled={processing}
+                        onClick={() => openRunner(mission)}
+                        className={`mt-2.5 w-full py-1.5 rounded-xl text-[10px] font-extrabold press-feedback shadow-sm flex items-center justify-center gap-1 ${
+                          processing
+                            ? 'bg-control-bg/40 text-text-tertiary cursor-not-allowed'
+                            : mission.eligible
+                              ? 'bg-usdt-green text-app-bg hover:brightness-110'
+                              : 'bg-sky-500/15 border border-sky-500/30 text-sky-400 hover:brightness-110'
+                        }`}
+                      >
+                        {processing ? (
+                          <>
+                            <Loader2 size={10} className="animate-spin" /> Processing…
+                          </>
+                        ) : mission.eligible ? (
+                          <>
+                            <Rocket size={10} /> Claim <ChevronRight size={10} />
+                          </>
+                        ) : (
+                          <>
+                            <Target size={10} /> Run Mission <ChevronRight size={10} />
+                          </>
+                        )}
+                      </button>
+                    )}
                   </motion.div>
                 );
               })}

@@ -4,6 +4,8 @@ import { persist } from 'zustand/middleware';
 export type PrimaryCurrency = 'USDT' | 'UGX';
 
 export interface AuthUser {
+  id?: string;
+  identityId?: string;
   telegramUserId: number;
   telegramUsername: string | null;
   firstName: string;
@@ -38,6 +40,7 @@ export interface SessionData {
   isNewUser: boolean;
   expiresAt: number;
   platform: 'telegram' | 'web';
+  provider?: 'TELEGRAM' | 'WHATSAPP';
 }
 
 interface AuthState {
@@ -50,14 +53,26 @@ interface AuthState {
   locationDetected: boolean;
   isAuthLoading: boolean;
   authError: string | null;
+  stepUpToken: string | null;
+  isStepUpModalOpen: boolean;
+  isMirrorMode: boolean;
+  mirrorTargetUser: AuthUser | null;
 
   setSession: (session: SessionData) => void;
+  startMirrorSession: (
+    user: AuthUser,
+    metrics?: { balance?: number; crystalBalance?: number; speedGhs?: number }
+  ) => void;
+  exitMirrorSession: () => void;
   clearSession: () => void;
   isSessionExpired: () => boolean;
   refreshSession: (newExpiresAt: number) => void;
   updateTokens: (accessToken: string, refreshToken: string, expiresAt: number) => void;
   setAuthLoading: (loading: boolean) => void;
   setAuthError: (error: string | null) => void;
+  setStepUpToken: (token: string | null) => void;
+  openStepUpModal: () => void;
+  closeStepUpModal: () => void;
   markOnboardingComplete: () => void;
   markCountrySelected: () => void;
   setDetectedCountry: (code: string) => void;
@@ -78,6 +93,10 @@ export const useAuthStore = create<AuthState>()(
       locationDetected: false,
       isAuthLoading: false,
       authError: null,
+      stepUpToken: null,
+      isStepUpModalOpen: false,
+      isMirrorMode: typeof sessionStorage !== 'undefined' && sessionStorage.getItem('mirror_mode') === 'true',
+      mirrorTargetUser: null,
 
       setSession: (session) => {
         localStorage.setItem('auth_token', session.accessToken);
@@ -96,12 +115,42 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
+      startMirrorSession: (targetUser) => {
+        // A client-side preview must never manufacture a user session or token.
+        // Server-authorized impersonation, if introduced, needs its own audited API.
+        set({
+          isMirrorMode: false,
+          mirrorTargetUser: null,
+        });
+      },
+
+      exitMirrorSession: () => {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('mirror_mode');
+          sessionStorage.removeItem('mirror_user');
+        }
+        set({
+          isMirrorMode: false,
+          mirrorTargetUser: null,
+        });
+      },
+
       clearSession: () => {
         localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth-storage');
+        localStorage.removeItem('wallet-storage');
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('mirror_mode');
+          sessionStorage.removeItem('mirror_user');
+        }
         set({
           isAuthenticated: false,
           session: null,
           authError: null,
+          stepUpToken: null,
+          isStepUpModalOpen: false,
+          isMirrorMode: false,
+          mirrorTargetUser: null,
         });
       },
 
@@ -148,6 +197,18 @@ export const useAuthStore = create<AuthState>()(
         set({ authError: error, isAuthLoading: false });
       },
 
+      setStepUpToken: (token) => {
+        set({ stepUpToken: token, isStepUpModalOpen: false });
+      },
+
+      openStepUpModal: () => {
+        set({ isStepUpModalOpen: true });
+      },
+
+      closeStepUpModal: () => {
+        set({ isStepUpModalOpen: false });
+      },
+
       markOnboardingComplete: () => {
         set({ onboardingComplete: true });
       },
@@ -187,6 +248,11 @@ export const useAuthStore = create<AuthState>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           state._hasHydrated = true;
+          if (state.session && (!state.session.accessToken || (state.session.expiresAt && Date.now() > state.session.expiresAt))) {
+            state.isAuthenticated = false;
+            state.session = null;
+            localStorage.removeItem('auth_token');
+          }
           useAuthStore.setState({ _hasHydrated: true });
         }
       },
@@ -204,33 +270,23 @@ export const handleSessionExpiry = () => {
 };
 
 export const detectUserCountry = async (): Promise<string | null> => {
-  try {
-    const response = await fetch('https://ipapi.co/json/', {
-      signal: AbortSignal.timeout(5000),
-    });
-    if (response.ok) {
-      const data = await response.json();
-      if (data.country_code) {
-        return data.country_code;
-      }
-    }
-  } catch {
-    // Silent fallback
+  if (typeof window !== 'undefined') {
+    const cached = localStorage.getItem('titan_cached_country_code');
+    if (cached) return cached;
   }
 
+  // Instant zero-network heuristic fallback based on Intl timezone
   try {
-    const response = await fetch('http://ip-api.com/json/?fields=countryCode', {
-      signal: AbortSignal.timeout(4000),
-    });
-    if (response.ok) {
-      const data = await response.json();
-      if (data.countryCode) {
-        return data.countryCode;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    let inferred = 'UG';
+    if (tz.includes('Kampala') || tz.includes('Nairobi') || tz.includes('Africa/')) {
+      inferred = tz.includes('Nairobi') ? 'KE' : 'UG';
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('titan_cached_country_code', inferred);
       }
+      return inferred;
     }
-  } catch {
-    // Silent fallback
-  }
+  } catch {}
 
-  return null;
+  return 'UG';
 };
