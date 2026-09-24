@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useLegalModalStore } from '../store/useLegalModalStore';
 import { completePreAuthOnboarding } from '../utils/preAuthOnboarding';
+import { MACHINE_CATALOG } from '../data/machines';
 
 interface PreAuthOnboardingProps {
   onComplete: () => void;
@@ -26,12 +27,18 @@ export function PreAuthOnboarding({ onComplete }: PreAuthOnboardingProps) {
   const openLegalModal = useLegalModalStore((state) => state.openLegalModal);
 
   // ─── Interactive State for Slide 0: Machine Selector ───
+  // Synced with the live GPU fleet catalog (single source of truth).
   const [selectedTierIndex, setSelectedTierIndex] = useState(0);
-  const machineTiers = [
-    { name: 'Titan Core Prime', price: 10, hashRate: 1, dailyUsdt: 0.5, tag: 'Starter' },
-    { name: 'Titan Alpha Rig', price: 100, hashRate: 10, dailyUsdt: 5.2, tag: 'Popular' },
-    { name: 'Titan H100 Cluster', price: 1000, hashRate: 120, dailyUsdt: 65.0, tag: 'Institutional' },
-  ];
+  const machineTiers = (['TS_TRIAL', 'TS_P250', 'TS_X1000'] as const).map((tierCode, idx) => {
+    const machine = MACHINE_CATALOG.find((item) => item.tierCode === tierCode);
+    return {
+      name: machine?.name ?? tierCode,
+      price: machine?.priceUsdt ?? 0,
+      hashRate: machine?.capacityGhs ?? 0,
+      dailyUsdt: machine?.dailyYieldUsdt ?? 0,
+      tag: ['Starter', 'Popular', 'Pro'][idx] as string,
+    };
+  });
 
   // ─── Interactive State for Slide 1: Dual-Currency & Live Yield Ticker ───
   const [currency, setCurrency] = useState<'USDT' | 'KES' | 'UGX' | 'NGN'>('USDT');
