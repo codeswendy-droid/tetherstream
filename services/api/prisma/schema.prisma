@@ -97,6 +97,10 @@ enum AuditEventType {
   TRANSACTION_COMPLETED
   TRANSACTION_FAILED
   BALANCE_UPDATED
+  ACCOUNT_SETUP_COMPLETED
+  TRANSACTION_METHOD_CHANGED
+  WITHDRAWAL_PHONE_CHANGED
+  PROFILE_NAME_UPDATED
 }
 
 enum FinancialAccountStatus {
@@ -342,6 +346,7 @@ model User {
   withdrawalPhoneNumber  String?   @map("withdrawal_phone_number")
   withdrawalPhoneVerified Boolean  @default(false) @map("withdrawal_phone_verified")
   withdrawalPhoneVerifiedAt DateTime? @map("withdrawal_phone_verified_at")
+  preferredTransactionMethod TransactionMethod? @map("preferred_transaction_method")
   verifiedUsdtAddress    String?   @map("verified_usdt_address")
   usdtAddressVerified    Boolean   @default(false) @map("usdt_address_verified")
   usdtAddressVerifiedAt  DateTime? @map("usdt_address_verified_at")
@@ -2201,6 +2206,11 @@ enum IdentityProvider {
 enum AuthMethod {
   TELEGRAM
   WHATSAPP
+}
+
+enum TransactionMethod {
+  MOBILE_MONEY
+  CRYPTO
 }
 
 enum ShareChannel {
