@@ -42,6 +42,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const setAuthError = useAuthStore((s) => s.setAuthError);
 
   const authAttempted = useRef(false);
+  const waChallengeInFlight = useRef(false);
 
   // Local UI states
   const [webDeepLink, setWebDeepLink] = useState<string | null>(null);
@@ -314,6 +315,8 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // ── WhatsApp Login Challenge Handler ──────────────────────────────────────
   const createWhatsAppChallenge = useCallback(async () => {
+    if (waChallengeInFlight.current) return;
+    waChallengeInFlight.current = true;
     setWaLoading(true);
     setWaError(null);
     try {
@@ -336,6 +339,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     } catch (err: any) {
       setWaError(err.response?.data?.error?.message || err.message || 'Failed to initialize WhatsApp sign-in request.');
     } finally {
+      waChallengeInFlight.current = false;
       setWaLoading(false);
     }
   }, [deviceContext]);

@@ -926,9 +926,16 @@ export class AuthService {
       data: { verified: true },
     });
 
+    // Get canonical identity ID for consistent JWT subject
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { identityId: true },
+    });
+    const canonicalId = user?.identityId || userId;
+
     // Issue 5-minute step-up authorization token
     const stepUpToken = this.jwtService.sign(
-      { sub: userId, type: 'step_up', purpose: 'financial_authorization' },
+      { sub: canonicalId, type: 'step_up', purpose: 'financial_authorization' },
       { expiresIn: '5m' },
     );
 
