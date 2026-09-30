@@ -162,7 +162,7 @@ describe('DEEP IDENTITY PERSISTENCE E2E ACCEPTANCE TEST (Phases 1-15)', () => {
   // ─────────────────────────────────────────────────────────────
   describe('Phase 2 & 3: WebAuthSession Incident Path & JWT Subject', () => {
     it('authorizes web session for baseline Telegram user and sets JWT.sub === canonical User UUID', async () => {
-      const { sessionCode } = webAuthSession.createWebAuthSession();
+      const { sessionCode } = await webAuthSession.createWebAuthSession();
 
       const authorized = await webAuthSession.authorizeWebSessionViaTelegram(sessionCode, {
         id: BASELINE_TELEGRAM_ID,
@@ -173,7 +173,7 @@ describe('DEEP IDENTITY PERSISTENCE E2E ACCEPTANCE TEST (Phases 1-15)', () => {
 
       expect(authorized).toBe(true);
 
-      const session: any = webAuthSession.pollWebAuthSession(sessionCode);
+      const session: any = await webAuthSession.pollWebAuthSession(sessionCode);
       expect(session.status).toBe('AUTHENTICATED');
       expect(session.user.id).toBe(BASELINE_UUID);
       expect(session.user.identityId).toBe(BASELINE_UUID);

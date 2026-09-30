@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException, Logger, BadRequestException, Optional } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { createHash, randomInt, timingSafeEqual } from 'crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import { IdentityProvider } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { TelegramAuthService } from './strategies/telegram-auth.service';
@@ -39,117 +39,30 @@ export class AuthService {
     }
   }
 
-  private readonly webAuthSessions = new Map<string, {
-    status: 'PENDING' | 'AUTHENTICATED' | 'EXPIRED';
-    data?: any;
-    createdAt: number;
-  }>();
-
-  createWebAuthSession() {
-    const sessionCode = `wa_${Math.random().toString(36).substring(2)}${Date.now().toString(36)}`;
-    const botUsername = process.env.TELEGRAM_BOT_USERNAME || 'titanstream_bot';
-    const deepLink = `https://t.me/${botUsername}?start=${sessionCode}`;
-
-    this.webAuthSessions.set(sessionCode, {
-      status: 'PENDING',
-      createdAt: Date.now(),
+  async createTelegramNonce() {
+    const now = Date.now();
+    const nonce = `tgn_${randomBytes(24).toString('base64url')}`;
+    const expiresAt = new Date(now + 10 * 60 * 1000);
+    await this.prisma.telegramAuthNonce.create({
+      data: { nonce, expiresAt },
     });
-
-    const tenMinsAgo = Date.now() - 10 * 60 * 1000;
-    for (const [code, sess] of this.webAuthSessions.entries()) {
-      if (sess.createdAt < tenMinsAgo) this.webAuthSessions.delete(code);
-    }
-
-    return { sessionCode, deepLink };
-  }
-
-  pollWebAuthSession(sessionCode: string) {
-    const session = this.webAuthSessions.get(sessionCode);
-    if (!session) {
-      return { status: 'EXPIRED' };
-    }
-
-    if (Date.now() - session.createdAt > 10 * 60 * 1000) {
-      this.webAuthSessions.delete(sessionCode);
-      return { status: 'EXPIRED' };
-    }
-
-    if (session.status === 'AUTHENTICATED' && session.data) {
-      return { status: 'AUTHENTICATED', ...session.data };
-    }
-
-    return { status: 'PENDING' };
-  }
-
-  async authorizeWebSessionViaTelegram(sessionCode: string, telegramUser: {
-    id: number | bigint;
-    first_name: string;
-    last_name?: string;
-    username?: string;
-    language_code?: string;
-    photo_url?: string;
-  }) {
-    const session = this.webAuthSessions.get(sessionCode);
-    if (!session || session.status === 'EXPIRED') {
-      this.logger.warn(`Attempted deep link web auth for unknown or expired session ${sessionCode}`);
-      return false;
-    }
-
-    const parsed = {
-      telegramUserId: telegramUser.id,
-      firstName: telegramUser.first_name,
-      lastName: telegramUser.last_name,
-      username: telegramUser.username,
-      languageCode: telegramUser.language_code,
-      photoUrl: telegramUser.photo_url,
-    };
-
-    const authResult = await this.authenticateTelegramIdentity(parsed, 'telegram_deep_link_bot', `deeplink_${sessionCode}`);
-
-    this.webAuthSessions.set(sessionCode, {
-      status: 'AUTHENTICATED',
-      data: authResult,
-      createdAt: session.createdAt,
-    });
-
-    this.logger.log(`Web auth session ${sessionCode} successfully authorized for Telegram ID ${telegramUser.id}`);
-    return true;
-  }
-
-  private readonly activeNonces = new Map<string, { createdAt: number; used: boolean }>();
-
-  createTelegramNonce() {
-    const nonce = `tgn_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
-    this.activeNonces.set(nonce, { createdAt: Date.now(), used: false });
-
-    const tenMinsAgo = Date.now() - 10 * 60 * 1000;
-    for (const [code, item] of this.activeNonces.entries()) {
-      if (item.createdAt < tenMinsAgo) this.activeNonces.delete(code);
-    }
-
+    await this.prisma.telegramAuthNonce.deleteMany({ where: { expiresAt: { lt: new Date(now) } } });
     return { nonce };
   }
 
-  validateAndConsumeNonce(nonce?: string): boolean {
+  async validateAndConsumeNonce(nonce?: string): Promise<boolean> {
     if (!nonce) {
       throw new UnauthorizedException({ code: 'MISSING_NONCE', message: 'Authentication nonce is required.' });
     }
 
-    const record = this.activeNonces.get(nonce);
-    if (!record) {
-      throw new UnauthorizedException({ code: 'INVALID_NONCE', message: 'Authentication nonce is invalid or expired.' });
+    const now = new Date();
+    const consumed = await this.prisma.telegramAuthNonce.updateMany({
+      where: { nonce, consumedAt: null, expiresAt: { gt: now } },
+      data: { consumedAt: now },
+    });
+    if (consumed.count !== 1) {
+      throw new UnauthorizedException({ code: 'INVALID_NONCE', message: 'Authentication nonce is invalid, expired, or already used.' });
     }
-
-    if (record.used) {
-      throw new UnauthorizedException({ code: 'REPLAYED_NONCE', message: 'Authentication nonce has already been consumed.' });
-    }
-
-    if (Date.now() - record.createdAt > 10 * 60 * 1000) {
-      this.activeNonces.delete(nonce);
-      throw new UnauthorizedException({ code: 'EXPIRED_NONCE', message: 'Authentication nonce has expired.' });
-    }
-
-    this.activeNonces.delete(nonce);
     return true;
   }
 
@@ -163,7 +76,7 @@ export class AuthService {
       // Nonce is required for replay protection on the hash flow. The id_token
       // flow binds the nonce inside the JWT itself (verified cryptographically).
       if (payload?.nonce) {
-        this.validateAndConsumeNonce(payload.nonce);
+        await this.validateAndConsumeNonce(payload.nonce);
       }
 
       const parsed = await this.telegramAuth.parseWebLoginPayloadAsync(payload);

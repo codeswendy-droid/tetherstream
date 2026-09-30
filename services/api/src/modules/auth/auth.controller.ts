@@ -41,7 +41,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Create a Web Auth Deep Link session' })
   async createWebSession() {
-    return { success: true, data: this.webAuthSessionService.createWebAuthSession() };
+    return { success: true, data: await this.webAuthSessionService.createWebAuthSession() };
   }
 
   @Public()
@@ -49,7 +49,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Poll status of Web Auth Deep Link session' })
   async pollWebSession(@Body('sessionCode') sessionCode: string) {
-    return { success: true, data: this.webAuthSessionService.pollWebAuthSession(sessionCode) };
+    return { success: true, data: await this.webAuthSessionService.pollWebAuthSession(sessionCode) };
   }
 
   @Public()
@@ -57,7 +57,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Generate a random cryptographic nonce for Telegram login authentication' })
   async getTelegramNonce() {
-    return { success: true, data: this.authService.createTelegramNonce() };
+    return { success: true, data: await this.authService.createTelegramNonce() };
   }
 
   @Public()

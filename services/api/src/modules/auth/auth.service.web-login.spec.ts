@@ -43,8 +43,19 @@ function makeService(overrides: {
     overrides.userLookup ??
     jest.fn().mockResolvedValue(canonicalUser);
 
+  const authNonces = new Map<string, { expiresAt: Date; consumedAt: Date | null }>();
   const prisma: any = {
     user: { findUnique: userLookup },
+    telegramAuthNonce: {
+      create: jest.fn(({ data }) => { authNonces.set(data.nonce, { expiresAt: data.expiresAt, consumedAt: null }); return data; }),
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      updateMany: jest.fn(({ where, data }) => {
+        const record = authNonces.get(where.nonce);
+        if (!record || record.consumedAt || record.expiresAt <= where.expiresAt.gt) return { count: 0 };
+        record.consumedAt = data.consumedAt;
+        return { count: 1 };
+      }),
+    },
     referralCode: {
       findUnique: jest.fn().mockResolvedValue(overrides.referralCodeRecord ?? null),
     },
@@ -85,7 +96,7 @@ function makeService(overrides: {
 describe('AuthService.authenticateWebLogin (standalone web regression)', () => {
   it('authenticates a valid Login Widget payload with nonce and resolves the canonical user', async () => {
     const { service, canonicalUser } = makeService({});
-    const nonce = (service as any).createTelegramNonce().nonce;
+    const nonce = (await service.createTelegramNonce()).nonce;
     const signed = signWidgetPayload({ id: 123456789, first_name: 'Wendy', auth_date: Math.floor(Date.now() / 1000) });
 
     const result = await service.authenticateWebLogin({ ...signed, nonce }, '127.0.0.1', 'jest');
@@ -103,9 +114,9 @@ describe('AuthService.authenticateWebLogin (standalone web regression)', () => {
     const { service } = makeService({});
     const signed = signWidgetPayload({ id: 123456789, first_name: 'Wendy', auth_date: Math.floor(Date.now() / 1000) });
 
-    const nonce1 = (service as any).createTelegramNonce().nonce;
+    const nonce1 = (await service.createTelegramNonce()).nonce;
     const first = await service.authenticateWebLogin({ ...signed, nonce: nonce1 }, '127.0.0.1', 'jest');
-    const nonce2 = (service as any).createTelegramNonce().nonce;
+    const nonce2 = (await service.createTelegramNonce()).nonce;
     const second = await service.authenticateWebLogin({ ...signed, nonce: nonce2 }, '127.0.0.1', 'jest');
 
     expect(first.user.id).toBe(second.user.id);
@@ -119,7 +130,7 @@ describe('AuthService.authenticateWebLogin (standalone web regression)', () => {
   it('rejects tampered payloads and replays (no JWT issued)', async () => {
     const { service, jwtService } = makeService({});
     const signed = signWidgetPayload({ id: 123456789, first_name: 'Wendy', auth_date: Math.floor(Date.now() / 1000) });
-    const nonce = (service as any).createTelegramNonce().nonce;
+    const nonce = (await service.createTelegramNonce()).nonce;
 
     jwtService.sign.mockClear();
     await expect(
@@ -132,7 +143,7 @@ describe('AuthService.authenticateWebLogin (standalone web regression)', () => {
   it('rejects reused nonces (replay protection)', async () => {
     const { service } = makeService({});
     const signed = signWidgetPayload({ id: 123456789, first_name: 'Wendy', auth_date: Math.floor(Date.now() / 1000) });
-    const nonce = (service as any).createTelegramNonce().nonce;
+    const nonce = (await service.createTelegramNonce()).nonce;
 
     await service.authenticateWebLogin({ ...signed, nonce }, '127.0.0.1', 'jest');
     await expect(service.authenticateWebLogin({ ...signed, nonce }, '127.0.0.1', 'jest')).rejects.toThrow();
@@ -142,7 +153,7 @@ describe('AuthService.authenticateWebLogin (standalone web regression)', () => {
     const failing = jest.fn().mockRejectedValue(new Error('DB_UNREACHABLE'));
     const { service, jwtService } = makeService({ identityAuthenticate: failing });
     const signed = signWidgetPayload({ id: 123456789, first_name: 'Wendy', auth_date: Math.floor(Date.now() / 1000) });
-    const nonce = (service as any).createTelegramNonce().nonce;
+    const nonce = (await service.createTelegramNonce()).nonce;
 
     jwtService.sign.mockClear();
     await expect(service.authenticateWebLogin({ ...signed, nonce }, '127.0.0.1', 'jest')).rejects.toThrow(
@@ -154,7 +165,7 @@ describe('AuthService.authenticateWebLogin (standalone web regression)', () => {
   it('fails closed when the canonical user record is missing (no fake financial account)', async () => {
     const { service, jwtService } = makeService({ userLookup: jest.fn().mockResolvedValue(null) });
     const signed = signWidgetPayload({ id: 123456789, first_name: 'Wendy', auth_date: Math.floor(Date.now() / 1000) });
-    const nonce = (service as any).createTelegramNonce().nonce;
+    const nonce = (await service.createTelegramNonce()).nonce;
 
     jwtService.sign.mockClear();
     await expect(service.authenticateWebLogin({ ...signed, nonce }, '127.0.0.1', 'jest')).rejects.toThrow(

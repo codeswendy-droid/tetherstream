@@ -16,7 +16,19 @@ describe('Identity Persistence & Sign-in Approval Remediation (Phase 8 Verificat
   const PHONE_NUMBER = '+256752762181';
 
   beforeEach(async () => {
+    const webSessions = new Map<string, any>();
     prismaMock = {
+      telegramWebAuthSession: {
+        create: jest.fn(({ data }) => { const row = { sessionCode: data.sessionCode, status: data.status, expiresAt: data.expiresAt, data: null }; webSessions.set(data.sessionCode, row); return row; }),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+        findUnique: jest.fn(({ where }) => webSessions.get(where.sessionCode) ?? null),
+        updateMany: jest.fn(({ where, data }) => {
+          const row = webSessions.get(where.sessionCode);
+          if (!row || row.status !== where.status || row.expiresAt <= where.expiresAt.gt) return { count: 0 };
+          Object.assign(row, data);
+          return { count: 1 };
+        }),
+      },
       channelIdentity: {
         findUnique: jest.fn(),
         create: jest.fn(),
@@ -116,7 +128,7 @@ describe('Identity Persistence & Sign-in Approval Remediation (Phase 8 Verificat
 
   describe('Test 2: WebAuthSessionService Canonical Identity Integration', () => {
     it('authorizes web session using IdentityMasterEngine and sets JWT sub to canonical User UUID', async () => {
-      const { sessionCode } = webAuthService.createWebAuthSession();
+      const { sessionCode } = await webAuthService.createWebAuthSession();
 
       const existingRecord = {
         id: 'chan_tg_1',
@@ -147,7 +159,7 @@ describe('Identity Persistence & Sign-in Approval Remediation (Phase 8 Verificat
 
       expect(success).toBe(true);
 
-      const pollResult: any = webAuthService.pollWebAuthSession(sessionCode);
+      const pollResult: any = await webAuthService.pollWebAuthSession(sessionCode);
       expect(pollResult.status).toBe('AUTHENTICATED');
       expect(pollResult.user.id).toBe(CANONICAL_USER_UUID);
       expect(pollResult.user.identityId).toBe(CANONICAL_USER_UUID);

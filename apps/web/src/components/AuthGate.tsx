@@ -48,7 +48,10 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [webDeepLink, setWebDeepLink] = useState<string | null>(null);
   const [webSessionCode, setWebSessionCode] = useState<string | null>(null);
   const [isWaitingForTelegramAuth, setIsWaitingForTelegramAuth] = useState(false);
+  const [authErrorNeedsTelegramApp, setAuthErrorNeedsTelegramApp] = useState(false);
   const [sessionVerified, setSessionVerified] = useState(false);
+  const [sessionVerificationIssue, setSessionVerificationIssue] = useState<string | null>(null);
+  const [sessionVerificationAttempt, setSessionVerificationAttempt] = useState(0);
 
   const [authTab, setAuthTab] = useState<'telegram' | 'whatsapp'>('telegram');
 
@@ -79,6 +82,15 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     setDeviceContext(detectDeviceContext());
   }, []);
 
+  useEffect(() => {
+    if (!hasHydrated || !isReady) return;
+    console.info(
+      `[AUTH_GATE] session.restore origin=${window.location.origin} miniApp=${isMiniApp} ` +
+      `persisted=${isAuthenticated} accessToken=${Boolean(localStorage.getItem('auth_token'))} ` +
+      `refreshToken=${Boolean(localStorage.getItem('refresh_token'))}`
+    );
+  }, [hasHydrated, isReady, isMiniApp, isAuthenticated]);
+
   // Persisted browser state is never authentication proof. A protected backend
   // request must validate the signed token before this gate renders the app.
   useEffect(() => {
@@ -89,6 +101,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     }
 
     let active = true;
+    setSessionVerificationIssue(null);
     setSessionVerified(false);
     
     // Verify session with canonical identity check using dedicated endpoint
@@ -104,10 +117,11 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
         // Log identity verification for audit trail
         console.info(`[IDENTITY_VERIFICATION] Session verified: verified=${verified}, userId=${userId}, identityId=${identityId}, telegramUserId=${telegramUserId}, mappingConsistent=${mappingConsistent}, hasChannels=${hasChannels}`);
         
-        // REJECT session if identity mapping is inconsistent - this prevents loading wrong user data
+        // Keep user data gated until the saved session can be verified, but do
+        // not erase credentials when verification has an inconsistent response.
         if (!mappingConsistent) {
-          console.error(`[IDENTITY_VERIFICATION] Identity mapping inconsistency detected: userId=${userId} != identityId=${identityId}. REJECTING SESSION.`);
-          clearSession();
+          console.warn(`[IDENTITY_VERIFICATION] Identity mapping needs review: userId=${userId} != identityId=${identityId}. Keeping saved session.`);
+          setSessionVerificationIssue('We could not confirm this saved login yet. Your session is preserved; retry verification or sign in again.');
           return;
         }
         
@@ -115,12 +129,25 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
       })
       .catch((error) => {
         if (!active) return;
-        console.error(`[IDENTITY_VERIFICATION] Session verification failed:`, error);
-        clearSession();
+        const status = error?.response?.status;
+        console.warn(`[IDENTITY_VERIFICATION] Verification incomplete; keeping saved session (status=${status || 'network'})`);
+        setSessionVerificationIssue(status === 401 || status === 403
+          ? 'We could not verify this saved login right now. Your session is preserved; retry or sign in again.'
+          : 'We could not reach the sign-in service. Your saved session is preserved; check your connection and retry.');
       });
 
     return () => { active = false; };
-  }, [hasHydrated, isAuthenticated, clearSession]);
+  }, [hasHydrated, isAuthenticated, clearSession, sessionVerificationAttempt]);
+
+  useEffect(() => {
+    const retryWhenOnline = () => {
+      if (isAuthenticated && sessionVerificationIssue) {
+        setSessionVerificationAttempt((attempt) => attempt + 1);
+      }
+    };
+    window.addEventListener('online', retryWhenOnline);
+    return () => window.removeEventListener('online', retryWhenOnline);
+  }, [isAuthenticated, sessionVerificationIssue]);
 
   // ── Mini App authentication (initData HMAC) ────────────────────────────────
   const authenticateMiniApp = useCallback(async () => {
@@ -150,17 +177,25 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   // ── Manual fallback trigger for explicit deep-link choice ─────────────────
   const handleInitiateDeepLinkFallback = useCallback(async () => {
     setIsWaitingForTelegramAuth(true);
+    setAuthErrorNeedsTelegramApp(false);
+    const popup = window.open('about:blank', '_blank');
     try {
       const res = await api.post('/auth/web-session/create');
       if (res.data?.success && res.data?.data) {
-        setWebDeepLink(res.data.data.deepLink);
+        const deepLink = res.data.data.deepLink;
+        setWebDeepLink(deepLink);
         setWebSessionCode(res.data.data.sessionCode);
-        window.open(res.data.data.deepLink, '_blank');
+        if (popup && !popup.closed) popup.location.href = deepLink;
+        else window.location.href = deepLink;
       } else {
-        window.open(`https://t.me/${BOT_USERNAME}`, '_blank');
+        if (popup && !popup.closed) popup.location.href = `https://t.me/${BOT_USERNAME}`;
+        else window.location.href = `https://t.me/${BOT_USERNAME}`;
       }
     } catch {
-      window.open(`https://t.me/${BOT_USERNAME}`, '_blank');
+      if (popup && !popup.closed) popup.location.href = `https://t.me/${BOT_USERNAME}`;
+      else window.location.href = `https://t.me/${BOT_USERNAME}`;
+    } finally {
+      setIsWaitingForTelegramAuth(false);
     }
   }, []);
 
@@ -183,6 +218,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     console.info(`[AUTH_GATE:${traceId}] web.login_triggered`);
     setIsWaitingForTelegramAuth(true);
     setAuthError(null);
+    setAuthErrorNeedsTelegramApp(false);
 
     const nonce = preFetchedNonce || `tgn_m_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 10)}`;
 
@@ -256,6 +292,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
           const backendCode = apiErr?.response?.data?.error?.code;
           const backendMsg = apiErr?.response?.data?.error?.message || apiErr?.message || 'Telegram verification failed';
           console.warn(`[AUTH_GATE:${traceId}] API telegram-login notice:`, backendMsg, backendCode ? `code=${backendCode}` : '');
+          if (backendCode === 'INVALID_NONCE' || backendCode === 'EXPIRED_NONCE') setAuthErrorNeedsTelegramApp(true);
           throw new Error(backendMsg);
         }
 
@@ -270,6 +307,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
         const msg = backendErr.response?.data?.error?.message || backendErr.message || 'Telegram verification failed';
         console.error(`[AUTH_GATE:${traceId}] web.auth.failed reason=${msg}`);
         setIsWaitingForTelegramAuth(false);
+        setAuthErrorNeedsTelegramApp(false);
         setAuthError(msg);
       }
     };
@@ -322,6 +360,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     authAttempted.current = false;
     setAuthError(null);
     setIsWaitingForTelegramAuth(false);
+    setAuthErrorNeedsTelegramApp(false);
     if (isMiniApp) {
       authenticateMiniApp();
       authAttempted.current = true;
@@ -496,6 +535,30 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   }
 
   if (isAuthenticated) {
+    if (sessionVerificationIssue) {
+      return (
+        <div className="fixed inset-0 z-50 bg-[#06070b] flex items-center justify-center p-4">
+          <div className="w-full max-w-sm p-6 rounded-3xl bg-[#0f111a] border border-white/10 shadow-2xl flex flex-col items-center text-center">
+            <div className="p-3.5 rounded-full bg-amber-500/10 text-amber-300 mb-4"><AlertCircle size={26} /></div>
+            <h2 className="text-lg font-bold text-white mb-2">Connection needed</h2>
+            <p className="text-xs text-gray-400 leading-relaxed mb-6">{sessionVerificationIssue}</p>
+            <button
+              onClick={() => setSessionVerificationAttempt((attempt) => attempt + 1)}
+              className="w-full py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95"
+            >
+              <RefreshCw size={16} />
+              <span>Retry verification</span>
+            </button>
+            <button
+              onClick={clearSession}
+              className="w-full py-3 px-4 mt-2 rounded-2xl text-gray-400 hover:text-white text-xs font-semibold transition-colors"
+            >
+              Sign in again
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-app-bg text-text-secondary">
         <Loader2 className="animate-spin" size={22} />
@@ -521,6 +584,15 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </div>
           <h2 className="text-lg font-bold text-white mb-2">Authentication Error</h2>
           <p className="text-xs text-gray-400 leading-relaxed mb-6">{authError}</p>
+          {authErrorNeedsTelegramApp && (
+            <button
+              onClick={handleInitiateDeepLinkFallback}
+              className="w-full py-3.5 px-4 mb-3 rounded-2xl bg-[#2AABEE] hover:bg-[#2299d6] text-white font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95"
+            >
+              <Send size={16} />
+              <span>Continue in Telegram App</span>
+            </button>
+          )}
           <button
             onClick={handleRetry}
             className="w-full py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95"

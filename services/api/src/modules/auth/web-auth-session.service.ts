@@ -1,4 +1,5 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../database/prisma.service';
 import { UserState } from '../../common/interfaces/user-state.enum';
@@ -9,51 +10,30 @@ import { IdentityProvider } from '@prisma/client';
 @Injectable()
 export class WebAuthSessionService {
   private readonly logger = new Logger(WebAuthSessionService.name);
-  private readonly webAuthSessions = new Map<string, {
-    status: 'PENDING' | 'AUTHENTICATED' | 'EXPIRED';
-    data?: any;
-    createdAt: number;
-  }>();
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly identityMasterEngine: IdentityMasterEngineService,
   ) {}
 
-  createWebAuthSession() {
-    const sessionCode = `wa_${Math.random().toString(36).substring(2)}${Date.now().toString(36)}`;
+  async createWebAuthSession() {
+    const sessionCode = `wa_${randomBytes(24).toString('base64url')}`;
     const botUsername = process.env.TELEGRAM_BOT_USERNAME || 'titanstream_bot';
     const deepLink = `https://t.me/${botUsername}?start=${sessionCode}`;
-
-    this.webAuthSessions.set(sessionCode, {
-      status: 'PENDING',
-      createdAt: Date.now(),
+    const createdAt = new Date();
+    await this.prisma.telegramWebAuthSession.create({
+      data: { sessionCode, status: 'PENDING', expiresAt: new Date(createdAt.getTime() + 10 * 60 * 1000) },
     });
-
-    const tenMinsAgo = Date.now() - 10 * 60 * 1000;
-    for (const [code, sess] of this.webAuthSessions.entries()) {
-      if (sess.createdAt < tenMinsAgo) this.webAuthSessions.delete(code);
-    }
-
+    await this.prisma.telegramWebAuthSession.deleteMany({ where: { expiresAt: { lt: createdAt } } });
     return { sessionCode, deepLink };
   }
 
-  pollWebAuthSession(sessionCode: string) {
-    const session = this.webAuthSessions.get(sessionCode);
-    if (!session) {
-      return { status: 'EXPIRED' };
-    }
-
-    if (Date.now() - session.createdAt > 10 * 60 * 1000) {
-      this.webAuthSessions.delete(sessionCode);
-      return { status: 'EXPIRED' };
-    }
-
+  async pollWebAuthSession(sessionCode: string) {
+    const session = await this.prisma.telegramWebAuthSession.findUnique({ where: { sessionCode } });
+    if (!session || session.expiresAt <= new Date()) return { status: 'EXPIRED' };
     if (session.status === 'AUTHENTICATED' && session.data) {
-      return { status: 'AUTHENTICATED', ...session.data };
+      return { status: 'AUTHENTICATED', ...(session.data as Record<string, unknown>) };
     }
-
     return { status: 'PENDING' };
   }
 
@@ -65,8 +45,8 @@ export class WebAuthSessionService {
     language_code?: string;
     photo_url?: string;
   }) {
-    const session = this.webAuthSessions.get(sessionCode);
-    if (!session || session.status === 'EXPIRED') {
+    const session = await this.prisma.telegramWebAuthSession.findUnique({ where: { sessionCode } });
+    if (!session || session.status !== 'PENDING' || session.expiresAt <= new Date()) {
       this.logger.warn(`Attempted deep link web auth for unknown or expired session ${sessionCode}`);
       return false;
     }
@@ -110,9 +90,7 @@ export class WebAuthSessionService {
       { expiresIn: '30d', secret: process.env.JWT_REFRESH_SECRET || requiredEnv('JWT_REFRESH_SECRET', 'dev-refresh-secret') },
     );
 
-    this.webAuthSessions.set(sessionCode, {
-      status: 'AUTHENTICATED',
-      data: {
+    const data = {
         accessToken,
         refreshToken,
         user: {
@@ -125,9 +103,12 @@ export class WebAuthSessionService {
           state: identityContext.userState || UserState.READY,
         },
         isNewUser: identityContext.assuranceLevel !== 'HIGH',
-      },
-      createdAt: session.createdAt,
+      };
+    const persisted = await this.prisma.telegramWebAuthSession.updateMany({
+      where: { sessionCode, status: 'PENDING', expiresAt: { gt: new Date() } },
+      data: { status: 'AUTHENTICATED', data },
     });
+    if (persisted.count !== 1) return false;
 
     this.logger.log(`Web auth session ${sessionCode} successfully authorized for canonical User ${canonicalUserId} (Telegram ID ${telegramUser.id})`);
     return true;
