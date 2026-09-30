@@ -3127,3 +3127,25 @@ model UsdtBlockchainTransaction {
   @@index([settlementSessionId])
   @@map("usdt_blockchain_transactions")
 }
+
+model TelegramAuthNonce {
+  nonce       String    @id
+  expiresAt   DateTime  @map("expires_at")
+  consumedAt  DateTime? @map("consumed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("telegram_auth_nonces")
+}
+
+model TelegramWebAuthSession {
+  sessionCode String   @id @map("session_code")
+  status      String   @default("PENDING")
+  data        Json?
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@index([status, expiresAt])
+  @@map("telegram_web_auth_sessions")
+}
